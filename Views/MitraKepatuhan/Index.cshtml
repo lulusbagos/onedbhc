@@ -1,0 +1,590 @@
+﻿@{
+    ViewData["Title"] = ViewBag.Title ?? "Pengajuan Kepatuhan Mitra"; // Mengambil judul dari ViewBag
+    Layout = "~/Views/Shared/_Layout.cshtml"; // Pastikan path layout benar
+}
+
+@section Styles {
+    <!-- Library CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(120deg, #0a7cff, #6a5cff, #1cc88a);
+            --glass: rgba(255,255,255,0.85);
+        }
+
+        body {
+            background: var(--primary-gradient);
+            background-size: 180% 180%;
+            animation: bgFlow 18s ease infinite;
+        }
+
+        @@keyframes bgFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Penyesuaian tinggi Select2 agar seragam dengan input Bootstrap 4 */
+        .select2-container--default .select2-selection--single {
+            height: calc(1.5em + .75rem + 2px);
+            padding: .375rem .75rem;
+            border: 1px solid #ced4da;
+            border-radius: .25rem; /* Samakan radius border */
+        }
+
+            .select2-container--default .select2-selection--single .select2-selection__rendered {
+                line-height: 1.5; /* Pusatkan teks secara vertikal */
+                padding-left: 0;
+            }
+
+            .select2-container--default .select2-selection--single .select2-selection__arrow {
+                height: calc(1.5em + .75rem);
+                right: 0.5rem;
+            }
+
+        /* Warna disabled Bootstrap */
+        .select2-container--default.select2-container--disabled .select2-selection--single {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+
+        /* Loading spinner untuk Select2 (dari kode Anda) */
+        .select2-container--default.select2-container--loading .select2-selection--single {
+            background-image: url('data:image/gif;base64,R0lGODlhEAAQAPIAAP///wAAAMLCwkJCQgAAAGJiYoKCgpKSkiH/C05FVFNDQVBFMi4wAwEAAAAh/hpDcmVhdGVkIHdpdGggYWpheGxvYWQuaW5mbwAh+QQJCgAAACwAAAAAEAAQAAADMwi63P4wyklrE2MIOggZnAdOmGYJRbExwroUmcG2LmDEwnHQLVsYOd2mBzkYDAdKa+dIAAAh+QQJCgAAACwAAAAAEAAQAAADNAi63P5OjCEgG4QMu7DmikRxQlFUYDEZIGBMRVsaqHwctXXf7WEYB4Ag1xjihkMZsiUkKhIAIfkECQoAAAAsAAAAABAAEAAAAzYIujIjK8pByJDMlFYvBoVjHA70GU7xSUJhmKtwHPAKzLO9HMaoKwJZ7Rf8AYPDDzKpZBqfvwQAIfkECQoAAAAsAAAAABAAEAAAAzMIumIlK8oyhpHsnFZvxO9DqSkmYRTGqaKrp2bT1jLgT0EOiBwFaoJBYERgQYJYIblUqhlCaxVBQAh+QQJCgAAACwAAAAAEAAQAAADMgi63P7wCRHZnFVdmgHu2nFwlWCI3WGc3TSWhUFGxTAUkGCbtgENBMJAEJsxgMLWzpEAACH5BAkKAAAALAAAAAAQABAAAAMyCLrc/jDKSatlQtScKdceCAjDII7HcQ4EMTCpyrCuUBjCYRgHVtqlAiB1YhiCnlsRkAAAIfkECQoAAAAsAAAAABAAEAAAAzIIuitkyOkny5lKVQQDgsbPDomL5VvPYIaP2rW2uL8t2wSq09jAYBMZIFjXgQAU8gAAAh+QQJCgAAACwAAAAAEAAQAAADMwi63P4wykmrZULUnCnXHggIwxyJAdUpBYAAgUloS2NJSFMUoRgpzCWRALBKOXhBMOOYAADs=');
+            background-repeat: no-repeat;
+            background-position: right 1.75rem center;
+        }
+
+        /* Perbaikan kecil untuk padding card header */
+        .card-header .fa-stack {
+            font-size: 0.6rem;
+            margin-right: 0.5rem;
+            position: relative;
+            top: -1px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 0.8rem;
+            background: var(--glass);
+            box-shadow: 0 18px 40px rgba(10, 124, 255, 0.18);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, rgba(10,124,255,0.12), rgba(108,99,255,0.12));
+            border-bottom: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0a7cff, #6a5cff);
+            border: none;
+            box-shadow: 0 10px 25px rgba(10, 124, 255, 0.25);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-position 0.3s ease;
+            background-size: 160% 160%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 32px rgba(10, 124, 255, 0.35);
+            background-position: 100% 0;
+        }
+
+        .badge-gradient {
+            background: linear-gradient(135deg, #0a7cff, #1cc88a);
+            color: #fff;
+        }
+    </style>
+}
+
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <h1 class="h3 mb-4 text-gray-800">@ViewData["Title"]</h1>
+
+    <!-- Tampilkan Pesan Sukses/Error dari TempData -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+
+    <!-- =================================== -->
+    <!-- Form Pengajuan (Sekarang membungkus kedua kartu) -->
+    <!-- =================================== -->
+    <form id="formPengajuanMitra">
+
+        <!-- 1. Kartu Informasi Perusahaan (BARU) -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <span class="fa-stack fa-1x">
+                        <i class="fas fa-circle fa-stack-2x text-primary" style="opacity: 0.1;"></i>
+                        <i class="fas fa-building fa-stack-1x text-primary"></i>
+                    </span>
+                    Informasi Perusahaan Mitra
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-lightbulb mr-2"></i>Isi data singkat untuk menentukan reviewer & dokumen. Jika belum siap upload, tetap bisa ajukan dulu dan lengkapi kemudian lewat link upload.
+                </div>
+                <div class="row">
+                    <div class="col-lg-8 form-group">
+                        <label for="nama_pt">Nama Perusahaan (PT) <span class="text-danger">*</span></label>
+                        <input type="text" id="nama_pt" name="nama_pt" class="form-control text-uppercase" placeholder="Contoh: PT. MITRA SEJAHTERA" required>
+                    </div>
+                    <div class="col-lg-4 form-group">
+                        <label for="pt_owner">Perusahaan Induk (Owner)</label>
+                        <select id="pt_owner" name="pt_owner" class="form-control select2-basic" data-placeholder="-- Pilih Perusahaan Induk --">
+                            <option></option> <!-- Opsi kosong untuk placeholder -->
+                            <option value="PT INDEXIM COALINDO">PT INDEXIM COALINDO</option>
+                            <option value="PT KALIMANTAN PRIMA PERSADA">PT KALIMANTAN PRIMA PERSADA</option>
+                            <option value="PT UNGGUL DINAMIKA UTAMA">PT UNGGUL DINAMIKA UTAMA</option>
+                            <option value="PT MEGA GLOBAL ENERGY">PT MEGA GLOBAL ENERGY</option>
+                            <option value="LAINNYA">LAINNYA (NON-GROUP)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12 form-group">
+                        <label for="email_pt">Alamat Email Perusahaan <span class="text-danger">*</span></label>
+                        <input type="email" id="email_pt" name="email_pt" class="form-control" placeholder="Contoh: contact@mitrasejahtera.com atau hrd@mitrasejahtera.com" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12 form-group">
+                        <label for="review_singkat">Review Singkat / Catatan Pengaju</label>
+                        <textarea id="review_singkat" name="review_singkat" class="form-control" rows="3" placeholder="Contoh: Perusahaan ini adalah vendor lama untuk fabrikasi, mengajukan untuk proyek baru. Dikenal baik dan pengerjaan selalu tepat waktu."></textarea>
+                        <small class="form-text text-muted">Berikan catatan singkat (opsional) mengenai rekam jejak, spesialisasi, atau alasan pengajuan mitra ini.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Kartu Alamat Perusahaan (BARU) -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <span class="fa-stack fa-1x">
+                        <i class="fas fa-circle fa-stack-2x text-primary" style="opacity: 0.1;"></i>
+                        <i class="fas fa-map-marked-alt fa-stack-1x text-primary"></i>
+                    </span>
+                    Alamat Perusahaan
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label for="provinsi">Provinsi</label>
+                        <select id="provinsi" name="provinsi" class="form-control select2-wilayah" data-placeholder="-- Pilih Provinsi --">
+                            <option></option> <!-- Opsi kosong untuk placeholder -->
+                        </select>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label for="kabupaten">Kabupaten / Kota</label>
+                        <select id="kabupaten" name="kabupaten" class="form-control select2-wilayah" data-placeholder="-- Pilih Provinsi Dahulu --" disabled>
+                            <option></option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label for="kecamatan">Kecamatan</label>
+                        <select id="kecamatan" name="kecamatan" class="form-control select2-wilayah" data-placeholder="-- Pilih Kabupaten/Kota Dahulu --" disabled>
+                            <option></option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label for="kelurahan">Kelurahan / Desa</label>
+                        <select id="kelurahan" name="kelurahan" class="form-control select2-wilayah" data-placeholder="-- Pilih Kecamatan Dahulu --" disabled>
+                            <option></option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tombol Submit di luar kartu -->
+        <div class="text-right mb-4">
+            <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                <i class="fas fa-paper-plane mr-2"></i>Ajukan Perusahaan Baru
+            </button>
+        </div>
+
+    </form>
+    <!-- =================================== -->
+    <!-- Akhir Form Pengajuan -->
+    <!-- =================================== -->
+    <!-- 3. Riwayat Pengajuan Mitra -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-history mr-2"></i>Riwayat Pengajuan Anda</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped" id="tableRiwayatMitra" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nama PT</th>
+                            <th>Tgl Pengajuan</th>
+                            <th>Status</th>
+                            <th>Catatan Admin OHS</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data akan dimuat oleh DataTables via AJAX -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <!-- Library JS (jQuery & Bootstrap Bundle sudah ada di _Layout) -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/id.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            moment.locale('id'); // Set locale moment ke Indonesia
+
+            // ======================================
+            // Inisialisasi Select2 Basic (Non-AJAX)
+            // ======================================
+            $('.select2-basic').select2({
+                allowClear: true,
+                width: '100%',
+                placeholder: $(this).data('placeholder')
+            });
+
+
+            // ======================================
+            // Inisialisasi Select2 Wilayah (AJAX)
+            // ======================================
+
+            // =========================================================================================
+            // !!! PENJELASAN MASALAH SELECT2 WILAYAH ANDA !!!
+            // =========================================================================================
+            // Kode Anda sudah benar. JSON yang Anda berikan (`{"data": [...]}`) juga valid.
+            // Fungsi `processResults` Anda (`$.map(data.data, ...)` sudah tepat.
+            //
+            // MASALAHNYA: Kemungkinan besar adalah *KEBIJAKAN CORS (Cross-Origin Resource Sharing)*.
+            // Browser modern (Chrome, Firefox) memblokir permintaan JavaScript dari satu domain
+            // (misal: `localhost:5000` Anda) ke domain lain (`https://wilayah.id`)
+            // kecuali `wilayah.id` mengirimkan header "Access-Control-Allow-Origin: *" atau
+            // "Access-Control-Allow-Origin: http://localhost:5000".
+            //
+            // SOLUSI:
+            // 1. (Terbaik) Buat endpoint/action di Controller Anda (misal: `/Wilayah/GetProvinsi`)
+            //    yang bertugas memanggil API `wilayah.id` dari SISI SERVER (C#).
+            //    Server-side C# tidak dibatasi oleh CORS. Lalu, panggil API *lokal* Anda
+            //    dari Select2.
+            // 2. (Workaround) Gunakan plugin browser untuk menonaktifkan CORS sementara (TIDAK disarankan
+            //    untuk produksi).
+            // 3. (Perbaikan) Saya telah menyempurnakan kode Anda di bawah ini agar lebih robust,
+            //    termasuk memperbaiki bug kecil pada saat re-inisialisasi.
+            //
+            // Cek error di browser Anda: Tekan F12 -> Buka tab "Console".
+            // Anda mungkin akan melihat error yang menyebutkan "CORS policy".
+            // =========================================================================================
+
+            function initWilayahSelect2(selector, urlFunction, placeholder, parentSelector = null) {
+                const config = {
+                    allowClear: true,
+                    width: '100%',
+                    placeholder: placeholder,
+                    minimumInputLength: 0, // [PERBAIKAN] Tampilkan list saat diklik, tanpa mengetik
+                    ajax: {
+                        url: urlFunction, // Fungsi yang mengembalikan URL
+                        dataType: 'json',
+                        delay: 250,
+                        // [PERBAIKAN] Tambahkan fungsi data untuk mengirim 'term' (meski API wilayah.id
+                        // mungkin tidak membutuhkannya, ini adalah praktik standar Select2)
+                        data: function (params) {
+                            return {
+                                term: params.term || '' // Kirim parameter pencarian
+                            };
+                        },
+                        processResults: function (data) {
+                            if (data && data.data) {
+                                return {
+                                    // ID adalah code, TEXT adalah nama
+                                    results: $.map(data.data, function (item) {
+                                        return { id: item.code, text: item.name.toUpperCase() };
+                                    })
+                                };
+                            } else {
+                                console.warn("API wilayah tidak mengembalikan data yang valid untuk:", selector);
+                                // Tampilkan pesan error jika F12 dibuka
+                                return { results: [{ id: '', text: 'Gagal memuat data (Cek Console F12)', disabled: true }] };
+                            }
+                        },
+                        cache: true
+                    }
+                };
+
+                // Hancurkan instance lama jika ada sebelum inisialisasi baru
+                if ($(selector).data('select2')) {
+                    $(selector).select2('destroy');
+                }
+                // Inisialisasi Select2
+                $(selector).select2(config);
+
+                // Logika untuk mereset dan enable/disable child
+                if (parentSelector) {
+                    $(parentSelector).on('change', function () {
+                        const parentValue = $(this).val();
+                        const $child = $(selector);
+
+                        // Reset child
+                        $child.val(null).trigger('change');
+                        $child.prop('disabled', !parentValue); // Disable jika parent kosong
+
+                        // Update placeholder di child
+                        const newPlaceholder = parentValue
+                            ? placeholder // Placeholder normal jika parent ada value
+                            : `-- Pilih ${$(parentSelector).siblings('label').text().replace('*', '').trim()} Dahulu --`; // Placeholder 'disabled'
+
+                        // [BUG FIX] Panggil ulang inisialisasi dengan *semua* argumen
+                        // Kode Anda sebelumnya: initWilayahSelect2(selector, urlFunction, newPlaceholder);
+                        // Seharusnya:
+                        initWilayahSelect2(selector, urlFunction, newPlaceholder, parentSelector);
+                    });
+                }
+            }
+
+            // --- Panggil Inisialisasi untuk setiap level ---
+            initWilayahSelect2('#provinsi', () => '/MitraKepatuhan/WilayahProvinces', '-- Pilih Provinsi --');
+
+            initWilayahSelect2('#kabupaten', () => {
+                const provCode = $('#provinsi').val();
+                return provCode ? `/MitraKepatuhan/WilayahRegencies?code=${provCode}` : null;
+            }, '-- Pilih Kabupaten/Kota --', '#provinsi'); // Definisikan parent
+
+            initWilayahSelect2('#kecamatan', () => {
+                const kabCode = $('#kabupaten').val();
+                return kabCode ? `/MitraKepatuhan/WilayahDistricts?code=${kabCode}` : null;
+            }, '-- Pilih Kecamatan --', '#kabupaten');
+
+            initWilayahSelect2('#kelurahan', () => {
+                const kecCode = $('#kecamatan').val();
+                return kecCode ? `/MitraKepatuhan/WilayahVillages?code=${kecCode}` : null;
+            }, '-- Pilih Kelurahan/Desa --', '#kecamatan');
+
+
+            // Konversi Nama PT ke Uppercase
+            $('#nama_pt').on('input', function () {
+                $(this).val($(this).val().toUpperCase());
+            });
+
+
+            // ======================================
+            // Submit Form Pengajuan Mitra (AJAX)
+            // ======================================
+            $('#formPengajuanMitra').on('submit', function (e) {
+                e.preventDefault();
+
+                const namaPt = $('#nama_pt').val().trim();
+                const emailPt = $('#email_pt').val().trim();
+
+                if (!namaPt) {
+                    Swal.fire('Error!', 'Nama Perusahaan (PT) wajib diisi.', 'error');
+                    return;
+                }
+                if (!emailPt) {
+                    Swal.fire('Error!', 'Alamat Email Perusahaan wajib diisi.', 'error');
+                    return;
+                }
+
+                // Kirim nama wilayah (text) BUKAN KODE wilayah (id) ke backend
+                const formData = {
+                    nama_pt: namaPt,
+                    email_pt: emailPt,
+                    pt_owner: $('#pt_owner').val() || null,
+                    review_singkat: $('#review_singkat').val().trim() || null,
+                    provinsi: $('#provinsi').select2('data')[0]?.text || null,
+                    kabupaten: $('#kabupaten').select2('data')[0]?.text || null,
+                    kecamatan: $('#kecamatan').select2('data')[0]?.text || null,
+                    kelurahan: $('#kelurahan').select2('data')[0]?.text || null
+                };
+
+                Swal.fire({
+                    title: 'Konfirmasi Pengajuan',
+                    text: `Ajukan "${formData.nama_pt}" sebagai mitra baru?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, Ajukan!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Mengirim Pengajuan...',
+                            allowOutsideClick: false,
+                            didOpen: () => { Swal.showLoading() }
+                        });
+
+                        $.ajax({
+                            url: '@Url.Action("SubmitPengajuan", "MitraKepatuhan")',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify(formData),
+                            success: function (response) {
+                                Swal.close();
+                                if (response.success) {
+                                    Swal.fire('Berhasil!', response.message, 'success');
+                                    $('#formPengajuanMitra')[0].reset();
+
+                                    // Reset Select2
+                                    $('#pt_owner').val(null).trigger('change');
+                                    $('#provinsi').val(null).trigger('change');
+                                    // Event 'change' di provinsi akan otomatis reset & disable yang lain
+
+                                    $('#tableRiwayatMitra').DataTable().ajax.reload();
+                                } else {
+                                    Swal.fire('Gagal!', response.message || 'Terjadi kesalahan.', 'error');
+                                }
+                            },
+                            error: function (jqXHR, textStatus, errorThrown) {
+                                Swal.close();
+                                console.error("AJAX Error:", textStatus, errorThrown, jqXHR.responseText);
+                                Swal.fire('Error!', 'Tidak dapat menghubungi server. Coba lagi nanti.', 'error');
+                            }
+                        });
+                    }
+                });
+            });
+
+
+            // ======================================
+            // Inisialisasi DataTable Riwayat Mitra
+            // ======================================
+            $('#tableRiwayatMitra').DataTable({
+                processing: true,
+                serverSide: false,
+                ajax: {
+                    url: '@Url.Action("GetMitraHistory", "MitraKepatuhan")',
+                    type: "GET",
+                    dataType: "json",
+                    dataSrc: function (json) {
+                        if (!json || !json.success) {
+                            console.error("Error fetching history:", json?.message);
+                            $('#tableRiwayatMitra tbody').empty().append(
+                                '<tr><td colspan="6" class="text-center text-danger">Gagal memuat data riwayat.</td></tr>'
+                            );
+                            return [];
+                        }
+                        return json.data;
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.error("DataTable AJAX Error:", textStatus, errorThrown);
+                        $('#tableRiwayatMitra tbody').empty().append(
+                            '<tr><td colspan="6" class="text-center text-danger">Gagal memuat data riwayat. Coba refresh halaman.</td></tr>'
+                        );
+                    }
+                },
+                columns: [
+                    { data: 'id', width: '5%' },
+                    { data: 'nama_pt' },
+                    {
+                        data: 'created_at',
+                        render: function (data, type, row) {
+                            return data ? moment(data).format('D MMMM YYYY [pukul] HH:mm') : '-';
+                        }
+                    },
+                    {
+                        data: 'status_pengajuan',
+                        render: function (data, type, row) {
+                            let badgeClass = 'badge-secondary';
+                            if (data === 'Menunggu Review') badgeClass = 'badge-warning';
+                            else if (data === 'Menunggu Upload Dokumen') badgeClass = 'badge-info';
+                            else if (data === 'Menunggu Review Dokumen') badgeClass = 'badge-primary';
+                            else if (data === 'Perlu Perbaikan Upload') badgeClass = 'badge-danger';
+                            else if (data === 'Disetujui') badgeClass = 'badge-success';
+                            else if (data === 'Ditolak') badgeClass = 'badge-danger';
+                            return `<span class="badge ${badgeClass} p-2">${data || 'Tidak Diketahui'}</span>`;
+                        }
+                    },
+                    {
+                        data: 'catatan_admin',
+                        render: function (data, type, row) {
+                            return data || '-';
+                        }
+                    },
+                    {
+                        data: null,
+                        orderable: false,
+                        searchable: false,
+                        width: '20%',
+                        render: function (data, type, row) {
+                            let buttons = '';
+                            if (row.status_pengajuan === 'Menunggu Upload Dokumen' || row.status_pengajuan === 'Menunggu Review Dokumen' || row.status_pengajuan === 'Perlu Perbaikan Upload' || row.status_pengajuan === 'Disetujui') {
+                                if (row.id) {
+                                    const uploadUrl = '@Url.Action("Upload", "MitraKepatuhan")/' + row.id;
+                                    const publicUrl = row.upload_token ? '@Url.Action("UploadPublic", "MitraKepatuhan", new { id = "__ID__", token = "__TOKEN__" })'.replace('__ID__', row.id).replace('__TOKEN__', row.upload_token) : '';
+                                    buttons += `<a href="${uploadUrl}" class="btn btn-sm btn-info mr-1" title="Upload Dokumen"><i class="fas fa-upload"></i> Upload</a>`;
+                                    if (publicUrl) {
+                                        buttons += `<button class="btn btn-sm btn-outline-primary btn-copy-link" data-link="${publicUrl}" title="Copy Link Upload"><i class="fas fa-link"></i></button>`;
+                                    }
+                                } else {
+                                    console.warn("ID Pengajuan tidak ditemukan untuk baris:", row);
+                                }
+                            }
+                            return buttons || '-';
+                        }
+                    }
+                ],
+                order: [[0, 'desc']],
+                language: {
+                    search: "Cari:",
+                    lengthMenu: "Tampilkan _MENU_ data",
+                    zeroRecords: "Tidak ada data pengajuan ditemukan",
+                    info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                    infoEmpty: "Tidak ada data tersedia",
+                    infoFiltered: "(difilter dari _MAX_ total data)",
+                    paginate: { first: "Awal", last: "Akhir", next: "Berikutnya", previous: "Sebelumnya" },
+                    processing: '<div class="text-center py-3"><i class="fa fa-spinner fa-spin fa-2x fa-fw"></i><span class="sr-only">Memuat...</span></div>',
+                }
+            });
+
+            // Copy link upload dari tombol di tabel
+            $(document).on('click', '.btn-copy-link', function () {
+                const link = $(this).data('link');
+                if (!link) return;
+                const tempInput = document.createElement('input');
+                tempInput.value = link;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                tempInput.setSelectionRange(0, 99999);
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                Swal.fire('Disalin', 'Link upload publik disalin.', 'success');
+            });
+
+        }); // End $(document).ready
+    </script>
+}

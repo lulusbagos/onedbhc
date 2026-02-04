@@ -1,0 +1,219 @@
+﻿@model one_db.Models.vw_m_surat_pengajuan
+@using System.Globalization
+@{
+    Layout = null;
+
+    string ToTitleCase(string s)
+    {
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return string.Empty;
+        }
+        return new CultureInfo("id-ID", false).TextInfo.ToTitleCase(s.ToLower());
+    }
+}
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Surat Keterangan Kerja - @Model.nama_lengkap</title>
+    <style>
+        @@page {
+            size: A4;
+            margin: 0.5cm;
+        }
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+            line-height: 1.2;
+        }
+
+        /* Header surat */
+        .letter-header {
+            text-align: center;
+            border-bottom: 4px double black;
+            padding-bottom: 15px;
+            position: relative;
+        }
+
+        /* Logo perusahaan – sekarang posisinya bisa digeser kiri */
+        .logo-container {
+            width: 180px;
+            height: auto;
+            margin: 0 auto 10px auto;
+            position: relative;
+            left: -250px; /* geser logo ke kiri, ubah nilainya sesuai kebutuhan */
+        }
+
+        .logo-container img {
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+
+        /* Judul surat */
+        .title {
+            font-size: 16pt;
+            font-weight: bold;
+            text-decoration: underline;
+            letter-spacing: 1px;
+        }
+
+        .number {
+            margin-top: 5px;
+            font-size: 12pt;
+        }
+
+        .content-section {
+            margin-top: 30px;
+            text-align: justify;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        td {
+            padding: 2px 0;
+            vertical-align: top;
+        }
+
+        td.label {
+            width: 200px;
+            padding-right: 10px;
+        }
+
+        td.separator {
+            width: 15px;
+        }
+
+        td.value {
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 40px;
+        }
+
+        .signature-block {
+            display: table;
+            width: 100%;
+        }
+        .signature-cell {
+            display: table-cell;
+            vertical-align: top;
+        }
+        .qr-code {
+            width: 120px;
+        }
+        .signature-text {
+            padding-left: 20px;
+        }
+
+        .signature {
+            margin-top: 60px;
+            font-weight: bold;
+        }
+        .bottom-footer {
+            margin-top: 100px;
+            border-top: 1px solid black;
+            padding-top: 8px;
+            text-align: center;
+            font-size: 10pt;
+            line-height: 1.4;
+        }
+
+        @@media print {
+            .bottom-footer {
+                position: fixed;
+                bottom: 10px;
+                left: 0;
+                right: 0;
+            }
+        }
+    </style>
+</head>
+<body onload="window.print();">
+
+    <div class="letter-header">
+        <div class="logo-container">
+            <img src="~/images/indexim.png" alt="Logo Perusahaan" />
+        </div>
+        <div class="title">SURAT KETERANGAN KERJA</div>
+        <div class="number">No. @ViewBag.LetterNumber</div>
+    </div>
+
+    <div class="content-section">
+        <p>Yang bertandatangan dibawah ini:</p>
+        <table>
+            <tr><td class="label">Nama</td><td class="separator">:</td><td>Dimas Haryo Seto Waskito</td></tr>
+            <tr><td class="label">Jabatan</td><td class="separator">:</td><td>HCGS Manager</td></tr>
+            <tr>
+                <td class="label">Alamat</td>
+                <td class="separator">:</td>
+                <td>
+                    Site Kaliorang, Jl. Poros Bengalon - Sangkulirang, Desa Kaliorang,
+                    Kec. Kaliorang Kab. Kutai Timur Prov. Kalimantan Timur
+                </td>
+            </tr>
+        </table>
+
+        <p style="margin-top: 20px;">Menerangkan dengan sesungguhnya bahwa yang bersangkutan dibawah ini:</p>
+        <table class="details-table">
+            <tr><td class="label">Nama</td><td class="separator">:</td><td>@ToTitleCase(Model.nama_lengkap)</td></tr>
+            <tr><td class="label">NIK</td><td class="separator">:</td><td>@Model.nik</td></tr>
+            <tr><td class="label">Departemen</td><td class="separator">:</td><td>@Model.depart</td></tr>
+            <tr><td class="label">Jabatan</td><td class="separator">:</td><td>@Model.posisi</td></tr>
+            <tr><td class="label">Status</td><td class="separator">:</td><td>@ToTitleCase(Model.status_karyawan)</td></tr>
+            <tr><td class="label">Lokasi Kerja</td><td class="separator">:</td><td>Site Kaliorang</td></tr>
+            <tr><td class="label">Tanggal Mulai Bekerja</td><td class="separator">:</td><td>@(Model.doh.HasValue? Model.doh.Value.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("id-ID")) : "-")</td></tr>
+        </table>
+        <p style="margin-top: 20px;">
+            Benar adalah Karyawan PT Indexim Coalindo yang masih aktif bekerja sampai dengan saat ini di Perusahaan.
+        </p>
+        <p>
+            Segala Hak dan Kewajiban yang timbul sehubungan dengan surat keterangan ini menjadi tanggung jawab Perorangan dari Karyawan yang bersangkutan.
+        </p>
+        <p>
+            Demikian Surat Keterangan ini dibuat dengan sebenarnya, untuk digunakan sebagaimana mestinya.
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>Site Kaliorang, @ViewBag.CurrentDateFormatted</p>
+        <p>PT Indexim Coalindo</p>
+        <div class="signature-cell qr-code" id="qrcode"></div>
+            <strong><u>Dimas Haryo Seto Waskito</u></strong><br />
+            <em>HCGS Manager</em>
+        </div>
+    </div>
+
+    <div class="bottom-footer">
+        Mine Office | Jl.A.Wahab Syaharanie No. 98, RT 46, Dusun VI Pinang Raya, Kec Sangatta Utara, Kab.Kutai Timur 755611<br>
+        Site Office | Jl.Poros Bengalon - Sangkulirang, Desa Kaliorang, Kec Kaliorang, Kab. Kutai Timur | Kalimantan Timur 755617
+    </div>
+
+</body>
+<!-- Pustaka untuk generate QR Code -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+    // Data yang akan di-encode ke dalam QR Code
+    const qrData = "Dokumen ini telah ditandatangani secara digital oleh Dimas Haryo Seto Waskito Selaku Manager HCGS PT INDEXIM COALINDO untuk Surat Keterangan Kerja dengan ID: @ViewBag.LetterNumber pada tanggal @ViewBag.CurrentDateFormatted.";
+
+    // Generate QR Code
+    new QRCode(document.getElementById("qrcode"), {
+        text: qrData,
+        width: 110,
+        height: 110,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+    });
+</script>
+
+</html>

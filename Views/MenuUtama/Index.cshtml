@@ -1,0 +1,230 @@
+﻿@{
+    ViewData["Title"] = "Dashboard Monitoring Operator";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.min.css">
+    <link href="~/css/dashboard.css" rel="stylesheet" />
+
+    <style>
+
+
+        /* Latar belakang gradien animasi */
+        body {
+            /* Menggunakan lebih banyak warna untuk animasi yang lebih kaya */
+            background: linear-gradient(-45deg, #e8ecf1, #f5f7fa, #dbe4f0, #f5f7fa);
+            background-size: 400% 400%;
+            animation: gradientAnimation 20s ease infinite; /* Menerapkan animasi */
+        }
+
+        .container-fluid {
+            padding-bottom: 40px;
+            min-height: 90vh;
+        }
+
+        /* Header Dashboard */
+        .dashboard-header {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e7e9ec;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease-in-out; /* Transisi untuk efek hover */
+        }
+
+            /* ===== BARU: Efek glow saat hover ===== */
+            .dashboard-header:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 25px rgba(0, 123, 255, 0.1); /* Pijar biru halus */
+            }
+
+            /* Garis aksen profesional */
+            .dashboard-header::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 6px;
+                height: 100%;
+                background-color: #007bff;
+            }
+
+        .welcome-title {
+            font-size: 2.3rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .date-subtitle {
+            font-size: 1.1rem;
+            color: #555;
+        }
+
+        /* Kontainer Carousel */
+        .carousel-container {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e7e9ec;
+            position: relative;
+            transition: all 0.3s ease-in-out; /* Transisi untuk efek hover */
+        }
+
+            /* ===== BARU: Efek glow saat hover ===== */
+            .carousel-container:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 25px rgba(0, 123, 255, 0.1); /* Pijar biru halus */
+            }
+
+        .carousel-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .carousel-iframe {
+            width: 100%;
+            height: 70vh;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        /* Navigasi Owl Carousel (Light Theme) */
+        .owl-nav {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            transform: translateY(-50%);
+            display: flex;
+            justify-content: space-between;
+            padding: 0 5px;
+            pointer-events: none;
+        }
+
+            .owl-nav button {
+                pointer-events: all;
+                background: rgba(255, 255, 255, 0.8) !important;
+                color: #333 !important;
+                border-radius: 50% !important;
+                width: 45px;
+                height: 45px;
+                font-size: 1.5rem !important;
+                transition: all 0.3s ease;
+                border: 1px solid #ddd !important;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }
+
+                .owl-nav button:hover {
+                    background: #007bff !important;
+                    color: #fff !important;
+                    border-color: #007bff !important;
+                }
+
+            .owl-nav .owl-prev {
+                margin-left: -15px !important;
+            }
+
+            .owl-nav .owl-next {
+                margin-right: -15px !important;
+            }
+
+        /* Progress Bar Autoplay */
+        .autoplay-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background-color: #e9ecef;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            overflow: hidden;
+        }
+
+        .autoplay-progress-bar {
+            height: 100%;
+            background-color: #007bff;
+            width: 0%;
+        }
+    </style>
+}
+
+<div class="container-fluid">
+    <div class="dashboard-header">
+        <h1 class="welcome-title">Selamat Datang, @(ViewContext.HttpContext.Session.GetString("nama") ?? "Pengguna")!</h1>
+        <p class="date-subtitle" id="currentDate"></p>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <!-- Menghapus section-title karena header sudah cukup jelas -->
+            <div class="carousel-container">
+                <div id="dashboardCarousel" class="owl-carousel owl-theme"></div>
+                <div class="autoplay-progress">
+                    <div class="autoplay-progress-bar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            $('#currentDate').text(new Date().toLocaleDateString('id-ID', options));
+            initializeCarousel();
+        });
+
+        function initializeCarousel() {
+            $.ajax({
+                url: '@Url.Action("GetAll", "MenuUtama")',
+                method: 'GET',
+                success: function (res) {
+                    if (res.data?.length) {
+                        const sorted = res.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                        sorted.forEach(item => {
+                            $('#dashboardCarousel').append(`
+                                <div class="item">
+                                    <h5 class="carousel-title">${item.judul}</h5>
+                                    <iframe src="${item.link}" class="carousel-iframe" allowfullscreen></iframe>
+                                </div>`);
+                        });
+
+                        $("#dashboardCarousel").owlCarousel({
+                            items: 1, loop: true, margin: 15, nav: true, dots: false, autoplay: true,
+                            autoplayTimeout: 15000, autoplayHoverPause: true,
+                            navText: ["<i class='fas fa-chevron-left'></i>", "<i class='fas fa-chevron-right'></i>"],
+                            onInitialized: startProgressBar, onTranslate: resetProgressBar, onTranslated: startProgressBar
+                        });
+                    }
+                },
+                error: (xhr, status, err) => console.error("Gagal memuat dashboard:", err)
+            });
+
+            const progressBar = $('.autoplay-progress-bar');
+            let timer;
+            function startProgressBar() {
+                resetProgressBar();
+                timer = setTimeout(() => {
+                    progressBar.css('transition', 'width 15000ms linear');
+                    progressBar.css('width', '100%');
+                }, 10);
+            }
+            function resetProgressBar() {
+                clearTimeout(timer);
+                progressBar.css({ 'transition': 'none', 'width': '0%' });
+            }
+        }
+    </script>
+}

@@ -1,0 +1,244 @@
+﻿@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<div style="margin-bottom: 20px;">
+    <button onclick="btnAdd()" class="btn btn-primary btn-icon-split">
+        <span class="icon text-white-50">
+            <i class="fas fa-plus"></i>
+        </span>
+        <span class="text">Add Data</span>
+    </button>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">MASTER - @ViewBag.Title</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" width="100%" id="tableBS" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>KATEGORI</th>
+                        <th>PATH LOGIN</th>
+                        <th>AKSI</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal Add/Update -->
+<div class="modal fade modalBS" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">FORM @ViewBag.Title</h4>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formBS" class="forms-sample">
+                    <input type="hidden" id="id" name="id" />
+                    <div class="form-group row">
+                        <label for="nrp" class="col-sm-3 col-form-label">Kategori</label>
+                        <div class="col-sm-9">
+
+                            <input type="text" class="form-control" id="kategori" name="kategori" placeholder="Masukkan kategori user" required>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="nrp" class="col-sm-3 col-form-label">Path Login</label>
+                        <div class="col-sm-4">
+                            <input type="text" class="form-control" id="login_controller" name="login_controller" placeholder="Controller" required>
+                        </div>
+                        <div class="col-sm-5">
+                            <input type="text" class="form-control" id="login_function" name="login_function" placeholder="Function" required>
+                        </div>
+                    </div>
+                    <button type="button" id="btnSave" onclick="insertData()" class="btn btn-success mr-2">Save</button>
+                    <button type="button" id="btnUpdate" onclick="updateData()" class="btn btn-success mr-2">Update</button>
+                    <button type="button" data-dismiss="modal" class="btn btn-light">Cancel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@* End Modal *@
+
+@section styles {
+    <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet" />
+}
+
+@section scripts {
+    <script src="~/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="~/vendor/datatables/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/alertify.min.js"></script>
+    <script>
+        var link = '@Url.Action("Function", "Controller")'
+        var controller_name = "@ViewBag.Controller"
+        var a
+        var dataTable
+
+        $(document).ready(function () {
+            getCredentials()
+            getAll()
+        })
+
+        function btnAdd() {
+            $('#btnSave').show()
+            $('#btnUpdate').hide()
+            $('.modalBS').modal('show');
+            $('#formBS').trigger("reset")
+        }
+
+        function btnEdit(id) {
+            $('#btnSave').hide()
+            $('#btnUpdate').show()
+            $('#formBS').trigger("reset")
+            getData(id)
+            $('.modalBS').modal('show')
+        }
+
+        function getCredentials() {
+            //GetNRP
+            $('#insert_by').val("@Html.Raw(ViewBag.insert_by)")
+        }
+
+        function getAll() {
+            link = link.replace("Controller", controller_name);
+            link = link.replace("Function", "GetAll");
+
+            dataTable = $("#tableBS").DataTable({
+                "ajax": {
+                    "url": link,
+                    "type": "GET",
+                    "datatype": "json",
+                    "dataSrc": "data" // Menyediakan data dari array dalam objek "data"
+                },
+                "columns": [
+                    { "data": "kategori" },
+                    {
+                        "data": function (data, type, dataToSet) {
+                            return data.login_controller + '/' + data.login_function;
+                        }
+                    },
+                    {
+                        "data": "id",
+                        "render": function (data) {
+                            var a = '<button onclick="btnEdit(' + data + ')" class="btn btn-info btn-circle btn-sm">'
+                            a += '  <i class="fas fa-edit"></i>'
+                            a += '</button>'
+                            a += '<button onclick="deleteData(' + data + ')" class="btn btn-danger btn-circle btn-sm" style="margin-left: 5px;">'
+                            a += '  <i class="fa fa-trash"></i>'
+                            a += '</button>'
+                            return a;
+                        },
+                        "orderable": false,
+                        "width": "180px",
+                        "searchable": false
+                    }
+                ],
+                "language": {
+                    "emptyTable": "Tidak ada data"
+                }
+            });
+            link = '@Url.Action("Function", "Controller")';
+        }
+
+
+        function getData(id) {
+            link = link.replace("Controller", controller_name);
+            link = link.replace("Function", "Get");
+
+            $.ajax({
+                type: "GET",
+                url: link + '/' + id,
+                success: function (response) {
+                    if (response.success) {
+                        var data = response.data; // Mengakses objek data
+                        $('#id').val(data.id);
+                        $('#kategori').val(data.kategori);
+                        $('#login_controller').val(data.login_controller);
+                        $('#login_function').val(data.login_function);
+                    } else {
+                        alert("Terjadi kesalahan: " + response.data);
+                    }
+                }
+            });
+            link = '@Url.Action("Function", "Controller")';
+        }
+
+
+        function insertData() {
+            link = link.replace("Controller", controller_name);
+            link = link.replace("Function", "Insert");
+
+            $.ajax({
+                type: "POST",
+                url: link,
+                data: $('#formBS').serialize(),
+                success: function (data) {
+                    if (data.status) {
+                        $('.modalBS').modal('hide');
+                        dataTable.ajax.reload();
+                        alertify.notify('Data berhasil disimpan', 'success', 5)
+                    } else {
+                        alert(data.data)
+                    }
+                }
+            })
+            link = '@Url.Action("Function", "Controller")'
+        }
+
+        function updateData() {
+            var id = $('#id').val();
+            link = link.replace("Controller", controller_name);
+            link = link.replace("Function", "Update");
+
+            $.ajax({
+                type: "POST",
+                url: link,
+                data: $('#formBS').serialize(),
+                success: function (data) {
+                    if (data.status) {
+                        $('.modalBS').modal('hide');
+                        dataTable.ajax.reload();
+                        alertify.notify('Data berhasil diubah', 'success', 5)
+                    } else {
+                        alert(data.data)
+                    }
+                }
+            })
+            link = '@Url.Action("Function", "Controller")'
+        }
+
+        function deleteData(id) {
+            link = link.replace("Controller", controller_name);
+            link = link.replace("Function", "Delete");
+
+            if (confirm('Are u sure?')) {
+                $.ajax({
+                    type: 'POST',
+                    url: link + '/' + id,
+                    success: function (data) {
+                        if (data.status) {
+                            dataTable.ajax.reload();
+                            alertify.notify('Data berhasil dihapus', 'success', 5)
+                        } else {
+                            alert(data.data)
+                        }
+                    }
+                })
+            }
+            link = '@Url.Action("Function", "Controller")'
+        }
+
+    </script>
+}

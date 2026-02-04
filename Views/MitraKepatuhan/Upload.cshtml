@@ -1,0 +1,382 @@
+﻿@model List<one_db.Models.tbl_r_dokumen_mitra>
+@{
+    ViewData["Title"] = ViewBag.Title ?? "Upload Dokumen Kepatuhan";
+    var pengajuan = ViewBag.Pengajuan as one_db.Models.tbl_r_mitra_pengajuan; // Ambil data pengajuan dari ViewBag
+    var uploadToken = ViewBag.UploadToken as string;
+    var isPublic = (bool)(ViewBag.IsPublic ?? false);
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    // Kelompokkan dokumen berdasarkan grup master
+    var documentsByGroup = Model.GroupBy(d => d.DokumenMaster?.grup ?? "Lainnya")
+                               .OrderBy(g => g.Key);
+}
+
+@section Styles {
+    <!-- CSS tambahan jika diperlukan -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        .document-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .document-group-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #5a5c69;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e3e6f0;
+        }
+
+        .document-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid #eaecf4;
+        }
+
+            .document-item:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+
+        .status-badge {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.35em 0.7em;
+            border-radius: 0.25rem;
+        }
+
+        .status-wajib {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-diunggah {
+            color: #155724;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-ditolak {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-disetujui {
+            color: #155724;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+
+        /* Style untuk file input yang sedang loading */
+        .custom-file-input:disabled ~ .custom-file-label {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            position: relative; /* Agar spinner bisa di absolute */
+            overflow: hidden; /* Sembunyikan spinner yg keluar */
+        }
+
+            .custom-file-input:disabled ~ .custom-file-label::after {
+                background-color: #adb5bd; /* Warna tombol browse saat disabled */
+            }
+
+        .upload-spinner {
+            position: absolute;
+            left: 10px; /* Posisi spinner di dalam label */
+            top: 50%;
+            transform: translateY(-50%);
+            display: none; /* Sembunyikan default */
+            color: #6c757d; /* Warna spinner */
+        }
+
+        .uploading .upload-spinner {
+            display: inline-block; /* Tampilkan saat uploading */
+        }
+
+        .uploading .custom-file-label {
+            padding-left: 35px; /* Beri ruang untuk spinner */
+        }
+        /* Style untuk file yang sudah ada */
+        .existing-file-link {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: inline-block;
+        }
+
+            .existing-file-link:hover {
+                text-decoration: underline;
+            }
+
+        .rejected-reason {
+            font-size: 0.8em;
+            color: #dc3545; /* Warna merah */
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+    </style>
+}
+
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Pengajuan Kepatuhan</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Upload Dokumen: @pengajuan?.nama_pt</li>
+        </ol>
+    </nav>
+    <h1 class="h3 mb-4 text-gray-800">@ViewData["Title"]</h1>
+
+    <!-- Tampilkan Pesan Sukses/Error dari TempData -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <!-- Informasi Pengajuan -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-building mr-2"></i>Informasi Perusahaan</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Nama Perusahaan:</strong> @pengajuan?.nama_pt
+                </div>
+                <div class="col-md-6">
+                    @{
+                        var badgeClass = "badge-secondary";
+                        if (pengajuan?.status_pengajuan == "Menunggu Review") badgeClass = "badge-warning";
+                        else if (pengajuan?.status_pengajuan == "Menunggu Upload Dokumen") badgeClass = "badge-info";
+                        else if (pengajuan?.status_pengajuan == "Menunggu Review Dokumen") badgeClass = "badge-primary";
+                        else if (pengajuan?.status_pengajuan == "Perlu Perbaikan Upload") badgeClass = "badge-danger";
+                        else if (pengajuan?.status_pengajuan == "Disetujui") badgeClass = "badge-success";
+                        else if (pengajuan?.status_pengajuan == "Ditolak") badgeClass = "badge-danger";
+                    }
+                    <strong>Status Pengajuan:</strong> <span class="badge @badgeClass">@pengajuan?.status_pengajuan</span>
+                </div>
+            </div>
+            @if (isPublic)
+            {
+                <div class="alert alert-info mt-3 mb-0">
+                    <i class="fas fa-info-circle mr-2"></i> Anda dapat mengunggah dokumen tanpa login. Pastikan mengikuti permintaan reviewer.
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Daftar Dokumen untuk Diunggah -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-file-upload mr-2"></i>Dokumen Kepatuhan yang Wajib Diunggah</h6>
+        </div>
+        <div class="card-body">
+            @if (Model != null && Model.Any())
+            {
+                foreach (var group in documentsByGroup)
+                {
+                    <div class="document-group">
+                        <h5 class="document-group-header">@group.Key</h5>
+                        @foreach (var docItem in group.OrderBy(d => d.DokumenMaster?.id))
+                        {
+                            var masterDoc = docItem.DokumenMaster;
+                            if (masterDoc == null) continue; // Skip jika data master tidak ada
+
+                            string statusText = docItem.status_dokumen ?? "Wajib Diunggah";
+                            string statusClass = "status-wajib"; // Default
+                            if (statusText == "Sudah Diunggah") statusClass = "status-diunggah";
+                            else if (statusText == "Ditolak") statusClass = "status-ditolak";
+                            else if (statusText == "Disetujui") statusClass = "status-disetujui";
+
+                            <div class="document-item" id="item-@docItem.id">
+                                <div class="row align-items-center">
+                                    <!-- Info Dokumen -->
+                                    <div class="col-md-4 mb-2 mb-md-0">
+                                        <h6 class="font-weight-bold text-dark mb-1">(@masterDoc.id) @masterDoc.nama_dokumen</h6>
+                                        <p class="text-sm text-muted mb-0">@masterDoc.deskripsi</p>
+                                    </div>
+                                    <!-- File Input Area -->
+                                    <div class="col-md-5 mb-2 mb-md-0">
+                                        <div class="custom-file">
+                                            <input type="file"
+                                                   class="custom-file-input document-file-input"
+                                                   id="file-doc-@docItem.id"
+                                                   data-doc-item-id="@docItem.id" @* Simpan ID tbl_r_dokumen_mitra *@
+                                                   accept="application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"> @* Filter Excel & PDF *@
+                                            <label class="custom-file-label" for="file-doc-@docItem.id">
+                                                <i class="fas fa-spinner fa-spin upload-spinner"></i> <!-- Spinner Loading -->
+                                                Pilih file...
+                                            </label>
+                                        </div>
+                                        <small class="form-text text-muted mt-1">Hanya file PDF atau EXCEL (Maks 10MB)</small>
+                                        <!-- [BARU] Link ke file yang sudah ada & Alasan Ditolak -->
+                                        @if (!string.IsNullOrEmpty(docItem.file_path))
+                                        {
+                                            <a href="@docItem.file_path" target="_blank" class="existing-file-link" title="Lihat file yang sudah diunggah">
+                                                <i class="fas fa-link mr-1"></i> @(docItem.file_name_original ?? "Lihat File")
+                                            </a>
+                                        }
+                                        @if (docItem.status_dokumen == "Ditolak" && !string.IsNullOrEmpty(docItem.catatan_review))
+                                        {
+                                            <p class="rejected-reason mb-0 mt-1">
+                                                <i class="fas fa-times-circle mr-1"></i> <strong>Ditolak:</strong> @docItem.catatan_review
+                                            </p>
+                                        }
+                                    </div>
+                                    <!-- Status Badge Area -->
+                                    <div class="col-md-3 text-md-right">
+                                        <span class="status-badge @statusClass">
+                                            @statusText
+                                        </span>
+                                        <small class="form-text text-muted mt-1 d-block">
+                                            @if (docItem.uploaded_at.HasValue)
+                                            {
+                                                @docItem.uploaded_at.Value.ToString("dd MMM yyyy, HH:mm")
+                                            }
+                                            else
+                                            {
+                                                @:Belum diunggah
+                                            }
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="alert alert-warning">Belum ada dokumen yang diwajibkan untuk pengajuan ini. Mohon tunggu review dari OHS Departemen.</div>
+            }
+
+            <div class="mt-4 text-right">
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left mr-1"></i> Kembali ke Pengajuan
+                </a>
+                <!-- Tombol Submit All mungkin tidak diperlukan karena upload per file -->
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <!-- Library JS (jQuery & Bootstrap Bundle sudah ada di _Layout) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/id.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            moment.locale('id');
+
+            // ======================================
+            // Handle File Upload via AJAX
+            // ======================================
+            $('.document-file-input').on('change', function(e) {
+                const input = this;
+                const file = e.target.files[0];
+                const docItemId = $(input).data('doc-item-id'); // Ambil ID dari tbl_r_dokumen_mitra
+                const label = $(input).next('.custom-file-label');
+                const itemDiv = $(input).closest('.document-item'); // Div item dokumen
+                const statusBadge = itemDiv.find('.status-badge');
+                const fileLinkContainer = itemDiv.find('.existing-file-link').parent(); // Container link file
+                const rejectedReason = itemDiv.find('.rejected-reason');
+
+                if (!file || !docItemId) {
+                    label.text('Pilih file...'); // Reset jika tidak ada file
+                    return;
+                }
+
+                // Validasi sisi klien (tipe & ukuran)
+                const allowedTypes = ['application/pdf', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+                const maxSizeMB = 10;
+
+                if (!allowedTypes.includes(file.type)) {
+                    Swal.fire('Error!', 'Format file harus PDF atau Excel.', 'error');
+                    $(input).val(''); // Reset input file
+                    label.text('Pilih file...');
+                    return;
+                }
+                if (file.size > maxSizeMB * 1024 * 1024) {
+                     Swal.fire('Error!', `Ukuran file maksimal ${maxSizeMB} MB.`, 'error');
+                     $(input).val('');
+                     label.text('Pilih file...');
+                     return;
+                }
+
+                // Tampilkan loading & disable input
+                label.addClass('uploading');
+                label.text('Mengunggah...');
+                $(input).prop('disabled', true);
+
+                const formData = new FormData();
+                formData.append('id', docItemId); // Kirim ID item dokumen
+                formData.append('file', file);
+                if ('@(uploadToken ?? "")' !== '') {
+                    formData.append('upload_token', '@(uploadToken ?? "")');
+                }
+
+                // Kirim AJAX ke Controller
+                $.ajax({
+                    url: '@Url.Action("SubmitFileUpload", "MitraKepatuhan")', // Action di Controller
+                    type: 'POST',
+                    data: formData,
+                    processData: false, // Penting untuk FormData
+                    contentType: false, // Penting untuk FormData
+                    success: function(response) {
+                        label.removeClass('uploading');
+                        $(input).prop('disabled', false);
+
+                        if (response.success) {
+                            Swal.fire({
+                                toast: true,
+                                icon: 'success',
+                                title: response.message || 'File berhasil diunggah',
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 3000,
+                                timerProgressBar: true
+                            });
+
+                            // Update UI: Label, Badge, Link, Status Ditolak
+                            label.text(response.fileName || file.name); // Tampilkan nama file asli
+                            statusBadge.text('Sudah Diunggah');
+                            statusBadge.removeClass('status-wajib status-ditolak').addClass('status-diunggah');
+                            rejectedReason.remove(); // Hapus pesan ditolak jika ada
+
+                            const newLink = `<a href="${response.path || '#'}" target="_blank" class="existing-file-link" title="Lihat file yang baru diunggah"><i class="fas fa-link mr-1"></i> ${response.fileName || file.name}</a>`;
+                            fileLinkContainer.html(newLink); // Ganti atau isi container link
+
+                            // Update tanggal upload (opsional, bisa reload atau ambil dari response)
+                             itemDiv.find('small.text-muted.mt-1.d-block').text(moment().format('DD MMM YYYY, HH:mm'));
+
+
+                        } else {
+                            Swal.fire('Gagal!', response.message || 'Gagal mengunggah file.', 'error');
+                            label.text('Gagal! Pilih file lagi...'); // Beri tahu user
+                            $(input).val(''); // Reset input file agar bisa pilih lagi
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        label.removeClass('uploading');
+                        $(input).prop('disabled', false);
+                        label.text('Error! Pilih file lagi...');
+                        $(input).val('');
+                        console.error("AJAX Error:", textStatus, errorThrown, jqXHR.responseText);
+                        Swal.fire('Error Server!', 'Tidak dapat menghubungi server. Coba lagi nanti.', 'error');
+                    }
+                });
+            });
+
+        }); // End $(document).ready
+    </script>
+}

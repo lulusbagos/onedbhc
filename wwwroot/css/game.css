@@ -1,0 +1,228 @@
+﻿/* --- Kontainer & Latar Belakang --- */
+.game-container {
+    background: #1a1a2e; /* Biru malam yang gelap */
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    width: 100%;
+    max-width: 700px; /* Lebarkan untuk papan 9x9 */
+    margin: 2rem auto;
+    border: 1px solid #2a2a4e;
+    text-align: center;
+}
+
+/* --- Header Game --- */
+.game-header h1 {
+    color: #e0e0e0;
+    font-weight: 600;
+}
+
+.game-header p {
+    color: #9a9a9a;
+    font-size: 1rem;
+}
+
+/* --- Lobi --- */
+#game-lobby {
+    padding: 3rem 0;
+}
+
+.game-button {
+    background: linear-gradient(45deg, #e94560, #a64d79);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+}
+
+    .game-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(233, 69, 96, 0.6);
+    }
+
+/* --- Spinner Pencarian --- */
+.spinner-container {
+    color: #e0e0e0;
+}
+
+.spinner {
+    border: 4px solid rgba(255, 255, 255, 0.2);
+    border-left-color: #e94560;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* --- Panel Info Pemain --- */
+.game-info-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    color: #e0e0e0;
+}
+
+.player-card {
+    background: #16213e;
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    width: 200px; /* Lebarkan kartu pemain */
+}
+
+    .player-card.active-player {
+        border-color: #e94560;
+        box-shadow: 0 0 15px rgba(233, 69, 96, 0.5);
+    }
+
+.player-symbol {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 10px;
+}
+
+.player-name {
+    font-weight: 500;
+}
+
+.game-status-display {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+/* --- Papan Permainan 9x9 --- */
+.game-board {
+    display: grid;
+    gap: 5px;
+    background: #0f162c;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+    .game-board.nine-by-nine {
+        grid-template-columns: repeat(9, 1fr);
+        grid-template-rows: repeat(9, 1fr);
+    }
+
+.cell {
+    background: #1a1a2e;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    aspect-ratio: 1 / 1; /* Menjaga sel tetap kotak */
+}
+
+    .cell:not(.taken):hover {
+        background-color: #2a2a4e;
+    }
+
+    .cell .symbol {
+        font-size: 1.5vw; /* Ukuran font responsif */
+        font-weight: 700;
+        animation: popIn 0.3s ease;
+    }
+
+        .cell .symbol.x {
+            color: #00f5d4;
+        }
+
+        .cell .symbol.o {
+            color: #ff577f;
+        }
+
+@keyframes popIn {
+    from {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* --- Hasil Permainan --- */
+.game-result-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 22, 44, 0.95);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    animation: fadeIn 0.5s;
+}
+
+.result-content {
+    text-align: center;
+}
+
+    .result-content h2 {
+        font-size: 2.5rem;
+        color: #fff;
+        margin-bottom: 2rem;
+    }
+
+/* --- Garis Kemenangan --- */
+.cell.win {
+    background-color: #e94560 !important;
+}
+
+    .cell.win .symbol {
+        color: white;
+        animation: pulse 0.8s infinite;
+    }
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.15);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Responsif untuk layar lebih kecil */
+@media (max-width: 768px) {
+    .game-container {
+        padding: 1rem;
+    }
+
+    .game-info-panel {
+        flex-direction: column;
+        gap: 10px;
+    }
+}

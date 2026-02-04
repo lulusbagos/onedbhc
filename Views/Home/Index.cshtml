@@ -1,0 +1,760 @@
+@using Microsoft.AspNetCore.Http
+@{
+    ViewData["Title"] = "Beranda";
+    var namaUser = Context.Session.GetString("nama") ?? "Rekan ONEDB";
+    var company = Context.Session.GetString("company") ?? "Seluruh Unit";
+}
+
+<div class="home-shell">
+    <div class="glow-orb orb-a"></div>
+    <div class="glow-orb orb-b"></div>
+    <div class="glow-orb orb-c"></div>
+
+    <div class="home-hero card-glass">
+        <div class="hero-copy reveal">
+            <p class="eyebrow">ONEDB Evolution - @company</p>
+            <h1>Halo, @namaUser<span class="spark">*</span></h1>
+            <p class="lede">
+                Dasbor terkini untuk memantau kinerja, SDM, dan perjalanan. Semuanya dikemas
+                dalam antarmuka yang ringan, responsif, dan penuh animasi.
+            </p>
+            <div class="hero-actions">
+                <a class="btn primary" href='@Url.Action("Index", "MenuUtama")'>Mulai Dashboard</a>
+                <a class="btn ghost" href="#insights">Jelajahi Insight</a>
+            </div>
+            <div class="hero-metrics">
+                <div class="metric-pill">
+                    <span class="label">Roster Aktif</span>
+                    <span class="value stat-number" data-target="128">0</span>
+                </div>
+                <div class="metric-pill">
+                    <span class="label">Travel Hari Ini</span>
+                    <span class="value stat-number" data-target="24">0</span>
+                </div>
+                <div class="metric-pill">
+                    <span class="label">Mitra Terverifikasi</span>
+                    <span class="value stat-number" data-target="62">0</span>
+                </div>
+            </div>
+
+            <div class="presence live-card reveal">
+                <div class="presence-left">
+                    <div class="pulse-dot"></div>
+                    <div>
+                        <p class="eyebrow">Live Presence</p>
+                        <h3><span id="liveUsers" class="live-number">000</span> orang sedang mengakses</h3>
+                        <p class="mini">Telemetry realtime dengan pembaruan periodik.</p>
+                    </div>
+                </div>
+                <div class="presence-trail">
+                    <span></span><span></span><span></span><span></span><span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-visual reveal">
+            <div class="floating-card">
+                <div class="badge-soft badge-green">Realtime</div>
+                <div class="card-title">Health & Safety</div>
+                <div class="chart-pulse">
+                    <span class="bar bar-1"></span>
+                    <span class="bar bar-2"></span>
+                    <span class="bar bar-3"></span>
+                    <span class="bar bar-4"></span>
+                    <span class="bar bar-5"></span>
+                </div>
+                <p class="mini">Kepatuhan dan mitigasi risiko terpantau otomatis.</p>
+            </div>
+
+            <div class="floating-card alt">
+                <div class="badge-soft badge-blue">Productivity</div>
+                <div class="progress-line">
+                    <span class="progress-fill"></span>
+                </div>
+                <div class="pill-stack">
+                    <span class="pill">Karyawan</span>
+                    <span class="pill">Travel</span>
+                    <span class="pill">Roster</span>
+                    <span class="pill">Pengajuan</span>
+                </div>
+                <p class="mini">Integrasi lintas modul untuk keputusan yang lebih cepat.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="insights" class="feature-grid">
+        <div class="feature-card reveal">
+            <div class="feature-icon">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <div>
+                <h3>Snapshot Cepat</h3>
+                <p>Ringkasan aktivitas harian, alert, dan progres target dalam satu layar.</p>
+            </div>
+        </div>
+        <div class="feature-card reveal">
+            <div class="feature-icon">
+                <i class="fas fa-route"></i>
+            </div>
+            <div>
+                <h3>Travel Orchestrator</h3>
+                <p>Kelola itinerary, approval, dan compliance perjalanan tanpa berpindah tab.</p>
+            </div>
+        </div>
+        <div class="feature-card reveal">
+            <div class="feature-icon">
+                <i class="fas fa-users-cog"></i>
+            </div>
+            <div>
+                <h3>Roster Intelligence</h3>
+                <p>Prediksi kebutuhan tim, susun jadwal, dan pantau mitigasi overtime.</p>
+            </div>
+        </div>
+        <div class="feature-card reveal">
+            <div class="feature-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div>
+                <h3>Governance</h3>
+                <p>Kontrol akses, audit trail, dan status kepatuhan yang selalu up-to-date.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="split-panels">
+        <div class="panel card-glass reveal">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">Realtime Pulse</p>
+                    <h3>Performa Operasional</h3>
+                </div>
+                <span class="badge-soft badge-blue">Live</span>
+            </div>
+            <div class="pulse-grid">
+                <div class="pulse">
+                    <span class="dot dot-green"></span>
+                    <p>Onboarding selesai</p>
+                    <strong class="stat-number" data-target="86">0</strong>
+                </div>
+                <div class="pulse">
+                    <span class="dot dot-orange"></span>
+                    <p>Approval tertunda</p>
+                    <strong class="stat-number" data-target="14">0</strong>
+                </div>
+                <div class="pulse">
+                    <span class="dot dot-blue"></span>
+                    <p>Travel aktif</p>
+                    <strong class="stat-number" data-target="9">0</strong>
+                </div>
+                <div class="pulse">
+                    <span class="dot dot-purple"></span>
+                    <p>Ticket support</p>
+                    <strong class="stat-number" data-target="5">0</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel card-glass reveal">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">Shortcut</p>
+                    <h3>Aksi Kilat</h3>
+                </div>
+                <span class="badge-soft badge-green">Preferred</span>
+            </div>
+            <div class="action-list">
+                <a class="action-item" href='@Url.Action("Index", "Karyawan")'>
+                    <div class="icon-wrap"><i class="fas fa-user-plus"></i></div>
+                    <div>
+                        <p>Input Karyawan</p>
+                        <small>Tambah atau update profil karyawan.</small>
+                    </div>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+                <a class="action-item" href='@Url.Action("Index", "Travel")'>
+                    <div class="icon-wrap"><i class="fas fa-plane-departure"></i></div>
+                    <div>
+                        <p>Kelola Travel</p>
+                        <small>Atur keberangkatan dan approval lebih cepat.</small>
+                    </div>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+                <a class="action-item" href='@Url.Action("Index", "Roster")'>
+                    <div class="icon-wrap"><i class="fas fa-calendar-check"></i></div>
+                    <div>
+                        <p>Monitoring Roster</p>
+                        <small>Sinkronisasi jadwal dan kehadiran tim.</small>
+                    </div>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section styles {
+    <style>
+        .home-shell {
+            position: relative;
+            overflow: hidden;
+            padding: 32px 12px 40px;
+            background: linear-gradient(140deg, #0f172a 0%, #0b1024 40%, #0a1b3a 100%);
+        }
+
+        .card-glass {
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            border-radius: 18px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25), 0 10px 30px rgba(59, 130, 246, 0.15);
+        }
+
+        .home-hero {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 36px;
+            padding: 28px;
+            margin-bottom: 28px;
+            position: relative;
+            background: radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.18), transparent 30%),
+                        radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.12), transparent 28%),
+                        radial-gradient(circle at 30% 80%, rgba(59, 130, 246, 0.18), transparent 30%),
+                        rgba(255, 255, 255, 0.82);
+        }
+
+        .eyebrow {
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #6b7280;
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 0.78rem;
+        }
+
+        .hero-copy h1 {
+            font-size: 2.35rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 12px;
+            line-height: 1.2;
+        }
+
+        .hero-copy h1 .spark {
+            color: #6366f1;
+            font-size: 1.5rem;
+            animation: float 4s ease-in-out infinite;
+            display: inline-block;
+            margin-left: 6px;
+        }
+
+        .lede {
+            color: #4b5563;
+            margin-bottom: 18px;
+            max-width: 630px;
+            line-height: 1.6;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, #6366f1, #10b981);
+            border: none;
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 32px rgba(99, 102, 241, 0.45);
+        }
+
+        .btn.ghost {
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            color: #374151;
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-weight: 600;
+            background: rgba(99, 102, 241, 0.06);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .btn.ghost:hover {
+            transform: translateY(-2px);
+            border-color: #6366f1;
+        }
+
+        .hero-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .metric-pill {
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(16, 185, 129, 0.08));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .metric-pill .label {
+            display: block;
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .metric-pill .value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .hero-visual {
+            position: relative;
+            display: grid;
+            gap: 16px;
+        }
+
+        .floating-card {
+            padding: 18px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(236, 72, 153, 0.15));
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            box-shadow: 0 10px 40px rgba(15, 23, 42, 0.12);
+            animation: float 7s ease-in-out infinite;
+        }
+
+        .floating-card.alt {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(59, 130, 246, 0.12));
+            animation-delay: 1s;
+        }
+
+        .badge-soft {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.78rem;
+        }
+
+        .badge-green { background: rgba(16, 185, 129, 0.12); color: #047857; }
+        .badge-blue { background: rgba(59, 130, 246, 0.12); color: #1d4ed8; }
+
+        .card-title {
+            font-weight: 700;
+            color: #0f172a;
+            margin: 10px 0;
+        }
+
+        .live-card {
+            margin-top: 14px;
+            padding: 14px;
+            border: 1px dashed rgba(99, 102, 241, 0.4);
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(14, 165, 233, 0.08));
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .presence-left {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .presence-left h3 {
+            margin: 0 0 6px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .pulse-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+            animation: pulseGlow 2s infinite;
+        }
+
+        .presence-trail {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .presence-trail span {
+            display: block;
+            width: 10px;
+            height: 22px;
+            border-radius: 8px;
+            background: linear-gradient(180deg, #22d3ee, #6366f1);
+            opacity: 0.85;
+            animation: trail 1.6s ease-in-out infinite;
+        }
+
+        .presence-trail span:nth-child(2) { animation-delay: 0.1s; height: 26px; }
+        .presence-trail span:nth-child(3) { animation-delay: 0.2s; height: 30px; }
+        .presence-trail span:nth-child(4) { animation-delay: 0.3s; height: 24px; }
+        .presence-trail span:nth-child(5) { animation-delay: 0.4s; height: 18px; }
+
+        .live-number {
+            font-variant-numeric: tabular-nums;
+            color: #0f172a;
+        }
+
+        .chart-pulse {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin: 10px 0 6px;
+        }
+
+        .chart-pulse .bar {
+            display: block;
+            height: 46px;
+            border-radius: 8px;
+            background: linear-gradient(180deg, #6366f1, #10b981);
+            opacity: 0.85;
+            animation: pulse 1.6s ease-in-out infinite;
+        }
+
+        .bar-2 { animation-delay: 0.12s; height: 60px; }
+        .bar-3 { animation-delay: 0.24s; height: 52px; }
+        .bar-4 { animation-delay: 0.36s; height: 64px; }
+        .bar-5 { animation-delay: 0.48s; height: 56px; }
+
+        .mini {
+            color: #4b5563;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .progress-line {
+            width: 100%;
+            height: 10px;
+            background: rgba(99, 102, 241, 0.12);
+            border-radius: 999px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, #06b6d4, #6366f1, #a855f7);
+            width: 62%;
+            border-radius: 999px;
+            animation: shimmer 2.3s ease-in-out infinite;
+        }
+
+        .pill-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 12px 0 8px;
+        }
+
+        .pill {
+            padding: 6px 10px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.08);
+            font-weight: 600;
+            color: #111827;
+            font-size: 0.85rem;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin: 6px 0 24px;
+        }
+
+        .feature-card {
+            background: #fff;
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 12px;
+            align-items: start;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+        }
+
+        .feature-card h3 {
+            margin: 0 0 6px;
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        .feature-card p {
+            margin: 0;
+            color: #4b5563;
+        }
+
+        .feature-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #6366f1, #10b981);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-size: 1.2rem;
+            box-shadow: 0 10px 24px rgba(99, 102, 241, 0.35);
+        }
+
+        .split-panels {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .panel {
+            padding: 18px;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .panel h3 {
+            margin: 0;
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        .pulse-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .pulse {
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            background: rgba(255, 255, 255, 0.85);
+        }
+
+        .pulse p {
+            margin: 0 0 6px;
+            color: #4b5563;
+        }
+
+        .pulse strong {
+            color: #111827;
+            font-size: 1.3rem;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .dot-green { background: #22c55e; box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.18); }
+        .dot-orange { background: #f97316; box-shadow: 0 0 0 6px rgba(249, 115, 22, 0.18); }
+        .dot-blue { background: #3b82f6; box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.18); }
+        .dot-purple { background: #a855f7; box-shadow: 0 0 0 6px rgba(168, 85, 247, 0.18); }
+
+        .action-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 12px;
+            align-items: center;
+            padding: 12px;
+            border-radius: 14px;
+            text-decoration: none;
+            color: inherit;
+            border: 1px solid rgba(99, 102, 241, 0.14);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+            background: #fff;
+        }
+
+        .action-item:hover {
+            transform: translateY(-3px);
+            border-color: #6366f1;
+        }
+
+        .action-item p {
+            margin: 0;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .action-item small {
+            color: #6b7280;
+        }
+
+        .icon-wrap {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(99, 102, 241, 0.14);
+            display: grid;
+            place-items: center;
+            color: #4338ca;
+        }
+
+        .glow-orb {
+            position: absolute;
+            filter: blur(50px);
+            opacity: 0.55;
+            animation: drift 14s ease-in-out infinite;
+        }
+
+        .orb-a { width: 220px; height: 220px; background: #c4b5fd; top: -40px; right: 10%; }
+        .orb-b { width: 180px; height: 180px; background: #a5f3fc; bottom: 0; left: -60px; }
+        .orb-c { width: 160px; height: 160px; background: #bbf7d0; bottom: 10%; right: 4%; animation-delay: 1.5s; }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .reveal.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @@keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @@keyframes pulse {
+            0%, 100% { transform: scaleY(0.96); opacity: 0.8; }
+            50% { transform: scaleY(1.08); opacity: 1; }
+        }
+
+        @@keyframes shimmer {
+            0% { width: 20%; }
+            50% { width: 72%; }
+            100% { width: 20%; }
+        }
+
+        @@keyframes drift {
+            0%, 100% { transform: translate3d(0, 0, 0); }
+            50% { transform: translate3d(12px, 14px, 0); }
+        }
+
+        @@keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.45); }
+            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        @@keyframes trail {
+            0%, 100% { transform: scaleY(0.95); opacity: 0.85; }
+            50% { transform: scaleY(1.15); opacity: 1; }
+        }
+
+        @@media (max-width: 992px) {
+            .home-hero {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @@media (max-width: 640px) {
+            .hero-copy h1 {
+                font-size: 1.9rem;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .home-shell {
+                padding: 22px 8px 30px;
+            }
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Counter animation
+            const counters = document.querySelectorAll('.stat-number');
+            const speed = 32;
+            const liveUsersEl = document.getElementById('liveUsers');
+
+            const animateCount = (el) => {
+                const target = +el.getAttribute('data-target') || 0;
+                const increment = Math.max(1, Math.ceil(target / speed));
+                const update = () => {
+                    const current = +el.innerText.replace(/,/g, '');
+                    if (current < target) {
+                        const next = Math.min(target, current + increment);
+                        el.innerText = next.toLocaleString();
+                        requestAnimationFrame(update);
+                    } else {
+                        el.innerText = target.toLocaleString();
+                    }
+                };
+                update();
+            };
+
+            const revealables = document.querySelectorAll('.reveal');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        if (entry.target.classList.contains('hero-copy')) {
+                            counters.forEach(animateCount);
+                        }
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.18 });
+
+            revealables.forEach(el => observer.observe(el));
+
+            // Simulasi live presence (random smoothing)
+            const updateLiveUsers = () => {
+                if (!liveUsersEl) return;
+                const current = parseInt(liveUsersEl.textContent || '0', 10) || 0;
+                const base = current || 420;
+                const swing = Math.floor(Math.random() * 26) - 12; // -12..13
+                const nextVal = Math.min(680, Math.max(180, base + swing));
+                liveUsersEl.textContent = nextVal.toString().padStart(3, '0');
+            };
+            updateLiveUsers();
+            setInterval(updateLiveUsers, 7000);
+        });
+    </script>
+}

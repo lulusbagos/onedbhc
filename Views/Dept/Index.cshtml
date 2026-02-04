@@ -1,0 +1,233 @@
+﻿@model one_db.Models.tbl_r_dept
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<div style="margin-bottom: 20px;">
+    <button onclick="btnAdd()" class="btn btn-primary btn-icon-split">
+        <span class="icon text-white-50">
+            <i class="fas fa-plus"></i>
+        </span>
+        <span class="text">Add Data</span>
+    </button>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">MASTER - @ViewBag.Title</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" width="100%" id="tableBS" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>DEPT CODE</th>
+                        <th>DEPARTEMEN</th>
+                        <th>AKSI</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal Add/Update -->
+<div class="modal fade modalBS" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">FORM @ViewBag.Title</h4>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formBS" class="forms-sample">
+                    <input type="hidden" id="id" name="id" />
+                    <div class="form-group row">
+                        <label for="nrp" class="col-sm-3 col-form-label">Dept Code</label>
+                        <div class="col-sm-9">
+
+                            <input type="text" class="form-control" id="dept_code" name="dept_code" placeholder="Masukkan dept code" required>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="nrp" class="col-sm-3 col-form-label">Departemen</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" id="departemen" name="departemen" placeholder="Masukkan departemen" required>
+                        </div>
+                    </div>
+                    <button type="button" id="btnSave" onclick="insertData()" class="btn btn-success mr-2">Save</button>
+                    <button type="button" id="btnUpdate" onclick="updateData()" class="btn btn-success mr-2">Update</button>
+                    <button type="button" data-dismiss="modal" class="btn btn-light">Cancel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@* End Modal *@
+
+@section styles {
+    <link href="~/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet" />
+}
+
+@section scripts {
+    <script src="~/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="~/vendor/datatables/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/alertify.min.js"></script>
+    <script>
+        var baseLink = '@Url.Action("Function", "Controller")';
+        var controllerName = "@ViewBag.Controller";
+        var dataTable;
+
+        $(document).ready(function () {
+            getAll();
+        });
+
+        function btnAdd() {
+            $('#btnSave').show();
+            $('#btnUpdate').hide();
+            $('#formBS').trigger("reset");
+            $('.modalBS').modal('show');
+        }
+
+        function btnEdit(id) {
+            $('#btnSave').hide();
+            $('#btnUpdate').show();
+            $('#formBS').trigger("reset");
+            getData(id);
+            $('.modalBS').modal('show');
+        }
+
+        function getAll() {
+            var link = baseLink.replace("Controller", controllerName).replace("Function", "GetAll");
+
+            dataTable = $("#tableBS").DataTable({
+                "order": [[1, "desc"]],
+                "ajax": {
+                    "url": link,
+                    "type": "GET",
+                    "datatype": "json",
+                    "dataSrc": "data" // Pastikan data tabel diambil dari array data
+                },
+                "columns": [
+                    { "data": "dept_code" },
+                    { "data": "departemen" },
+                    {
+                        "data": "id",
+                        "render": function (data) {
+                            return `
+                                        <button onclick="btnEdit(${data})" class="btn btn-info btn-circle btn-sm">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button onclick="deleteData(${data})" class="btn btn-danger btn-circle btn-sm" style="margin-left: 5px;">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    `;
+                        },
+                        "orderable": false,
+                        "width": "180px",
+                        "searchable": false
+                    }
+                ],
+                "language": {
+                    "emptyTable": "Tidak ada data"
+                }
+            });
+        }
+
+        function getData(id) {
+            var link = baseLink.replace("Controller", controllerName).replace("Function", "Get");
+
+            $.ajax({
+                type: "GET",
+                url: `${link}/${id}`,
+                success: function (response) {
+                    if (response.success) {
+                        var data = response.data;
+                        $('#id').val(data.id);
+                        $('#dept_code').val(data.dept_code);
+                        $('#departemen').val(data.departemen);
+                    } else {
+                        alert("Terjadi kesalahan: " + response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("Terjadi kesalahan: ", error);
+                    alert("Terjadi kesalahan saat mengambil data.");
+                }
+            });
+        }
+
+        function insertData() {
+            var link = baseLink.replace("Controller", controllerName).replace("Function", "Insert");
+
+            $.ajax({
+                type: "POST",
+                url: link,
+                data: $('#formBS').serialize(),
+                success: function (data) {
+                    if (data.success) {
+                        $('.modalBS').modal('hide');
+                        alertify.notify('Data berhasil disimpan', 'success', 5);
+                        dataTable.ajax.reload();
+                    } else {
+                        alert(data.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('Terjadi kesalahan: ' + error);
+                }
+            });
+        }
+
+        function updateData() {
+            var id = $('#id').val();
+            console.log(id)
+            var link = baseLink.replace("Controller", controllerName).replace("Function", "Update");
+
+            $.ajax({
+                type: "POST",
+                url: link,
+                data: $('#formBS').serialize(),
+                success: function (data) {
+                    if (data.success) {
+                        $('.modalBS').modal('hide');
+                        alertify.notify('Data berhasil diubah', 'success', 5);
+                        dataTable.ajax.reload();
+                    } else {
+                        alert(data.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('Terjadi kesalahan: ' + error);
+                }
+            });
+        }
+
+        function deleteData(id) {
+            var link = baseLink.replace("Controller", controllerName).replace("Function", "Delete");
+
+            if (confirm('Are you sure?')) {
+                $.ajax({
+                    type: 'POST',
+                    url: `${link}/${id}`,
+                    success: function (data) {
+                        if (data.success) {
+                            alertify.notify('Data berhasil dihapus', 'success', 5);
+                            dataTable.ajax.reload();
+                        } else {
+                            alert(data.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        alert('Terjadi kesalahan: ' + error);
+                    }
+                });
+            }
+        }
+    </script>
+}

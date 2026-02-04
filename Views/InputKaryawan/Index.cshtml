@@ -1,0 +1,1293 @@
+@{
+    ViewData["Title"] = "Input Data Karyawan";
+    Layout = "~/Views/Shared/_Layout.cshtml"; // Pastikan _Layout.cshtml memuat jQuery, Select2, SweetAlert2 SEBELUM skrip ini
+
+    // Mengambil data referensi yang tidak dependen untuk dropdown
+    var listPendidikan = ViewBag.ListPendidikan as List<one_db.Models.tbl_r_pendidikan> ?? new List<one_db.Models.tbl_r_pendidikan>();
+    var requiredDocs = ViewBag.RequiredDocuments as IEnumerable<dynamic> ?? new List<dynamic>();
+    var docConfigJson = ViewBag.DocumentConfigJson as string ?? "[]";
+    dynamic inviteContext = ViewBag.InviteContext;
+    var inviteContextJson = inviteContext != null ? System.Text.Json.JsonSerializer.Serialize(inviteContext) : "{}";
+    string inviteTokenValue = inviteContext?.Token as string ?? string.Empty;
+
+    // Serialisasi data pendidikan ke JSON string DENGAN AMAN di blok C#
+    var listPendidikanJson = "[]"; // Default ke string array kosong
+    if (listPendidikan != null && listPendidikan.Any()) {
+        // Pastikan GUID dikonversi ke string agar aman untuk JSON -> JS
+        listPendidikanJson = System.Text.Json.JsonSerializer.Serialize(listPendidikan.Select(p => new { id = p.id.ToString(), text = p.nama_pendidikan }));
+    }
+}
+
+@section styles {
+    <!-- Library CSS (Select2, SweetAlert2, Animate.css, Font Awesome) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <!-- CSS Kustom Profesional (Lebih Bersih) -->
+    <style>
+        :root {
+            --primary-blue: #0a7cff;
+            --primary-blue-dark: #0056b3;
+            --primary-blue-light: #e7f2ff;
+            --secondary-gray: #6c757d;
+            --gradient-1: linear-gradient(120deg, #0a7cff, #6a5cff, #1cc88a);
+            --gradient-2: linear-gradient(135deg, #0a7cff, #6a11cb, #1cc88a);
+            --light-gray: #f8f9fa;
+            --border-color: #dee2e6;
+            --text-dark: #212529;
+            --text-light: #5a5c69;
+            --success-green: #1cc88a;
+            --danger-red: #e74a3b;
+            --white: #fff;
+            --body-bg: #f5f7fa; /* Latar belakang body sedikit abu-abu */
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Shadow bersih */
+            --card-shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.08);
+            --border-radius-md: 0.5rem;  /* 8px */
+            --border-radius-lg: 0.75rem; /* 12px */
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            background: var(--gradient-1);
+            background-size: 200% 200%;
+            animation: gradientFlow 18s ease infinite;
+            font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
+        }
+
+        @@keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* == WIZARD STEPPER == */
+        .stepper-wrapper {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2.5rem;
+            list-style-type: none;
+            padding: 0;
+            position: relative;
+        }
+        .stepper-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            flex-basis: 16.66%; /* Kembali ke 6 step */
+            position: relative;
+            z-index: 2;
+        }
+        /* Garis Latar Belakang */
+        .stepper-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 1.25rem; /* Posisi vertikal garis */
+            left: 8%; /* Kembali ke 6 step */
+            width: 84%; /* Kembali ke 6 step */
+            height: 4px;
+            background: var(--gradient-2);
+            box-shadow: 0 8px 24px rgba(10, 124, 255, 0.18);
+            z-index: 1;
+        }
+        .stepper-counter {
+            height: 2.5rem;
+            width: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--white);
+            border: 3px solid var(--border-color);
+            border-radius: 50%;
+            font-weight: 600;
+            color: var(--secondary-gray);
+            transition: all var(--transition-speed) ease;
+            margin-bottom: 0.5rem;
+            z-index: 2;
+        }
+        .stepper-name {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--secondary-gray);
+            transition: all var(--transition-speed) ease;
+        }
+
+        /* Status Aktif */
+        .stepper-item.active .stepper-counter {
+            border-color: var(--primary-blue);
+            background-color: var(--primary-blue);
+            color: var(--white);
+            animation: pulseActive 0.5s ease;
+        }
+        .stepper-item.active .stepper-name {
+            color: var(--primary-blue);
+            font-weight: 600;
+        }
+
+        /* Status Selesai (Completed) */
+        .stepper-item.completed .stepper-counter {
+            border-color: var(--success-green);
+            background-color: var(--success-green);
+            color: var(--white);
+            font-size: 1.2rem; /* Ruang untuk ikon centang */
+        }
+        .stepper-item.completed .stepper-name {
+            color: var(--text-light);
+        }
+        .stepper-item.completed .stepper-counter::after {
+            content: '\f00c'; /* Font Awesome check icon */
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+        }
+
+        @@keyframes pulseActive {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(10, 124, 255, 0.3); }
+            50% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(10, 124, 255, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(10, 124, 255, 0); }
+        }
+
+        @@keyframes fadeSlideIn {
+            0% { opacity: 0; transform: translateY(12px) scale(0.99); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* == KARTU WIZARD == */
+        .wizard-step-panel {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+        .wizard-step-panel.active {
+            display: block;
+            animation: fadeSlideIn 0.65s ease both;
+        }
+        .wizard-card {
+            background: var(--white);
+            border-radius: var(--border-radius-lg);
+            border: 1px solid rgba(10, 124, 255, 0.08);
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
+            transition: box-shadow var(--transition-speed) ease, transform 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .wizard-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 20%, rgba(10, 124, 255, 0.08), transparent 35%),
+                        radial-gradient(circle at 80% 10%, rgba(108, 117, 125, 0.06), transparent 35%);
+            pointer-events: none;
+        }
+        .wizard-card:hover {
+            box-shadow: var(--card-shadow-hover);
+            transform: translateY(-2px);
+        }
+        .wizard-card .card-header {
+            background: linear-gradient(120deg, rgba(10, 124, 255, 0.08), rgba(26, 200, 138, 0.08)), var(--white);
+            border-bottom: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+            padding: 1.25rem 2rem;
+            display: flex;
+            align-items: center;
+        }
+        .wizard-card .card-header .section-icon {
+            font-size: 1.25rem;
+            color: var(--primary-blue);
+            margin-right: 1rem;
+            width: 30px;
+            text-align: center;
+        }
+        .wizard-card .card-header h5 {
+            margin: 0;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+        .wizard-card .card-body {
+            padding: 1.5rem 2.5rem 2.5rem 2.5rem;
+            background: linear-gradient(180deg, rgba(10, 124, 255, 0.04), rgba(255,255,255,0.9));
+        }
+        .wizard-card .card-body h6.section-title {
+             font-weight: 600;
+             color: var(--primary-blue);
+             margin-top: 1rem;
+             margin-bottom: 1.5rem;
+             border-bottom: 2px solid var(--primary-blue-light);
+             padding-bottom: 0.5rem;
+        }
+
+        /* Panel pekerjaan dengan gradasi */
+        .job-panel {
+            background: linear-gradient(135deg, rgba(10,124,255,0.08), rgba(26,200,138,0.08));
+            border: 1px solid rgba(10,124,255,0.15);
+            border-radius: var(--border-radius-lg);
+            padding: 1rem 1.25rem;
+            box-shadow: 0 10px 28px rgba(10,124,255,0.12);
+            animation: fadeSlideIn 0.65s ease both;
+        }
+
+        /* == TOMBOL NAVIGASI == */
+        .wizard-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3rem;
+        }
+        .btn {
+            border-radius: var(--border-radius-md);
+            padding: 0.65rem 1.5rem;
+            font-weight: 600;
+            transition: all var(--transition-speed) ease;
+            box-shadow: var(--card-shadow);
+            border: none;
+        }
+        .btn:hover {
+             transform: translateY(-2px);
+             box-shadow: var(--card-shadow-hover);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-primary {
+            background-image: var(--gradient-2);
+            background-size: 180% 180%;
+            color: var(--white);
+            box-shadow: 0 10px 25px rgba(10, 124, 255, 0.25);
+            transition: background-position 0.35s ease, transform 0.22s ease, box-shadow 0.22s ease;
+        }
+        .btn-primary:hover {
+            background-position: 100% 0;
+            color: var(--white);
+            transform: translateY(-3px);
+            box-shadow: 0 16px 32px rgba(10, 124, 255, 0.35);
+        }
+        .btn-secondary {
+            background-color: var(--secondary-gray);
+            color: var(--white);
+        }
+        .btn-secondary:hover {
+             background-color: #5a6268;
+             color: var(--white);
+        }
+        .btn-success { background-color: var(--success-green); color: var(--white); }
+        .btn-success:hover { background-color: #17a673; color: var(--white); }
+
+        /* == FORMULIR == */
+        .form-group {
+            margin-bottom: 1.25rem;
+            /* Untuk animasi stagger */
+            opacity: 0;
+            animation: fadeInUp 0.55s ease forwards;
+            background: linear-gradient(135deg, rgba(10, 124, 255, 0.04), rgba(26, 200, 138, 0.03));
+            border-radius: var(--border-radius-md);
+            padding: 0.75rem;
+            box-shadow: 0 6px 18px rgba(10, 124, 255, 0.05);
+        }
+        label {
+            font-weight: 500;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .form-control, .custom-select {
+            border-radius: var(--border-radius-md);
+            border: 1px solid var(--border-color);
+            background-color: var(--white);
+            padding: 0.65rem 1rem;
+            transition: all 0.3s ease;
+            color: var(--text-dark);
+            height: calc(1.5em + 1.3rem + 2px); /* Tinggi konsisten */
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .form-control::placeholder {
+            color: #adb5bd;
+        }
+        .form-control:focus, .custom-select:focus {
+            background-color: var(--white);
+            border-color: var(--primary-blue);
+            box-shadow: 0 8px 24px rgba(10, 124, 255, 0.18), 0 0 0 0.2rem rgba(10, 124, 255, 0.15);
+            outline: none;
+        }
+        .form-control:read-only {
+            background-color: var(--light-gray);
+            cursor: not-allowed;
+        }
+
+        /* Validasi (Centang Hijau / Silang Merah) */
+        .form-control.is-valid, .custom-select.is-valid {
+            border-color: var(--success-green);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%231cc88a' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8L3 5.13l3.4-3.9c.6-.6 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+            padding-right: calc(1.5em + 1.3rem);
+        }
+        .form-control.is-invalid, .custom-select.is-invalid {
+            border-color: var(--danger-red);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='%23e74a3b' viewBox='-2 -2 7 7'%3e%3cpath stroke='%23e74a3b' d='M0 0l3 3m0-3L0 3'/%3e%3ccircle r='.5'/%3e%3ccircle cx='3' r='.5'/%3e%3ccircle cy='3' r='.5'/%3e%3ccircle cx='3' cy='3' r='.5'/%3e%3c/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+            padding-right: calc(1.5em + 1.3rem);
+        }
+        .invalid-feedback {
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        /* == SELECT2 == */
+        .select2-container--default .select2-selection--single {
+            border-radius: var(--border-radius-md);
+            border: 1px solid var(--border-color);
+            height: calc(1.5em + 1.3rem + 2px) !important;
+            padding: 0.65rem 1rem;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: var(--text-dark);
+            line-height: calc(1.5em + 1.3rem - 14px) !important; /* Adjust line height */
+            padding-left: 0;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #adb5bd;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: calc(1.5em + 1.3rem) !important;
+            right: 15px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow b {
+             border-color: var(--secondary-gray) transparent transparent transparent;
+             border-width: 6px 6px 0 6px;
+             margin-top: -3px;
+        }
+        .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+            border-width: 0 6px 6px 6px;
+            border-color: transparent transparent var(--secondary-gray) transparent;
+        }
+        /* Validasi Select2 */
+        .select2-container--default .select2-selection--single.is-valid {
+             border-color: var(--success-green);
+        }
+        .select2-container--default .select2-selection--single.is-invalid {
+             border-color: var(--danger-red);
+        }
+        
+        .select2-dropdown {
+             border-radius: var(--border-radius-md);
+             border: 1px solid var(--border-color);
+             box-shadow: var(--card-shadow);
+        }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: var(--primary-blue);
+        }
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+             border-radius: var(--border-radius-md);
+             border: 1px solid var(--border-color);
+        }
+        /* Posisi/Jabatan */
+        #posisi_text {
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        /* Tombol Tambah Dropdown (+) */
+        .btn-add-reference {
+            padding: 0.65rem 0.9rem; /* Samakan tinggi dengan input */
+            line-height: 1.5;
+            font-size: 0.9rem;
+            background-color: var(--primary-blue-light);
+            color: var(--primary-blue);
+            box-shadow: none;
+        }
+        .btn-add-reference:hover {
+            background-color: var(--primary-blue);
+            color: var(--white);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(10, 124, 255, 0.3);
+        }
+
+        /* == UPLOAD FILE == */
+        .custom-file-label {
+            border-radius: var(--border-radius-md);
+            border: 1px solid var(--border-color);
+            background-color: var(--white);
+            padding: 0.65rem 1rem;
+            height: calc(1.5em + 1.3rem + 2px);
+            color: #adb5bd;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .custom-file-label::after {
+            background-color: var(--secondary-gray);
+            color: var(--white);
+            border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+            height: calc(1.5em + 1.3rem);
+            line-height: 1.5;
+            padding: 0.65rem 1rem;
+            content: "Pilih";
+        }
+        .custom-file-input:lang(id) ~ .custom-file-label::after {
+            content: "Pilih";
+        }
+        .custom-file-input:focus ~ .custom-file-label {
+             border-color: var(--primary-blue);
+             box-shadow: 0 0 0 0.2rem rgba(10, 124, 255, 0.15);
+        }
+        .custom-file-input.is-valid ~ .custom-file-label {
+            border-color: var(--success-green);
+        }
+        .custom-file-input.is-invalid ~ .custom-file-label {
+            border-color: var(--danger-red);
+        }
+
+        /* == LIST DINAMIS (Keluarga, Pendidikan, dll) == */
+        .dynamic-list-item {
+            background: var(--light-gray);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            animation: fadeIn 0.4s ease;
+        }
+        .btn-remove-item {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background-color: var(--light-gray);
+            color: var(--danger-red);
+            border: 1px solid var(--border-color);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            box-shadow: none;
+        }
+        .btn-remove-item:hover {
+            background-color: var(--danger-red);
+            color: var(--white);
+            border-color: var(--danger-red);
+            transform: scale(1.1);
+        }
+        .btn-add-item {
+            background-color: var(--primary-blue-light);
+            color: var(--primary-blue);
+            font-weight: 600;
+            padding: 0.5rem 1.25rem;
+            box-shadow: none;
+            border: 1px dashed var(--primary-blue);
+        }
+        .btn-add-item:hover {
+            background-color: var(--primary-blue);
+            color: var(--white);
+            border-style: solid;
+            transform: translateY(-2px);
+            box-shadow: var(--card-shadow);
+        }
+
+        /* == HALAMAN KONFIRMASI == */
+        #confirmation-container h6 {
+            color: var(--primary-blue);
+            font-weight: 600;
+            border-bottom: 2px solid var(--primary-blue-light);
+            padding-bottom: 0.5rem;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        #confirmation-container .confirm-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--light-gray);
+            font-size: 0.95rem;
+        }
+        #confirmation-container .confirm-item strong {
+            color: var(--text-light);
+            font-weight: 500;
+            flex-basis: 40%;
+        }
+        #confirmation-container .confirm-item span {
+            color: var(--text-dark);
+            font-weight: 600;
+            flex-basis: 60%;
+            text-align: right;
+            word-break: break-word;
+        }
+        #confirmation-container .confirm-list-item {
+            background: var(--light-gray);
+            border-radius: var(--border-radius-md);
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* == SWEETALERT == */
+        .swal2-popup { border-radius: var(--border-radius-lg) !important; }
+        .swal2-title { color: var(--text-dark) !important; font-weight: 600; }
+        .swal2-html-container { color: var(--text-light) !important; }
+        .swal2-confirm, .swal2-cancel, .swal2-deny {
+            border-radius: var(--border-radius-md) !important;
+            padding: 0.65rem 1.5rem !important;
+            font-weight: 600 !important;
+            box-shadow: var(--card-shadow) !important;
+        }
+        .swal2-confirm { background-color: var(--primary-blue) !important; }
+        .swal2-confirm.swal2-styled.swal2-default-outline:focus {
+             box-shadow: 0 0 0 0.2rem rgba(10, 124, 255, 0.15) !important;
+        }
+        .swal2-cancel { background-color: var(--danger-red) !important; }
+        .swal2-cancel.swal2-styled.swal2-default-outline:focus {
+             box-shadow: 0 0 0 0.2rem rgba(231, 74, 59, 0.15) !important;
+        }
+
+    </style>
+}
+
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeInDown">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-user-plus mr-2" style="color: var(--primary-blue);"></i>
+            Input Data Karyawan Baru
+        </h1>
+    </div>
+
+    <!-- Wizard Stepper Navigation (6 Langkah) -->
+    <ol class="stepper-wrapper animate__animated animate__fadeIn">
+        <li class="stepper-item active" data-step="1">
+            <div class="stepper-counter">1</div>
+            <div class="stepper-name">Data Personal</div>
+        </li>
+        <li class="stepper-item" data-step="2">
+            <div class="stepper-counter">2</div>
+            <div class="stepper-name">Pekerjaan</div>
+        </li>
+        <li class="stepper-item" data-step="3">
+            <div class="stepper-counter">3</div>
+            <div class="stepper-name">Info Detail</div>
+        </li>
+        <li class="stepper-item" data-step="4">
+            <div class="stepper-counter">4</div>
+            <div class="stepper-name">Riwayat</div>
+        </li>
+        <li class="stepper-item" data-step="5">
+            <div class="stepper-counter">5</div>
+            <div class="stepper-name">Dokumen</div>
+        </li>
+        <li class="stepper-item" data-step="6">
+            <div class="stepper-counter">6</div>
+            <div class="stepper-name">Konfirmasi</div>
+        </li>
+    </ol>
+
+    <form id="formInputKaryawan" method="post" enctype="multipart/form-data" action="@Url.Action("SubmitWizard", "InputKaryawan")" novalidate>
+        @Html.AntiForgeryToken() <!-- Token Keamanan -->
+        <input type="hidden" id="invite_token" name="invite_token" value="@inviteTokenValue" />
+        <input type="hidden" id="payload_json" name="payload_json" />
+
+        <!-- =================================================================== -->
+        <!-- LANGKAH 1: DATA PERSONAL -->
+        <!-- =================================================================== -->
+        <div id="step-1" class="wizard-step-panel active">
+            <div class="wizard-card">
+                <div class="card-header">
+                    <i class="fas fa-id-card section-icon"></i>
+                    <h5>Langkah 1: Data Personal</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label for="indexim_id">Nomor ID Karyawan Indexim <span class="text-danger">*</span></label>
+                            <!-- Tombol Generate Dihapus -->
+                            <input id="indexim_id" name="indexim_id" type="text" class="form-control" placeholder="ID akan terisi otomatis..." required readonly>
+                            <div class="invalid-feedback">Nomor ID Karyawan Indexim wajib diisi.</div>
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="kewarganegaraan">Warga Negara <span class="text-danger">*</span></label>
+                            <select id="kewarganegaraan" name="kewarganegaraan" class="form-control custom-select" required>
+                                <option value="" selected disabled>-- Pilih Kewarganegaraan --</option>
+                                <option value="WNI">WNI (Warga Negara Indonesia)</option>
+                                <option value="WNA">WNA (Warga Negara Asing)</option>
+                            </select>
+                            <div class="invalid-feedback">Warga negara wajib dipilih.</div>
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="no_identitas" id="label_no_identitas">No. KTP <span class="text-danger">*</span></label>
+                            <input id="no_identitas" name="no_identitas" type="text" class="form-control force-numeric" placeholder="16 digit nomor KTP" maxlength="25" required>
+                            <div class="invalid-feedback">Nomor identitas (KTP/Paspor) wajib diisi.</div>
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="nama_lengkap">Nama Lengkap (Sesuai Identitas) <span class="text-danger">*</span></label>
+                            <input id="nama_lengkap" name="nama_lengkap" type="text" class="form-control force-uppercase" placeholder="Nama lengkap sesuai KTP/Paspor" required>
+                            <div class="invalid-feedback">Nama lengkap wajib diisi.</div>
+                        </div>
+                        
+                        <div class="col-md-6 form-group">
+                            <label for="tempat_lahir">Tempat Lahir <span class="text-danger">*</span></label>
+                            <input id="tempat_lahir" name="tempat_lahir" type="text" class="form-control force-uppercase" placeholder="Cth: JAKARTA" required>
+                            <div class="invalid-feedback">Tempat lahir wajib diisi.</div>
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="tanggal_lahir">Tanggal Lahir <span class="text-danger">*</span></label>
+                            <input id="tanggal_lahir" name="tanggal_lahir" type="date" class="form-control" required>
+                            <div class="invalid-feedback">Tanggal lahir wajib diisi.</div>
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="jenis_kelamin">Jenis Kelamin <span class="text-danger">*</span></label>
+                            <select id="jenis_kelamin" name="jenis_kelamin" class="form-control custom-select" required>
+                                <option value="" selected disabled>-- Pilih Jenis Kelamin --</option>
+                                <option value="LK">Laki-laki</option>
+                                <option value="P">Perempuan</option>
+                            </select>
+                            <div class="invalid-feedback">Jenis kelamin wajib dipilih.</div>
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="gol_darah">Golongan Darah</label>
+                            <select id="gol_darah" name="gol_darah" class="form-control custom-select">
+                                <option value="" selected >-- Pilih Golongan Darah --</option> <!-- Default selected -->
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="AB">AB</option>
+                                <option value="O">O</option>
+                                <option value="Tidak Tahu">Tidak Tahu</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 form-group">
+                            <label for="agama">Agama <span class="text-danger">*</span></label>
+                            <select id="agama" name="agama" class="form-control custom-select" required>
+                                <option value="" selected disabled>-- Pilih Agama --</option>
+                                <option value="ISLAM">ISLAM</option>
+                                <option value="KRISTEN PROTESTAN">KRISTEN PROTESTAN</option>
+                                <option value="KRISTEN KATOLIK">KRISTEN KATOLIK</option>
+                                <option value="HINDU">HINDU</option>
+                                <option value="BUDDHA">BUDDHA</option>
+                                <option value="KHONGHUCU">KHONGHUCU</option>
+                                <option value="LAINNYA">LAINNYA</option>
+                            </select>
+                            <div class="invalid-feedback">Agama wajib dipilih.</div>
+                        </div>
+                        
+                        <div class="col-md-6 form-group">
+                            <label for="email_pribadi">Email Pribadi</label>
+                            <input id="email_pribadi" name="email_pribadi" type="email" class="form-control" placeholder="contoh@domain.com">
+                            <div class="invalid-feedback">Format email tidak valid.</div>
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="no_telp_pribadi">No. Telp / HP Pribadi</label>
+                            <input id="no_telp_pribadi" name="no_telp_pribadi" type="text" class="form-control force-numeric" placeholder="Cth: 0812xxxxxxxx">
+                        </div>
+                        
+                         <div class="col-md-6 form-group">
+                            <label for="no_kk">No. Kartu Keluarga (KK)</label>
+                            <input id="no_kk" name="no_kk" type="text" class="form-control force-numeric" placeholder="16 digit nomor KK">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="no_npwp">No. NPWP</label>
+                            <input id="no_npwp" name="no_npwp" type="text" class="form-control" placeholder="Cth: 00.000.000.0-000.000">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="no_bpjstk">No. BPJS Ketenagakerjaan</label>
+                            <input id="no_bpjstk" name="no_bpjstk" type="text" class="form-control force-numeric" placeholder="Nomor KPJ">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="no_bpjskes">No. BPJS Kesehatan</label>
+                            <input id="no_bpjskes" name="no_bpjskes" type="text" class="form-control force-numeric" placeholder="Nomor JKN-KIS">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="nama_ibu_kandung">Nama Ibu Kandung</label>
+                            <input id="nama_ibu_kandung" name="nama_ibu_kandung" type="text" class="form-control force-uppercase" placeholder="Nama lengkap ibu">
+                        </div>
+                         <div class="col-md-6 form-group">
+                            <label for="status_ibu">Status Ibu</label>
+                             <select id="status_ibu" name="status_ibu" class="form-control custom-select">
+                                <option value="" selected >-- Pilih Status --</option> <!-- Default selected -->
+                                <option value="Hidup">HIDUP</option>
+                                <option value="Meninggal">MENINGGAL</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="nama_ayah_kandung">Nama Ayah Kandung</label>
+                            <input id="nama_ayah_kandung" name="nama_ayah_kandung" type="text" class="form-control force-uppercase" placeholder="Nama lengkap ayah">
+                        </div>
+                         <div class="col-md-6 form-group">
+                            <label for="status_ayah">Status Ayah</label>
+                             <select id="status_ayah" name="status_ayah" class="form-control custom-select">
+                                <option value="" selected >-- Pilih Status --</option> <!-- Default selected -->
+                                <option value="Hidup">HIDUP</option>
+                                <option value="Meninggal">MENINGGAL</option>
+                            </select>
+                        </div>
+                    </div>
+                </div> <!-- End Card Body Step 1 -->
+            </div> <!-- End Wizard Card Step 1 -->
+        </div> <!-- End Wizard Panel Step 1 -->
+
+
+        <!-- =================================================================== -->
+        <!-- LANGKAH 2: PEKERJAAN -->
+        <!-- =================================================================== -->
+        <div id="step-2" class="wizard-step-panel">
+            <div class="wizard-card">
+                <div class="card-header">
+                    <i class="fas fa-briefcase section-icon"></i>
+                    <h5>Langkah 2: Data Pekerjaan</h5>
+                </div>
+                <div class="card-body">
+                    <div class="job-panel">
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label for="perusahaan_id">Perusahaan (Disetujui) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <select id="perusahaan_id" name="perusahaan_id" class="form-control select2-dynamic" data-entity="perusahaan" data-placeholder="-- Pilih Perusahaan --" required></select>
+                                    <div class="invalid-feedback">Perusahaan wajib dipilih.</div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="nik">Nomor Induk Karyawan (NIK) <span class="text-danger">*</span></label>
+                                <input id="nik" name="nik" type="text" class="form-control force-uppercase-alphanum" placeholder="NIK Karyawan di Perusahaan" required>
+                                <div class="invalid-feedback">NIK wajib diisi.</div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="departemen_id">Departemen <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <select id="departemen_id" name="departemen_id" class="form-control select2-dynamic" data-entity="departemen" data-placeholder="-- Pilih Departemen --" required></select>
+                                    <div class="invalid-feedback">Departemen wajib dipilih.</div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="posisi_text">Posisi / Jabatan <span class="text-danger">*</span></label>
+                                <input id="posisi_text" name="posisi_text" type="text" class="form-control force-uppercase" placeholder="Ketik jabatan, contoh: SUPERVISOR MEKANIK" required>
+                                <div class="invalid-feedback">Posisi / jabatan wajib diisi.</div>
+                            </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="level_id">Level <span class="text-danger">*</span></label>
+                            <select id="level_id" name="job_level" class="form-control" required>
+                                <option value="">-- Pilih Level --</option>
+                                <option value="KTT/PJO">KTT/PJO</option>
+                                <option value="MANAGER / DPM">Manager / DPM</option>
+                                <option value="SUPERINTENDENT / DEPT HEAD">Superintendent / Dept Head</option>
+                                <option value="SUPERVISOR / COORDINATOR/SECTION">Supervisor / Coordinator/Section</option>
+                                <option value="FOREMAN / GL / OFFICER / ADM">Foreman / GL / Officer / Adm</option>
+                                <option value="CREW / HELPER">Crew / Helper</option>
+                                <option value="MEKANIK / TECHNICIAN">Mekanik / Technician</option>
+                                <option value="OPERATOR / DRIVER">Operator / Driver</option>
+                                <option value="HELPER">Helper</option>
+                            </select>
+                            <div class="invalid-feedback">Level wajib dipilih.</div>
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="grade_id">Grade <span class="text-danger">*</span></label>
+                            <select id="grade_id" name="job_grade" class="form-control" required>
+                                <option value="">-- Pilih Grade --</option>
+                                <option value="GRADE-1">Grade 1</option>
+                                <option value="GRADE-2">Grade 2</option>
+                                <option value="GRADE-3">Grade 3</option>
+                                <option value="GRADE-4">Grade 4</option>
+                                <option value="GRADE-5">Grade 5</option>
+                                <option value="GRADE-6">Grade 6</option>
+                                <option value="GRADE-7">Grade 7</option>
+                                <option value="GRADE-8">Grade 8</option>
+                                <option value="GRADE-9">Grade 9</option>
+                                <option value="GRADE-10">Grade 10</option>
+                                <option value="GRADE-11">Grade 11</option>
+                                <option value="GRADE-12">Grade 12</option>
+                                <option value="GRADE-13">Grade 13</option>
+                                <option value="GRADE-14">Grade 14</option>
+                                <option value="GRADE-15">Grade 15</option>
+                                <option value="GRADE-16">Grade 16</option>
+                                <option value="GRADE-17">Grade 17</option>
+                                <option value="GRADE-18">Grade 18</option>
+                                <option value="GRADE-19">Grade 19</option>
+                                <option value="GRADE-20">Grade 20</option>
+                            </select>
+                            <div class="invalid-feedback">Grade wajib dipilih.</div>
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="roster_id">Jadwal Kerja <span class="text-danger">*</span></label>
+                            <select id="roster_id" name="roster_code" class="form-control" required>
+                                <option value="">-- Pilih Jadwal Kerja --</option>
+                                <option value="10:2">10 : 2</option>
+                                <option value="6:2">6 : 2</option>
+                                <option value="3:1">3 : 1</option>
+                            </select>
+                            <div class="invalid-feedback">Roster wajib dipilih.</div>
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="poh">Point of Hire (POH) <span class="text-danger">*</span></label>
+                            <input type="text" id="poh" name="poh" class="form-control" placeholder="Masukkan Point of Hire" required>
+                            <div class="invalid-feedback">POH wajib diisi.</div>
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="lokasi_terima_text">Lokasi Penerimaan (ketik) <span class="text-danger">*</span></label>
+                            <input id="lokasi_terima_text" name="lokasi_terima_text" type="text" class="form-control" placeholder="Ketik lokasi penerimaan, mis: Kantor Pusat / Site A" required>
+                            <div class="invalid-feedback">Lokasi penerimaan wajib diisi.</div>
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="lokasi_kerja_id">Lokasi Kerja <span class="text-danger">*</span></label>
+                            <select id="lokasi_kerja_id" name="lokasi_kerja_id" class="form-control" required>
+                                <option value="" selected disabled>-- Pilih Lokasi Kerja --</option>
+                                <option value="mess">Mess</option>
+                                <option value="office">Office</option>
+                                <option value="tambang">Tambang</option>
+                                <option value="port">Port</option>
+                                <option value="workshop">Workshop</option>
+                                <option value="hauling">Hauling</option>
+                                <option value="other">Other</option>
+                            </select>
+                            <div class="invalid-feedback">Lokasi kerja wajib dipilih.</div>
+
+                            <!-- Jika user memilih Other, silakan isi lokasi_kerja_text -->
+                            <input id="lokasi_kerja_text" name="lokasi_kerja_text" type="text" class="form-control mt-2" placeholder="Jika 'Other', ketik lokasi kerja di sini (opsional)" style="display:none;">
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="status_residence_id">Status Residence <span class="text-danger">*</span></label>
+                            <select id="status_residence_id" name="status_residence" class="form-control" required>
+                                <option value="">-- Pilih Status --</option>
+                                <option value="MESS">Mess Perusahaan</option>
+                                <option value="KONTRAK">Kontrak Rumah</option>
+                                <option value="KOST">Kost</option>
+                                <option value="MANDIRI">Rumah Sendiri</option>
+                            </select>
+                            <div class="invalid-feedback">Status residence wajib dipilih.</div>
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label>Status Reciden</label>
+                            <div class="form-control" style="border: none; padding: 0;">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="status_reciden" id="status_reciden_1" value="true">
+                                    <label class="form-check-label" for="status_reciden_1">Iya</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="status_reciden" id="status_reciden_0" value="false" checked>
+                                    <label class="form-check-label" for="status_reciden_0">Tidak</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 form-group">
+                            <label for="doh">Date of Hire (DOH) <span class="text-danger">*</span></label>
+                            <input id="doh" name="doh" type="date" class="form-control" required>
+                            <div class="invalid-feedback">DOH wajib diisi.</div>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label for="tanggal_aktif">Tanggal Aktif <span class="text-danger">*</span></label>
+                            <input id="tanggal_aktif" name="tanggal_aktif" type="date" class="form-control" required>
+                            <div class="invalid-feedback">Tanggal aktif wajib diisi.</div>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label for="tanggal_resign">Tanggal Resign</label>
+                            <input id="tanggal_resign" name="tanggal_resign" type="date" class="form-control">
+                        </div>
+                        
+                        <div class="col-md-6 form-group">
+                            <label for="email_perusahaan">Email Perusahaan</label>
+                            <input id="email_perusahaan" name="email_perusahaan" type="email" class="form-control" placeholder="nama.karyawan@perusahaan.com">
+                            <div class="invalid-feedback">Format email tidak valid.</div>
+                        </div>
+                    </div>
+                </div> <!-- End Card Body Step 2 -->
+            </div> <!-- End Wizard Card Step 2 -->
+        </div> <!-- End Wizard Panel Step 2 -->
+
+        <!-- =================================================================== -->
+        <!-- LANGKAH 3: INFO DETAIL (Alamat, Bank, Darurat) -->
+        <!-- =================================================================== -->
+        <div id="step-3" class="wizard-step-panel">
+            <div class="wizard-card">
+                <div class="card-header">
+                    <i class="fas fa-map-marked-alt section-icon"></i>
+                    <h5>Langkah 3: Info Detail</h5>
+                </div>
+                <div class="card-body">
+                    
+                    <h6 class="section-title"><i class="fas fa-map-pin mr-2"></i> Alamat Sesuai KTP</h6>
+                    <div class="row">
+                        <div class="col-12 form-group">
+                            <label for="alamat_ktp">Alamat KTP <span class="text-danger">*</span></label>
+                            <textarea id="alamat_ktp" name="alamat_ktp" class="form-control force-uppercase" rows="2" placeholder="Alamat lengkap sesuai KTP" required></textarea>
+                            <div class="invalid-feedback">Alamat KTP wajib diisi.</div>
+                        </div>
+                        <div class="col-md-3 col-6 form-group">
+                            <label for="rt_ktp">RT</label>
+                            <input id="rt_ktp" name="rt_ktp" type="text" placeholder="000" class="form-control force-numeric" maxlength="3">
+                        </div>
+                        <div class="col-md-3 col-6 form-group">
+                            <label for="rw_ktp">RW</label>
+                            <input id="rw_ktp" name="rw_ktp" type="text" placeholder="000" class="form-control force-numeric" maxlength="3">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="provinsi_id">Provinsi <span class="text-danger">*</span></label>
+                            <select id="provinsi_id" name="provinsi_id" class="form-control select2-dynamic" data-entity="provinsi" data-placeholder="-- Pilih Provinsi --" required></select>
+                            <div class="invalid-feedback">Provinsi wajib dipilih.</div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="kota_id">Kabupaten / Kota <span class="text-danger">*</span></label>
+                            <select id="kota_id" name="kota_id" class="form-control select2-dynamic" data-entity="kabupaten" data-parent-id="provinsi_id" data-placeholder="-- Pilih Kabupaten/Kota --" required disabled></select>
+                            <div class="invalid-feedback">Kabupaten/Kota wajib dipilih.</div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="kecamatan_id">Kecamatan <span class="text-danger">*</span></label>
+                            <select id="kecamatan_id" name="kecamatan_id" class="form-control select2-dynamic" data-entity="kecamatan" data-parent-id="kota_id" data-placeholder="-- Pilih Kecamatan --" required disabled></select>
+                            <div class="invalid-feedback">Kecamatan wajib dipilih.</div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="kelurahan_id">Kelurahan <span class="text-danger">*</span></label>
+                            <select id="kelurahan_id" name="kelurahan_id" class="form-control select2-dynamic" data-entity="kelurahan" data-parent-id="kecamatan_id" data-placeholder="-- Pilih Kelurahan --" required disabled></select>
+                            <div class="invalid-feedback">Kelurahan wajib dipilih.</div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="kode_pos">Kode Pos</label>
+                            <input id="kode_pos" name="kode_pos" type="text" class="form-control force-numeric" maxlength="5" placeholder="Contoh: 76115">
+                        </div>
+                    </div>
+
+                    <h6 class="section-title"><i class="fas fa-map-marker-alt mr-2"></i> Alamat Domisili (Opsional)</h6>
+                    <div class="row">
+                         <div class="col-12 form-group">
+                            <label for="alamat_domisili">Alamat Domisili (Jika berbeda dengan KTP)</label>
+                            <textarea id="alamat_domisili" name="alamat_domisili" class="form-control force-uppercase" rows="2" placeholder="Alamat domisili saat ini"></textarea>
+                        </div>
+                        <div class="col-md-3 col-6 form-group">
+                            <label for="rt_domisili">RT</label>
+                            <input id="rt_domisili" name="rt_domisili" type="text" placeholder="000" class="form-control force-numeric" maxlength="3">
+                        </div>
+                        <div class="col-md-3 col-6 form-group">
+                            <label for="rw_domisili">RW</label>
+                            <input id="rw_domisili" name="rw_domisili" type="text" placeholder="000" class="form-control force-numeric" maxlength="3">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="provinsi_domisili">Provinsi Domisili</label>
+                            <select id="provinsi_domisili" name="provinsi_domisili" class="form-control select2-dynamic" data-entity="provinsi" data-placeholder="-- Pilih Provinsi --"></select>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="kota_domisili">Kabupaten / Kota Domisili</label>
+                            <select id="kota_domisili" name="kota_domisili" class="form-control select2-dynamic" data-entity="kabupaten" data-parent-id="provinsi_domisili" data-placeholder="-- Pilih Kabupaten/Kota --" disabled></select>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="kecamatan_domisili">Kecamatan Domisili</label>
+                            <select id="kecamatan_domisili" name="kecamatan_domisili" class="form-control select2-dynamic" data-entity="kecamatan" data-parent-id="kota_domisili" data-placeholder="-- Pilih Kecamatan --" disabled></select>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="kelurahan_domisili">Kelurahan Domisili</label>
+                            <select id="kelurahan_domisili" name="kelurahan_domisili" class="form-control select2-dynamic" data-entity="kelurahan" data-parent-id="kecamatan_domisili" data-placeholder="-- Pilih Kelurahan --" disabled></select>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="kode_pos_domisili">Kode Pos Domisili</label>
+                            <input id="kode_pos_domisili" name="kode_pos_domisili" type="text" class="form-control force-numeric" maxlength="5" placeholder="Contoh: 76115">
+                        </div>
+                    </div>
+
+                    <h6 class="section-title"><i class="fas fa-university mr-2"></i> Data Bank (Payroll)</h6>
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label for="bank_name">Bank <span class="text-danger">*</span></label>
+                            <input id="bank_name" name="bank_name" type="text" class="form-control" list="bankOptions" placeholder="Nama bank" required>
+                            <div class="invalid-feedback">Bank wajib diisi.</div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="nomor_rekening">Nomor Rekening <span class="text-danger">*</span></label>
+                            <input id="nomor_rekening" name="nomor_rekening" type="text" class="form-control force-numeric" placeholder="Cth: 1234567890" required>
+                            <div class="invalid-feedback">Nomor rekening wajib diisi.</div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="nama_pemilik_rekening">Nama Pemilik Rekening <span class="text-danger">*</span></label>
+                            <input id="nama_pemilik_rekening" name="nama_pemilik_rekening" type="text" class="form-control force-uppercase" placeholder="Sesuai buku tabungan" required>
+                            <div class="invalid-feedback">Nama pemilik rekening wajib diisi.</div>
+                        </div>
+                    </div>
+
+                    <h6 class="section-title"><i class="fas fa-phone-alt mr-2"></i> Kontak Darurat</h6>
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label for="nama_kontak_darurat">Nama Kontak Darurat <span class="text-danger">*</span></label>
+                            <input id="nama_kontak_darurat" name="nama_kontak_darurat" type="text" class="form-control force-uppercase" placeholder="Nama lengkap kontak darurat" required>
+                            <div class="invalid-feedback">Nama kontak darurat wajib diisi.</div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="relasi_kontak_darurat">Hubungan / Relasi <span class="text-danger">*</span></label>
+                            <input id="relasi_kontak_darurat" name="relasi_kontak_darurat" type="text" class="form-control force-uppercase" placeholder="Cth: ISTRI, KAKAK, ORANG TUA" required>
+                            <div class="invalid-feedback">Relasi wajib diisi.</div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="hp_kontak_darurat_1">Nomor HP Utama <span class="text-danger">*</span></label>
+                            <input id="hp_kontak_darurat_1" name="hp_kontak_darurat_1" type="text" class="form-control force-numeric" placeholder="Cth: 0812xxxxxxxx" required>
+                            <div class="invalid-feedback">Nomor HP utama wajib diisi.</div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="hp_kontak_darurat_2">Nomor HP Alternatif</label>
+                            <input id="hp_kontak_darurat_2" name="hp_kontak_darurat_2" type="text" class="form-control force-numeric" placeholder="Cth: 0812xxxxxxxx (opsional)">
+                        </div>
+                    </div>
+                </div> <!-- End Card Body Step 3 -->
+            </div> <!-- End Wizard Card Step 3 -->
+        </div> <!-- End Wizard Panel Step 3 -->
+
+        <!-- =================================================================== -->
+        <!-- LANGKAH 4: RIWAYAT (Pendidikan, Keluarga, Vaksin, MCU, Sertifikasi) -->
+        <!-- =================================================================== -->
+        <div id="step-4" class="wizard-step-panel">
+            <div class="wizard-card">
+                 <div class="card-header">
+                    <i class="fas fa-history section-icon"></i>
+                    <h5>Langkah 4: Riwayat Karyawan</h5>
+                </div>
+                <div class="card-body">
+
+                    <h6 class="section-title"><i class="fas fa-user-graduate mr-2"></i> Riwayat Pendidikan</h6>
+                    <div id="pendidikan-list-container">
+                        <!-- Baris pendidikan akan ditambahkan di sini oleh JavaScript -->
+                    </div>
+                    <div class="text-left mt-2">
+                        <button type="button" class="btn-add-item" id="btnAddPendidikan">
+                            <i class="fas fa-plus-circle mr-1"></i> Tambah Riwayat Pendidikan
+                        </button>
+                    </div>
+
+                    <h6 class="section-title"><i class="fas fa-users mr-2"></i> Data Keluarga (Tanggungan)</h6>
+                    <div id="keluarga-list-container">
+                        <!-- Baris keluarga akan ditambahkan di sini oleh JavaScript -->
+                    </div>
+                    <div class="text-left mt-2">
+                        <button type="button" class="btn-add-item" id="btnAddKeluarga">
+                            <i class="fas fa-plus-circle mr-1"></i> Tambah Anggota Keluarga
+                        </button>
+                    </div>
+                    
+                    <h6 class="section-title"><i class="fas fa-award mr-2"></i> Riwayat Sertifikasi (Opsional)</h6>
+                    <div id="sertifikasi-list-container">
+                        <!-- Baris sertifikasi akan ditambahkan di sini oleh JavaScript -->
+                    </div>
+                    <div class="text-left mt-2">
+                        <button type="button" class="btn-add-item" id="btnAddSertifikasi">
+                            <i class="fas fa-plus-circle mr-1"></i> Tambah Riwayat Sertifikasi
+                        </button>
+                    </div>
+
+                    <h6 class="section-title"><i class="fas fa-heartbeat mr-2"></i> Riwayat Medical Check Up (MCU)</h6>
+                    <div id="mcu-list-container">
+                        <!-- Baris MCU akan ditambahkan di sini oleh JavaScript -->
+                    </div>
+                    <div class="text-left mt-2">
+                        <button type="button" class="btn-add-item" id="btnAddMcu">
+                            <i class="fas fa-plus-circle mr-1"></i> Tambah Riwayat MCU
+                        </button>
+                    </div>
+
+                    <h6 class="section-title"><i class="fas fa-syringe mr-2"></i> Riwayat Vaksinasi (Opsional)</h6>
+                    <div id="vaksin-list-container">
+                        <!-- Baris vaksin akan ditambahkan di sini oleh JavaScript -->
+                    </div>
+                    <div class="text-left mt-2">
+                        <button type="button" class="btn-add-item" id="btnAddVaksin">
+                            <i class="fas fa-plus-circle mr-1"></i> Tambah Riwayat Vaksin
+                        </button>
+                    </div>
+
+                </div> <!-- End Card Body Step 4 -->
+            </div> <!-- End Wizard Card Step 4 -->
+        </div> <!-- End Wizard Panel Step 4 -->
+
+        <!-- =================================================================== -->
+        <!-- LANGKAH 5: DOKUMEN -->
+        <!-- =================================================================== -->
+        <div id="step-5" class="wizard-step-panel">
+            <div class="wizard-card">
+                <div class="card-header">
+                   <i class="fas fa-paperclip section-icon"></i>
+                   <h5>Langkah 5: Upload Dokumen Pendukung</h5>
+               </div>
+               <div class="card-body">
+                    @if (requiredDocs.Any())
+                    {
+                        <div class="alert alert-info">
+                            <strong>Daftar Dokumen Wajib</strong>
+                            <ul class="mb-0 mt-2">
+                                @foreach (var doc in requiredDocs)
+                                {
+                                    <li>@doc.NamaDokumen (@doc.KodeDokumen)</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                    
+                    <h6 class="section-title"><i class="fas fa-portrait mr-2"></i> Foto Profil</h6>
+                    <div class="row">
+                        <div class="col-md-8 form-group">
+                            <label>Upload Foto Karyawan (JPG/PNG, max 1 MB) <span class="text-danger">*</span></label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="file_pasfoto" name="file_pasfoto" accept="image/jpeg, image/png" data-max-mb="1" data-types="image/jpeg,image/png" required>
+                                <label class="custom-file-label" for="file_pasfoto">Pilih file foto...</label>
+                                <div class="invalid-feedback">File foto wajib diupload (JPG/PNG, max 1MB).</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <img id="file_pasfoto_preview" src="https://placehold.co/200x250/eef1f5/adb5bd?text=Preview" class="img-thumbnail" alt="Preview Foto" style="width: 100%; max-width: 200px; object-fit: cover;">
+                        </div>
+                    </div>
+
+                    <h6 class="section-title"><i class="fas fa-file-pdf mr-2"></i> Dokumen Wajib (PDF, max 3MB)</h6>
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>Scan KTP <span class="text-danger">*</span></label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="file_ktp" name="file_ktp" accept="application/pdf" data-max-mb="3" data-types="application/pdf" required>
+                                <label class="custom-file-label" for="file_ktp">Pilih file KTP (PDF)...</label>
+                                <div class="invalid-feedback">File KTP (PDF) wajib diupload (max 3MB).</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Scan Kartu Keluarga (KK) <span class="text-danger">*</span></label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="file_kk" name="file_kk" accept="application/pdf" data-max-mb="3" data-types="application/pdf" required>
+                                <label class="custom-file-label" for="file_kk">Pilih file KK (PDF)...</label>
+                                <div class="invalid-feedback">File KK (PDF) wajib diupload (max 3MB).</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>CV / Daftar Riwayat Hidup <span class="text-danger">*</span></label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="file_cv" name="file_cv" accept="application/pdf" data-max-mb="3" data-types="application/pdf" required>
+                                <label class="custom-file-label" for="file_cv">Pilih file CV (PDF)...</label>
+                                <div class="invalid-feedback">File CV (PDF) wajib diupload (max 3MB).</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Ijazah Pendidikan Terakhir <span class="text-danger">*</span></label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="file_ijazah" name="file_ijazah" accept="application/pdf" data-max-mb="3" data-types="application/pdf" required>
+                                <label class="custom-file-label" for="file_ijazah">Pilih file Ijazah (PDF)...</label>
+                                <div class="invalid-feedback">File Ijazah (PDF) wajib diupload (max 3MB).</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>SKCK (Opsional)</label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="file_skck" name="file_skck" accept="application/pdf" data-max-mb="3" data-types="application/pdf">
+                                <label class="custom-file-label" for="file_skck">Pilih file SKCK (PDF)...</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="section-title"><i class="fas fa-file-contract mr-2"></i> Dokumen Pekerjaan (Opsional, PDF, max 3MB)</h6>
+                     <div class="row">
+                         <div class="col-md-6 form-group">
+                            <label>PKWT</label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="file_pkwt" name="file_pkwt" accept="application/pdf" data-max-mb="3" data-types="application/pdf">
+                                <label class="custom-file-label" for="file_pkwt">Pilih file PKWT...</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>PKWTT</label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="file_pkwtt" name="file_pkwtt" accept="application/pdf" data-max-mb="3" data-types="application/pdf">
+                                <label class="custom-file-label" for="file_pkwtt">Pilih file PKWTT...</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>SK Promosi</label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="file_sk_promosi" name="file_sk_promosi" accept="application/pdf" data-max-mb="3" data-types="application/pdf">
+                                <label class="custom-file-label" for="file_sk_promosi">Pilih file SK Promosi...</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>SK Mutasi</label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="file_sk_mutasi" name="file_sk_mutasi" accept="application/pdf" data-max-mb="3" data-types="application/pdf">
+                                <label class="custom-file-label" for="file_sk_mutasi">Pilih file SK Mutasi...</label>
+                            </div>
+                        </div>
+                     </div>
+                 </div> <!-- End Card Body Step 5 -->
+            </div> <!-- End Wizard Card Step 5 -->
+        </div> <!-- End Wizard Panel Step 5 -->
+
+        <!-- =================================================================== -->
+        <!-- LANGKAH 6: KONFIRMASI -->
+        <!-- =================================================================== -->
+        <div id="step-6" class="wizard-step-panel">
+            <div class="wizard-card">
+                <div class="card-header">
+                    <i class="fas fa-clipboard-check section-icon"></i>
+                    <h5>Langkah 6: Konfirmasi Data</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Harap periksa kembali semua data yang telah Anda masukkan. Jika sudah benar, silakan tekan tombol "Simpan Semua Data".
+                    </div>
+                    <div id="confirmation-container">
+                        <!-- Data konfirmasi akan di-generate oleh JavaScript -->
+                    </div>
+                </div> <!-- End Card Body Step 6 -->
+            </div> <!-- End Wizard Card Step 6 -->
+        </div> <!-- End Wizard Panel Step 6 -->
+
+        <!-- Tombol Navigasi Wizard -->
+        <div class="wizard-buttons animate__animated animate__fadeInUp">
+            <button type="button" class="btn btn-secondary" id="btnBack" disabled>
+                <i class="fas fa-arrow-left mr-1"></i> Kembali
+            </button>
+            <button type="button" class="btn btn-primary" id="btnNext">
+                Berikutnya <i class="fas fa-arrow-right ml-1"></i>
+            </button>
+        </div>
+    </form>
+</div>
+
+
+<datalist id="bankOptions">
+    <option value="BCA" />
+    <option value="Mandiri" />
+    <option value="BNI" />
+    <option value="BRI" />
+    <option value="Permata" />
+</datalist>
+
+<script type="application/json" id="doc-config">
+    @Html.Raw(docConfigJson)
+</script>
+<script type="application/json" id="invite-config">
+    @Html.Raw(inviteContextJson)
+</script>
+<script>
+    var listPendidikanJsonData = '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(listPendidikanJson))';
+</script>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <!-- 3️⃣ Load SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+
+    <!-- 4️⃣ Custom script -->
+    <script src="~/js/inputkaryawan.js"></script>
+}

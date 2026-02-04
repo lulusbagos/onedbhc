@@ -1,0 +1,365 @@
+﻿@{
+    ViewData["Title"] = "Data Karyawan";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        .avatar-img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid #e3e6f0;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: #f8f9fc;
+        }
+
+        .table th {
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: .05rem;
+        }
+
+        .filter-container {
+            padding: 1.25rem;
+            background-color: #f8f9fc;
+            border-radius: .35rem;
+        }
+
+        .select2-container--default .select2-selection--multiple {
+            border: 1px solid #d1d3e2;
+            min-height: 38px;
+        }
+
+            .select2-container--default .select2-selection--multiple .select2-selection__choice {
+                background-color: #4e73df;
+                border-color: #4e73df;
+                color: white;
+                margin-top: 4px;
+            }
+
+            .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+                color: rgba(255,255,255,0.7);
+            }
+
+        .table-danger,
+        .table-danger > th,
+        .table-danger > td {
+            background-color: #f8d7da !important;
+            color: #721c24;
+        }
+
+        .btn-xs {
+            padding: .2rem .4rem;
+            font-size: .75rem;
+            line-height: 1.5;
+            border-radius: .2rem;
+        }
+
+        .filter-label-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.25rem;
+        }
+    </style>
+}
+
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Master Data Karyawan</h1>
+        <button id="download-excel" class="btn btn-success shadow-sm">
+            <i class="fas fa-file-excel fa-sm text-white-50"></i> Download Excel
+        </button>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Filter Data</h6>
+            <button id="reset-filters" class="btn btn-sm btn-secondary">Reset Semua Filter</button>
+        </div>
+        <div class="card-body filter-container">
+            <div class="row">
+                <div class="col-md-6 form-group">
+                    <div class="filter-label-container">
+                        <label for="parent-filter" class="mb-0">Perusahaan Induk:</label>
+                        <div>
+                            <button class="btn btn-xs btn-outline-primary select-all" data-target="#parent-filter">Pilih Semua</button>
+                            <button class="btn btn-xs btn-outline-secondary clear-all" data-target="#parent-filter">Kosongkan</button>
+                        </div>
+                    </div>
+                    <select id="parent-filter" class="form-control" multiple="multiple"></select>
+                </div>
+                <div class="col-md-6 form-group">
+                    <div class="filter-label-container">
+                        <label for="company-filter" class="mb-0">Anggota Perusahaan:</label>
+                        <div>
+                            <button class="btn btn-xs btn-outline-primary select-all" data-target="#company-filter">Pilih Semua</button>
+                            <button class="btn btn-xs btn-outline-secondary clear-all" data-target="#company-filter">Kosongkan</button>
+                        </div>
+                    </div>
+                    <select id="company-filter" class="form-control" multiple="multiple"></select>
+                </div>
+                <div class="col-md-12 form-group mb-0">
+                    <label for="nik-search-filter">Cari berdasarkan NIK / No. NIK:</label>
+                    <input type="text" id="nik-search-filter" class="form-control" placeholder="Masukkan NIK atau No. NIK...">
+                </div>
+            </div>
+            <div id="progress-container" class="mt-3" style="display: none;">
+                <div class="progress-label mb-1">Mengunduh file Excel...</div>
+                <div class="progress">
+                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- DataTable Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Daftar Karyawan</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="karyawanTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Foto</th>
+                            <th>Info Karyawan</th>
+                            <th>Jabatan & Departemen</th>
+                            <th>Level & Perusahaan</th>
+                            <th>Kontak</th>
+                            <th class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            const baseUrl = '@Url.Content("~/")';
+            let companyFilterData = [];
+            let typingTimer;
+            const doneTypingInterval = 500; // 0.5 detik
+
+            $('#parent-filter, #company-filter').select2({
+                placeholder: "Pilih satu atau lebih...",
+                width: '100%'
+            });
+
+            const table = $('#karyawanTable').DataTable({
+                "processing": true,
+                "serverSide": true,
+                "filter": true,
+                "ajax": {
+                    "url": "@Url.Action("GetAll", "Karyawan")",
+                    "type": "POST",
+                    "datatype": "json",
+                    "data": function(d) {
+                        d.parentFilter = $('#parent-filter').val();
+                        d.companyFilter = $('#company-filter').val();
+                        d.nikSearch = $('#nik-search-filter').val();
+                        // d.search.value (pencarian global) sudah otomatis dikirim oleh DataTable
+                    }
+                },
+                "columns": [
+                    {
+                        "data": "url_foto", "name": "url_foto", "orderable": false, "className": "text-center",
+                        "render": function(data, type, row) {
+                            let photoUrl = `${baseUrl}images/default-avatar.png`;
+                            if (data) {
+                                photoUrl = `${baseUrl}reports/karyawan/foto/${encodeURIComponent(data)}?id_personal=${row.id_personal}`;
+                            }
+                            return `<img src="${photoUrl}" class="avatar-img" onerror="this.onerror=null; this.src='${baseUrl}images/default-avatar.png';" />`;
+                        }
+                    },
+                    // --- PERUBAHAN: Menampilkan NIK | No. NIK | No. KTP ---
+                    {
+                        "data": "nama_lengkap", "name": "nama_lengkap", "render": (data, type, row) => {
+                            let details = [];
+                            if (row.nik) details.push(row.nik);
+                            if (row.no_nik) details.push(row.no_nik);
+                            if (row.no_ktp) details.push(row.no_ktp);
+
+                            const detailInfo = details.length > 0 ? details.join(' | ') : '-';
+
+                            return `<strong>${data || '-'}</strong><br><small class="text-muted">${detailInfo}</small>`;
+                        }
+                    },
+                    { "data": "posisi", "name": "posisi", "render": (data, type, row) => `${data || '-'}<br><small class="text-muted">${row.depart || '-'}</small>` },
+                    { "data": "level", "name": "level", "render": (data, type, row) => `<strong>${data || 'N/A'}</strong><br><small class="text-muted">${row.nama_perusahaan || '-'}</small>` },
+                    { "data": "hp_1", "name": "hp_1", "render": (data, type, row) => `${data || '-'}<br><small class="text-muted">${row.email_kantor || '-'}</small>` },
+                    {
+                        "data": "id",
+                        "name": "id",
+                        "orderable": false,
+                        "className": "text-center",
+                        "render": function (data, type, row) {
+                            const url = `/Karyawan/Detail/${row.id}`;
+                            return `<a href="${url}" class="btn btn-sm btn-outline-primary">Detail</a>`;
+                        }
+                    }
+                ],
+                "rowCallback": function(row, data) {
+                    if (data.tgl_nonaktif) {
+                        $(row).addClass('table-danger');
+                    }
+                },
+                "order": [[1, "asc"]],
+                "language": { "processing": '<div class="spinner-border text-primary" role="status"><span class="sr-only">Loading...</span></div>', "emptyTable": "Tidak ada data.", "info": "Menampilkan _START_ s/d _END_ dari _TOTAL_ data", "search": "Cari Cepat:", "paginate": { "next": "Berikutnya", "previous": "Sebelumnya" } }
+            });
+
+        function loadFilterData() {
+            $.ajax({
+                url: '@Url.Action("GetCompanyFilterData", "Karyawan")',
+                type: 'GET',
+                success: function(response) {
+                    if (response && response.success && Array.isArray(response.data)) {
+                        let filterDataArray = response.data;
+                        companyFilterData = filterDataArray;
+
+                        const parentFilter = $('#parent-filter');
+                        parentFilter.empty();
+
+                        filterDataArray.sort((a, b) => a.parent.localeCompare(b.parent));
+
+                        filterDataArray.forEach(item => parentFilter.append(new Option(item.parent, item.parent)));
+
+                        parentFilter.val(null).trigger('change');
+                    } else {
+                        console.error("Gagal memuat data filter: ", response.message || "Struktur data tidak valid.");
+                    }
+                },
+                error: (err) => console.error("Terjadi error saat memuat data filter.", err)
+            });
+        }
+
+            $('#parent-filter').on('change', function() {
+                const selectedParents = $(this).val();
+                const companyFilter = $('#company-filter');
+                const oldSelectedCompanies = companyFilter.val() || [];
+
+                companyFilter.empty();
+                let availableCompanies = [];
+
+                if (selectedParents && selectedParents.length > 0) {
+                    selectedParents.forEach(selectedParent => {
+                        const parentData = companyFilterData.find(p => p.parent === selectedParent);
+                        if (parentData && parentData.companies) {
+                            availableCompanies.push(...parentData.companies);
+                        }
+                    });
+
+                    [...new Set(availableCompanies)].sort().forEach(company => {
+                        companyFilter.append(new Option(company, company));
+                    });
+
+                    const newSelectableCompanies = availableCompanies.filter(c => oldSelectedCompanies.includes(c));
+                    companyFilter.val(newSelectableCompanies);
+
+                    companyFilter.prop('disabled', false);
+                } else {
+                    companyFilter.prop('disabled', true);
+                }
+                companyFilter.trigger('change');
+                table.draw();
+            });
+
+            $('#company-filter').on('change', function() { table.draw(); });
+
+            $('#nik-search-filter').on('keyup', function() {
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(function() {
+                    table.draw();
+                }, doneTypingInterval);
+            });
+
+
+            $('#reset-filters').on('click', function() {
+                $('#parent-filter, #company-filter').val(null).trigger('change');
+                $('#nik-search-filter').val('');
+                table.search('').draw(); // Juga reset pencarian global
+            });
+
+            $('.select-all').on('click', function(e) {
+                e.preventDefault();
+                const targetId = $(this).data('target');
+                const $select = $(targetId);
+
+                if (!$select.prop('disabled')) {
+                    const allValues = $select.find('option').map(function() { return $(this).val(); }).get();
+                    $select.val(allValues).trigger('change');
+                }
+            });
+
+            $('.clear-all').on('click', function(e) {
+                e.preventDefault();
+                const targetId = $(this).data('target');
+                $(targetId).val(null).trigger('change');
+            });
+
+
+            loadFilterData();
+
+            // --- FUNGSI DOWNLOAD EXCEL YANG DIPERBAIKI (MENGGUNAKAN POST) ---
+            $('#download-excel').on('click', function () {
+                const parentFilter = $('#parent-filter').val() || [];
+                const companyFilter = $('#company-filter').val() || [];
+                const searchValue = $('#karyawanTable').DataTable().search();
+                const nikSearch = $('#nik-search-filter').val();
+
+                const url = '@Url.Action("ExportToExcel", "Karyawan")';
+
+                // Hapus form lama jika ada
+                $('#excel-export-form').remove();
+
+                // Buat form dinamis
+                const $form = $('<form>', {
+                    id: 'excel-export-form',
+                    action: url,
+                    method: 'POST',
+                    style: 'display:none;'
+                });
+
+                // Tambahkan input untuk setiap filter
+                parentFilter.forEach(v => {
+                    $form.append($('<input>', { type: 'hidden', name: 'ParentFilter', value: v }));
+                });
+
+                companyFilter.forEach(v => {
+                    $form.append($('<input>', { type: 'hidden', name: 'CompanyFilter', value: v }));
+                });
+
+                if (searchValue) {
+                    $form.append($('<input>', { type: 'hidden', name: 'SearchValue', value: searchValue }));
+                }
+
+                if (nikSearch) {
+                    // Pastikan 'name' cocok dengan properti di model C# (NikSearch)
+                    $form.append($('<input>', { type: 'hidden', name: 'NikSearch', value: nikSearch }));
+                }
+
+                // Tambahkan form ke body, submit, lalu hapus
+                $('body').append($form);
+                $form.submit();
+                $form.remove();
+            });
+
+        });
+    </script>
+}

@@ -1,0 +1,1047 @@
+﻿@{
+    ViewData["Title"] = "Pengajuan Revisi Roster";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- CSS Libraries -->
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css" />
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap4.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --primary: #4361ee;
+        --primary-light: #4895ef;
+        --secondary: #3f37c9;
+        --success: #4cc9f0;
+        --bg-body: #f8f9fa;
+        --card-bg: #ffffff;
+        --text-main: #2b2d42;
+        --text-muted: #8d99ae;
+        --border-radius: 12px;
+        --shadow-soft: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f0f2f5;
+        color: var(--text-main);
+    }
+
+    /* Premium Card Styling */
+    .card-premium {
+        background: var(--card-bg);
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-soft);
+        transition: transform 0.2s, box-shadow 0.2s;
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+
+    .card-premium:hover {
+        box-shadow: var(--shadow-hover);
+    }
+
+    .card-header-clean {
+        background: white;
+        border-bottom: 1px solid #edf2f7;
+        padding: 1.5rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .card-title {
+        font-weight: 700;
+        color: #1a202c;
+        font-size: 1.25rem;
+        margin: 0;
+        letter-spacing: -0.025em;
+    }
+
+    .card-body-premium {
+        padding: 2rem;
+    }
+
+    /* Form Controls */
+    .form-label-premium {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .form-control-premium {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+        background-color: #f8fafc;
+        height: auto;
+    }
+
+    .form-control-premium:focus {
+        background-color: white;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+        outline: none;
+    }
+
+    .form-control-premium:disabled {
+        background-color: #edf2f7;
+        opacity: 0.8;
+    }
+
+    /* Employee Detail Card (ID Card Style) */
+    .employee-id-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.5rem;
+        display: none; /* Hidden by default */
+        position: relative;
+        overflow: hidden;
+    }
+
+    .employee-id-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 6px;
+        height: 100%;
+        background: var(--primary);
+    }
+
+    .id-card-header h5 {
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 0.25rem;
+    }
+
+    .id-card-badges {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+
+    .id-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        background: #e0e7ff;
+        color: #4338ca;
+        font-weight: 600;
+    }
+
+    /* Range Table Styling */
+    .table-container-premium {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .table-premium {
+        margin-bottom: 0;
+    }
+    
+    .table-premium thead th {
+        background-color: #f8fafc;
+        color: #64748b;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid #e2e8f0;
+        border-top: none;
+        padding: 1rem;
+    }
+
+    .table-premium tbody td {
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+        border-top: 1px solid #f1f5f9;
+        font-size: 0.9rem;
+    }
+
+    /* Custom File Input */
+    .file-upload-wrapper {
+        position: relative;
+        border: 2px dashed #cbd5e1;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.2s;
+        background: #f8fafc;
+        cursor: pointer;
+    }
+
+    .file-upload-wrapper:hover {
+        border-color: var(--primary);
+        background: #eff6ff;
+    }
+    
+    .file-upload-wrapper input[type="file"] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .file-icon {
+        font-size: 2rem;
+        color: #94a3b8;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Status Badge Style */
+    .status-display-box {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        min-height: 48px;
+    }
+
+    /* Buttons */
+    .btn-submit-premium {
+        background: linear-gradient(to right, var(--primary), var(--secondary));
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 6px -1px rgba(67, 97, 238, 0.4);
+        transition: all 0.3s;
+    }
+
+    .btn-submit-premium:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(67, 97, 238, 0.5);
+        color: white;
+    }
+
+    .btn-submit-premium:disabled {
+        background: #cbd5e1;
+        transform: none;
+        box-shadow: none;
+    }
+
+    /* DataTable Overrides */
+    div.dataTables_wrapper div.dataTables_length select {
+        width: 80px;
+        display: inline-block;
+        border-radius: 6px;
+        border-color: #e2e8f0;
+    }
+    
+    div.dataTables_wrapper div.dataTables_filter input {
+        border-radius: 6px;
+        border-color: #e2e8f0;
+        padding: 6px 12px;
+    }
+
+    table.dataTable.no-footer {
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    /* Animations */
+    .fade-in-up {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    @@keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .history-summary {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 120px;
+    }
+
+    .history-summary small {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+
+    .history-summary .badge {
+        margin-bottom: .25rem;
+    }
+
+    .remarks-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        max-width: 280px;
+        white-space: normal;
+    }
+
+    .remarks-item {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.35rem 0.5rem;
+    }
+
+    .remarks-item.reject {
+        background: #fef2f2;
+        border-color: #fecaca;
+    }
+
+    .remarks-label {
+        display: block;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+        font-weight: 600;
+        margin-bottom: 0.15rem;
+    }
+
+    .remarks-text {
+        font-size: 0.85rem;
+        color: #374151;
+        word-break: break-word;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Row Header & Title -->
+    <div class="row mb-4 fade-in-up">
+        <div class="col-12">
+            <h2 class="font-weight-bold text-dark mb-1">Pengajuan Revisi Roster</h2>
+            <p class="text-muted">Buat dan kelola perubahan jadwal kerja karyawan dengan mudah.</p>
+        </div>
+    </div>
+
+    <!-- FORM CARD -->
+    <div class="card card-premium fade-in-up">
+        <div class="card-header-clean">
+            <span class="card-title">
+                <i class="fas fa-edit text-primary mr-2"></i> Formulir Pengajuan
+            </span>
+        </div>
+        <div class="card-body-premium">
+            <form id="form-revisi-roster" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="status_awal" name="status_awal" />
+                <input type="hidden" id="nik" name="nik" />
+                <input type="hidden" id="segments_json" name="segments_json" />
+
+                <div class="row">
+                    <!-- Left Column: Search & Employee Info -->
+                    <div class="col-lg-5 mb-4 mb-lg-0 border-right-lg">
+                        <div class="form-group mb-4">
+                            <label for="searchKaryawan" class="form-label-premium">
+                                <i class="fas fa-search mr-1 text-primary"></i> Cari Karyawan
+                            </label>
+                            <div class="input-group">
+                                <input type="text" class="form-control form-control-premium" id="searchKaryawan" placeholder="Ketik NIK atau Nama..." autocomplete="off">
+                                <div class="input-group-append">
+                                    <span class="input-group-text bg-transparent border-0 ml-n5" style="z-index: 10;">
+                                        <i class="fas fa-search text-muted"></i>
+                                    </span>
+                                </div>
+                            </div>
+                            <small class="text-muted mt-1 d-block ml-1">Minimal 3 karakter untuk pencarian.</small>
+                        </div>
+
+                        <!-- Info Card (Employee ID Style) -->
+                        <div id="karyawan-detail" class="employee-id-card shadow-sm">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-white p-2 rounded-circle shadow-sm mr-3 text-primary">
+                                    <i class="fas fa-user-tie fa-2x"></i>
+                                </div>
+                                <div class="id-card-header">
+                                    <h5 id="detail-nama">Nama Lengkap</h5>
+                                    <small class="text-muted font-weight-bold" id="detail-nik">NIK: 12345</small>
+                                </div>
+                            </div>
+                            <hr class="my-2 border-light">
+                            <div class="id-card-badges">
+                                <span class="id-badge" id="detail-depart"><i class="fas fa-building mr-1"></i> Dept</span>
+                                <span class="id-badge" id="detail-posisi"><i class="fas fa-briefcase mr-1"></i> Posisi</span>
+                            </div>
+                            <div class="mt-3 text-right">
+                                <span class="badge badge-light border" id="detail-level">Level</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Form Inputs -->
+                    <div class="col-lg-7 pl-lg-4">
+                        <!-- Date Range -->
+                        <div class="form-group mb-4">
+                            <label class="form-label-premium">
+                                <i class="far fa-calendar-alt mr-1 text-primary"></i> Periode Revisi
+                            </label>
+                            <div class="d-flex align-items-center">
+                                <input type="date" class="form-control form-control-premium mr-2" id="tanggal_awal" name="tanggal_awal" disabled>
+                                <span class="text-muted mx-2"><i class="fas fa-arrow-right"></i></span>
+                                <input type="date" class="form-control form-control-premium ml-2" id="tanggal_akhir" name="tanggal_akhir" disabled>
+                            </div>
+                            <small class="text-muted mt-1 d-block">Pilih tanggal awal, tanggal akhir akan otomatis mengikuti jika dikosongkan.</small>
+                        </div>
+
+                        <!-- Current Status Info -->
+                        <div class="form-group mb-4">
+                            <label class="form-label-premium">Jadwal Saat Ini (Status Awal)</label>
+                            <div id="status_awal_display" class="status-display-box">
+                                <span class="text-muted font-italic">Pilih Karyawan & Tanggal terlebih dahulu...</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Table -->
+                        <div class="form-group mb-4">
+                            <label class="form-label-premium d-flex justify-content-between">
+                                <span><i class="fas fa-list-ul mr-1 text-primary"></i> Rincian Perubahan</span>
+                                <span class="badge badge-info font-weight-normal">Maks. 31 Hari</span>
+                            </label>
+                            <div class="table-container-premium">
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table table-premium table-hover" id="rangeChangesTable">
+                                        <thead>
+                                            <tr>
+                                                <th class="sticky-top">Tanggal</th>
+                                                <th class="sticky-top">Kode Lama</th>
+                                                <th class="sticky-top">Kode Baru</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td colspan="3" class="text-center py-5 text-muted">
+                                                    <i class="fas fa-inbox fa-2x mb-3 d-block text-light-gray"></i>
+                                                    Belum ada data untuk ditampilkan.
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Remarks -->
+                        <div class="form-group mb-4">
+                            <label for="remarks" class="form-label-premium">Alasan Revisi <span class="text-danger">*</span></label>
+                            <textarea class="form-control form-control-premium" id="remarks" name="remarks" rows="2" placeholder="Contoh: Tukar shift dengan rekan, Sakit, dll." required maxlength="50"></textarea>
+                        </div>
+
+                        <!-- File Upload -->
+                        <div class="form-group mb-4">
+                            <label class="form-label-premium">Dokumen Pendukung (Opsional)</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" id="file_path" name="dokumen_bukti" accept=".pdf">
+                                <div class="file-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                <div class="font-weight-bold text-dark mb-1">Klik untuk upload file PDF</div>
+                                <div class="text-muted small file-name-display">Maksimal ukuran 1MB</div>
+                            </div>
+                            
+                            <!-- PDF Preview -->
+                            <div id="file_preview" class="mt-3 p-3 bg-white border rounded shadow-sm" style="display:none;">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong class="text-primary"><i class="fas fa-file-pdf mr-1"></i> Pratinjau</strong>
+                                    <small id="file_preview_info" class="text-muted"></small>
+                                </div>
+                                <div class="embed-responsive embed-responsive-16by9" style="height: 200px;">
+                                    <object id="file_preview_frame" type="application/pdf" data="" class="embed-responsive-item w-100 h-100"></object>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="text-right pt-3 border-top">
+                            <button type="submit" class="btn btn-submit-premium">
+                                <i class="fas fa-paper-plane mr-2"></i> Ajukan Revisi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- HISTORY CARD -->
+    <div class="card card-premium fade-in-up" style="animation-delay: 0.1s;">
+        <div class="card-header-clean bg-light">
+            <span class="card-title">
+                <i class="fas fa-history text-secondary mr-2"></i> Riwayat Pengajuan
+            </span>
+            <div class="card-tools">
+                <!-- DataTables buttons will be placed here via JS if needed, currently inside wrapper -->
+            </div>
+        </div>
+        <div class="card-body-premium p-0">
+            <div class="table-responsive">
+                <table id="revisiRosterTable" class="table table-hover table-striped mb-0" style="width:100%">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="text-center py-3 border-top-0">No</th>
+                            <th class="py-3 border-top-0">Tgl Pengajuan</th>
+                            <th class="py-3 border-top-0">NIK</th>
+                            <th class="py-3 border-top-0">Nama Karyawan</th>
+                            <th class="py-3 border-top-0">Periode</th>
+                            <th class="text-center py-3 border-top-0">Dari</th>
+                            <th class="text-center py-3 border-top-0">Ke</th>
+                            <th class="text-center py-3 border-top-0">Status</th>
+                            <th class="py-3 border-top-0">Alasan</th>
+                            <th class="text-center py-3 border-top-0">Dokumen</th>
+                            <th class="text-center py-3 border-top-0">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data loaded via Ajax -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <!-- Paste SEMUA script JavaScript asli Anda di bawah ini tanpa perubahan LOGIKA -->
+    <!-- Saya hanya akan menyesuaikan bagian UI di dalam script (misal: class name update) -->
+    
+    <script>
+        $(document).ready(function () {
+            console.log("Revisi Roster Premium UI: Ready!");
+
+            var table;
+            var rosterKeteranganMap = {};
+            var antiForgeryToken = $('input[name="__RequestVerificationToken"]').val();
+            var statusOptions = [];
+            var rosterRangeLimitDays = 31;
+            var rangeTableBody = $("#rangeChangesTable tbody");
+
+            // --- Fungsi Helper Format Tanggal ---
+            function formatDate(date) {
+                if (!date) return '';
+                let d = new Date(date),
+                    month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+                if (month.length < 2) month = '0' + month;
+                if (day.length < 2) day = '0' + day;
+                return [year, month, day].join('-');
+            }
+
+            // --- Helper Warna Teks ---
+            function isColorDark(hexColor) {
+                if (!hexColor || hexColor.length < 6) return false;
+                var color = (hexColor.charAt(0) === '#') ? hexColor.substring(1, 7) : hexColor;
+                if (color.length !== 6) return false;
+                try {
+                    var r = parseInt(color.substring(0, 2), 16),
+                        g = parseInt(color.substring(2, 4), 16),
+                        b = parseInt(color.substring(4, 6), 16);
+                    return (r * 0.299 + g * 0.587 + b * 0.114) < 186;
+                } catch (e) { return false; }
+            }
+
+            function formatRosterDateRange(row) {
+                 const startDate = row.tanggal_awal ? new Date(row.tanggal_awal) : (row.tanggal_roster ? new Date(row.tanggal_roster) : null);
+                 const endDate = row.tanggal_akhir ? new Date(row.tanggal_akhir) : startDate;
+
+                 if (!startDate) return '-';
+
+                 const startStr = startDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                 if (!endDate || startDate.toDateString() === endDate.toDateString()) {
+                     return startStr;
+                 }
+                 const endStr = endDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                 return `${startStr} <i class="fas fa-arrow-right text-muted mx-1" style="font-size:0.7em"></i> ${endStr}`;
+             }
+
+            // --- UI Update: Badge Style ---
+            function formatRosterBadge(status) {
+                if (!status) return '<span class="text-muted small">-</span>';
+                var rosterInfo = rosterKeteranganMap[status] || {};
+                var color = rosterInfo.warna || '#6c757d';
+                var textColor = isColorDark(color) ? '#fff' : '#212529';
+                // Rounded pill style for premium look
+                return `<span class="badge badge-pill shadow-sm" style="background-color: ${color}; color: ${textColor}; font-weight: 500; padding: 0.4em 0.8em;">${status}</span>`;
+            }
+
+            function buildStatusSelectOptions(currentStatus) {
+                var placeholder = currentStatus ? '-- Tetap --' : '-- Pilih --';
+                var html = `<option value="">${placeholder}</option>`;
+                statusOptions.forEach(item => {
+                    var selected = item.kode === currentStatus ? ' selected' : '';
+                    html += `<option value="${item.kode}"${selected}>${item.kode} - ${item.keterangan}</option>`;
+                });
+                return html;
+            }
+
+            function setRangeMessage(message, textClass = 'text-muted') {
+                rangeTableBody.html(`<tr><td colspan="3" class="py-5 text-center ${textClass}"><i class="fas fa-info-circle mr-1"></i> ${message}</td></tr>`);
+            }
+
+            function renderRangeTableRows(rangeList) {
+                if (!rangeList || !rangeList.length) {
+                    setRangeMessage('Tidak ada data roster dalam rentang yang dipilih.');
+                    return;
+                }
+                var rowsHtml = rangeList.map(item => {
+                    var date = item.tanggal;
+                    var readable = date ? new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+                    var currentStatus = item.status || '';
+                    var badge = currentStatus ? formatRosterBadge(currentStatus) : '<span class="text-muted font-italic small">N/A</span>';
+                    // Use premium form-control inside table
+                    var selectMarkup = `<select class="form-control form-control-sm form-control-premium segment-status" data-current-status="${currentStatus}" style="min-width: 120px;">
+                                            ${buildStatusSelectOptions(currentStatus)}
+                                       </select>`;
+                    return `<tr data-date="${date}" data-current-status="${currentStatus}">
+                                <td class="font-weight-bold text-dark">${readable}</td>
+                                <td>${badge}</td>
+                                <td>${selectMarkup}</td>
+                            </tr>`;
+                }).join('');
+                rangeTableBody.html(rowsHtml);
+            }
+
+            // --- UI Update: Segment Summary Badge ---
+            function renderStatusSummary(summaryArray) {
+                 if (!Array.isArray(summaryArray) || summaryArray.length === 0) {
+                     return '<span class="text-muted">-</span>';
+                 }
+                 return summaryArray.map(segment => {
+                     if (!segment || !segment.status) return '';
+                     var badge = formatRosterBadge(segment.status);
+                     return `<div class="mb-1">${badge}</div>`;
+                 }).join('');
+             }
+
+             // --- Logic Reset ---
+             function resetRangeTableState() {
+                 $("#segments_json").val('');
+                 setRangeMessage('Pilih karyawan dan rentang tanggal untuk melihat kode roster.');
+             }
+
+             // ... [Logic tryLoadRosterRange, collectSegmentsPayload sama persis seperti kode asli] ...
+             function tryLoadRosterRange() {
+                 var nik = $("#nik").val();
+                 var start = $("#tanggal_awal").val();
+                 var end = $("#tanggal_akhir").val() || start;
+                 if (!nik || !start) { resetRangeTableState(); return; }
+                 
+                 var startDate = new Date(start);
+                 var endDate = new Date(end);
+                 
+                 if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || endDate < startDate) {
+                     setRangeMessage('Rentang tanggal tidak valid.', 'text-danger');
+                     return;
+                 }
+                 var totalDays = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                 if (totalDays > rosterRangeLimitDays) {
+                     setRangeMessage('Rentang tanggal maksimal 31 hari.', 'text-danger');
+                     return;
+                 }
+                 
+                 // Loading state for table
+                 rangeTableBody.html('<tr><td colspan="3" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><div class="mt-2 text-muted">Memuat data...</div></td></tr>');
+
+                 $.get('@Url.Action("GetRosterRange", "RevisiRoster")', { nik: nik, startDate: start, endDate: end }, function(response) {
+                     if (response && response.success === false) {
+                         setRangeMessage(response.message || 'Gagal memuat rincian jadwal.', 'text-danger');
+                         return;
+                     }
+                     renderRangeTableRows(response.data || []);
+                 }).fail(function() {
+                     setRangeMessage('Gagal memuat rincian jadwal.', 'text-danger');
+                 });
+             }
+
+             function collectSegmentsPayload() {
+                 var segments = [];
+                 var hasChange = false;
+                 var totalRows = 0;
+                 rangeTableBody.find('tr[data-date]').each(function () {
+                     totalRows++;
+                     var $row = $(this);
+                     var tanggal = $row.data('date');
+                     var currentStatus = $row.data('current-status') || '';
+                     var newStatus = $row.find('.segment-status').val();
+                     if (!tanggal || !newStatus) return;
+                     segments.push({
+                         tanggal_awal: tanggal,
+                         tanggal_akhir: tanggal,
+                         status_awal: currentStatus,
+                         status_baru: newStatus
+                     });
+                     if (currentStatus !== newStatus) {
+                         hasChange = true;
+                     }
+                 });
+                 return { segments: segments, hasChange: hasChange, totalRows: totalRows };
+             }
+
+             $('body').tooltip({ selector: '[data-toggle="tooltip"]', container: 'body' });
+             resetRangeTableState();
+
+             // Date Limits
+             var today = new Date();
+             var maxDate = new Date();
+             var minDate = new Date();
+             maxDate.setMonth(today.getMonth() + 1);
+             minDate.setMonth(today.getMonth() - 1);
+             $('#tanggal_awal, #tanggal_akhir')
+                .attr('min', formatDate(minDate))
+                .attr('max', formatDate(maxDate));
+
+             // --- UI Update: File Input with Preview ---
+             $('#file_path').on('change', function(e) {
+                 var fileName = e.target.files[0] ? e.target.files[0].name : 'Klik untuk upload file PDF';
+                 var wrapper = $(this).closest('.file-upload-wrapper');
+                 wrapper.find('.file-name-display').text(fileName).addClass('text-primary font-weight-bold').removeClass('text-muted');
+                 
+                 if (e.target.files[0]) {
+                     const maxFileSizeMB = 1;
+                     const fileSizeMB = e.target.files[0].size / 1024 / 1024;
+                     if (fileSizeMB > maxFileSizeMB) {
+                         Swal.fire('Ukuran Terlalu Besar', `Maksimal ukuran file adalah ${maxFileSizeMB} MB.`, 'warning');
+                         $(this).val('');
+                         wrapper.find('.file-name-display').text('Maksimal ukuran 1MB').removeClass('text-primary font-weight-bold').addClass('text-muted');
+                         $('#file_preview').slideUp();
+                     } else {
+                         const file = e.target.files[0];
+                         const objectUrl = URL.createObjectURL(file);
+                         $('#file_preview_frame').attr('data', objectUrl);
+                         $('#file_preview_info').text(`${file.name} • ${(fileSizeMB).toFixed(2)} MB`);
+                         $('#file_preview').slideDown();
+                     }
+                 } else {
+                     $('#file_preview').slideUp();
+                 }
+             });
+
+             // --- Autocomplete ---
+             $("#searchKaryawan").autocomplete({
+                 source: (request, response) => {
+                     $.ajax({
+                         url: '@Url.Action("SearchKaryawan", "RevisiRoster")',
+                         dataType: "json",
+                         data: { term: request.term },
+                         success: data => response(data),
+                         error: () => response([])
+                     });
+                 },
+                 minLength: 3,
+                 select: (event, ui) => {
+                     getKaryawanDetail(ui.item.value);
+                     $("#searchKaryawan").val('');
+                     return false;
+                 }
+             });
+
+             function getKaryawanDetail(nik) {
+                 $.get('@Url.Action("GetKaryawanDetail", "RevisiRoster")', { nik: nik }, function (data) {
+                     resetRosterFields();
+                     $("#detail-nama").text(data.nama_lengkap || '-');
+                     $("#detail-nik").text("NIK: " + (data.no_nik || '-'));
+                     $("#detail-depart").html('<i class="fas fa-building mr-1"></i> ' + (data.depart || '-'));
+                     $("#detail-posisi").html('<i class="fas fa-briefcase mr-1"></i> ' + (data.posisi || '-'));
+                     $("#detail-level").text(data.level || '-');
+                     $("#nik").val(data.no_nik);
+                     
+                     // Animation for showing card
+                     $("#karyawan-detail").fadeIn().css('display', 'block');
+                     
+                     $("#tanggal_awal").prop('disabled', false).focus();
+                     $("#tanggal_akhir").prop('disabled', true).val('');
+                 }).fail(() => Swal.fire('Error', 'Gagal mengambil detail karyawan.', 'error'));
+             }
+
+             // --- Logika Tanggal & Roster ---
+             $("#tanggal_awal").on('change', function () {
+                 var nik = $("#nik").val();
+                 var tanggal = $(this).val();
+                 resetRosterFields(true);
+                 if (tanggal) {
+                     $("#tanggal_akhir").prop('disabled', false).attr('min', tanggal);
+                     if (!$("#tanggal_akhir").val() || $("#tanggal_akhir").val() < tanggal) {
+                         $("#tanggal_akhir").val(tanggal);
+                     }
+                 } else {
+                     $("#tanggal_akhir").prop('disabled', true).val('');
+                 }
+
+                if (nik && tanggal) {
+                    $.get('@Url.Action("GetCurrentRoster", "RevisiRoster")', { nik: nik, tanggal: tanggal }, function (data) {
+                        if (data && data.status && data.status !== "Tidak Ditemukan") {
+                            $("#status_awal").val(data.status);
+                            var rosterInfo = rosterKeteranganMap[data.status];
+                            var color = rosterInfo ? rosterInfo.warna : '#6c757d';
+                            var textColor = isColorDark(color) ? '#fff' : '#212529';
+                            // Update display with nice style
+                            $("#status_awal_display").html(`<span class="badge badge-pill shadow-sm" style="background-color: ${color}; color: ${textColor}; font-size: 1rem; padding: 0.6em 1em;">${data.status}</span>`);
+                        } else {
+                            $("#status_awal_display").html('<span class="text-danger"><i class="fas fa-exclamation-circle"></i> Data Tidak Ditemukan</span>');
+                            $("#status_awal").val('');
+                            Swal.fire('Info', 'Roster karyawan untuk tanggal ini tidak ditemukan di sistem.', 'info');
+                        }
+                    }).fail(() => Swal.fire('Error', 'Gagal mengambil data roster saat ini.', 'error'));
+                }
+                tryLoadRosterRange();
+             });
+
+             $("#tanggal_akhir").on('change', function() {
+                 const start = $("#tanggal_awal").val();
+                 const end = $(this).val();
+                 if (!start) {
+                     Swal.fire('Info', 'Pilih tanggal mulai terlebih dahulu.', 'info');
+                     $(this).val('').prop('disabled', true);
+                     return;
+                 }
+                 if (end && end < start) {
+                     Swal.fire('Gagal', 'Tanggal akhir tidak boleh lebih awal dari tanggal mulai.', 'warning');
+                     $(this).val(start);
+                 }
+                 tryLoadRosterRange();
+             });
+
+             // --- Load Data & Table ---
+             function loadRosterAndInitTable() {
+                 $.get('@Url.Action("GetRosterKeterangan", "RevisiRoster")', function(data) {
+                     rosterKeteranganMap = {};
+                     statusOptions = data || [];
+                     if (data && data.length > 0) {
+                         data.forEach(item => { rosterKeteranganMap[item.kode] = item; });
+                     }
+                     initDataTable();
+                 }).fail(function() {
+                     rosterKeteranganMap = {};
+                     statusOptions = [];
+                     initDataTable();
+                 });
+             }
+
+             function initDataTable() {
+                 if ($.fn.DataTable.isDataTable('#revisiRosterTable')) {
+                     $('#revisiRosterTable').DataTable().destroy();
+                     $('#revisiRosterTable tbody').empty();
+                 }
+
+                 table = $('#revisiRosterTable').DataTable({
+                     "ajax": {
+                         "url": "@Url.Action("GetAll", "RevisiRoster")",
+                         "dataSrc": function(json) {
+                             if (!json || json.success === false) { return []; }
+                             return json.data || [];
+                         },
+                         "error": function () { Swal.fire('Error', 'Gagal memuat riwayat pengajuan revisi.', 'error'); }
+                     },
+                     "columns": [
+                         { "data": null, "render": (data, type, row, meta) => meta.row + 1, "className": "text-center" },
+                         { "data": "tanggal", "render": data => data ? new Date(data).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-' },
+                         { "data": "nik", "defaultContent": "-" },
+                         { "data": "nama_lengkap", "defaultContent": "-" },
+                         { "data": "tanggal_awal", "render": (data, type, row) => formatRosterDateRange(row) },
+                         { "data": "status_awal_summary", "render": renderStatusSummary, "className": "text-center" },
+                         { "data": "status_baru_summary", "render": renderStatusSummary, "className": "text-center" },
+                         {
+                             "data": "status", "className": "text-center",
+                             "render": function(data, type, row) {
+                                 let badgeClass = {'DIAJUKAN': 'badge-warning', 'DISETUJUI': 'badge-success', 'DITOLAK': 'badge-danger'}[data] || 'badge-secondary';
+                                 return `<span class="badge ${badgeClass} shadow-sm px-2 py-1" style="font-size: 0.85em">${data || 'N/A'}</span>`;
+                             }
+                         },
+                         {
+                             "data": "remarks",
+                             "render": function(data, type, row) {
+                                 if (!data) return '<span class="text-muted">-</span>';
+                                 let alasanRevisi = data;
+                                 let alasanTolak = '';
+                                 if (data.includes('| DITOLAK:')) {
+                                     const parts = data.split('| DITOLAK:');
+                                     alasanRevisi = parts[0].trim();
+                                     alasanTolak = parts.slice(1).join('| DITOLAK:').trim();
+                                 }
+                                 const safeAlasanRevisi = $('<div>').text(alasanRevisi).html();
+                                 const safeAlasanTolak = $('<div>').text(alasanTolak).html();
+                                 const alasanRevisiMarkup = alasanRevisi
+                                     ? `<div class="remarks-item">
+                                            <span class="remarks-label">Alasan Revisi</span>
+                                            <div class="remarks-text">${safeAlasanRevisi}</div>
+                                        </div>`
+                                     : '';
+                                 const alasanTolakMarkup = alasanTolak
+                                     ? `<div class="remarks-item reject">
+                                            <span class="remarks-label">Alasan Ditolak</span>
+                                            <div class="remarks-text">${safeAlasanTolak}</div>
+                                        </div>`
+                                     : '';
+                                 return `<div class="remarks-cell">${alasanRevisiMarkup}${alasanTolakMarkup || ''}</div>`;
+                             }
+                         },
+                         {
+                             "data": "file_path", "className": "text-center",
+                             "render": function(data) {
+                                 if(data) {
+                                     let fileUrl = data.startsWith('/') ? data : '/' + data;
+                                     return `<a href="${fileUrl}" target="_blank" class="btn btn-sm btn-outline-info rounded-circle" title="Lihat PDF"><i class="fas fa-file-pdf"></i></a>`;
+                                 }
+                                 return '<span class="text-muted">-</span>';
+                             },
+                             "orderable": false
+                         },
+                         {
+                             "data": null, "className": "text-center", "orderable": false,
+                             "render": function (data, type, row) {
+                                 if (row.status === 'DIAJUKAN') {
+                                     return `<button class="btn btn-sm btn-outline-danger btn-delete-revisi shadow-sm" data-id="${row.id}" title="Batalkan">
+                                                <i class="fas fa-trash-alt"></i>
+                                             </button>`;
+                                 }
+                                 return '<span class="text-muted">-</span>';
+                             }
+                         }
+                     ],
+                     "order": [[1, "desc"]],
+                     "responsive": true,
+                     "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/id.json" },
+                     // Clean DOM Layout for DataTables
+                     "dom": "<'row mb-3'<'col-md-6'l><'col-md-6 text-right'f>>" +
+                            "<'row'<'col-12'tr>>" +
+                            "<'row mt-3'<'col-md-5'i><'col-md-7'p>>",
+                     "drawCallback": function(settings) {
+                         $('#revisiRosterTable [data-toggle="tooltip"]').tooltip('dispose').tooltip({ container: 'body', html: true });
+                         attachDeleteHandler();
+                     },
+                     "initComplete": function() { attachDeleteHandler(); }
+                 });
+             }
+
+             // --- Delete Handler ---
+             function attachDeleteHandler() {
+                 $('#revisiRosterTable tbody').off('click', '.btn-delete-revisi');
+                 $('#revisiRosterTable tbody').on('click', '.btn-delete-revisi', function () {
+                     var revisiId = $(this).data('id');
+                     Swal.fire({
+                         title: 'Batalkan Pengajuan?',
+                         text: "Pengajuan yang dibatalkan tidak dapat dikembalikan.",
+                         icon: 'warning',
+                         showCancelButton: true,
+                         confirmButtonColor: '#ef4444',
+                         cancelButtonColor: '#6b7280',
+                         confirmButtonText: 'Ya, Batalkan',
+                         cancelButtonText: 'Kembali'
+                     }).then((result) => {
+                         if (result.isConfirmed) {
+                             $.ajax({
+                                 url: '@Url.Action("Delete", "RevisiRoster")',
+                                 type: 'POST',
+                                 data: { id: revisiId, __RequestVerificationToken: antiForgeryToken },
+                                 success: function (response) {
+                                     if (response.success) {
+                                         Swal.fire('Berhasil', response.message, 'success');
+                                         table.ajax.reload();
+                                     } else {
+                                         Swal.fire('Gagal', response.message, 'error');
+                                     }
+                                 },
+                                 error: function () { Swal.fire('Error', 'Gagal menghubungi server.', 'error'); }
+                             });
+                         }
+                     });
+                 });
+             }
+
+             // --- Submit Handler ---
+             $("#form-revisi-roster").on('submit', function (e) {
+                 e.preventDefault();
+                 var $submitButton = $(this).find('button[type="submit"]');
+                 $submitButton.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Mengirim...');
+
+                 const startDate = $("#tanggal_awal").val();
+                 const endDate = $("#tanggal_akhir").val() || startDate;
+                 
+                 // [Validasi dasar sama seperti sebelumnya]
+                 if (!startDate) { Swal.fire('Gagal', 'Tanggal mulai wajib diisi.', 'warning'); $submitButton.prop('disabled', false).html('<i class="fas fa-paper-plane mr-2"></i> Ajukan Revisi'); return; }
+                 
+                 const statusAwal = $("#status_awal").val();
+                 if (!statusAwal) { Swal.fire('Gagal', 'Data roster awal belum valid.', 'error'); $submitButton.prop('disabled', false).html('<i class="fas fa-paper-plane mr-2"></i> Ajukan Revisi'); return; }
+                 
+                 var rangePayload = collectSegmentsPayload();
+                 if (!rangePayload.hasChange) { Swal.fire('Gagal', 'Tidak ada perubahan kode.', 'warning'); $submitButton.prop('disabled', false).html('<i class="fas fa-paper-plane mr-2"></i> Ajukan Revisi'); return; }
+                 
+                 if (!$("#remarks").val().trim()) { 
+                     Swal.fire('Gagal', 'Alasan revisi wajib diisi.', 'warning'); 
+                     $("#remarks").focus(); 
+                     $submitButton.prop('disabled', false).html('<i class="fas fa-paper-plane mr-2"></i> Ajukan Revisi'); return; 
+                 }
+
+                 var formData = new FormData(this);
+                 formData.set("tanggal_akhir", endDate);
+                 var segmentsJson = JSON.stringify(rangePayload.segments);
+                 $("#segments_json").val(segmentsJson);
+                 formData.set("segments_json", segmentsJson);
+                 if (rangePayload.segments.length > 0) formData.set("status_baru", rangePayload.segments[0].status_baru);
+                 formData.append("__RequestVerificationToken", antiForgeryToken);
+
+                 $.ajax({
+                     url: '@Url.Action("Create", "RevisiRoster")',
+                     type: 'POST',
+                     data: formData,
+                     processData: false,
+                     contentType: false,
+                     success: response => {
+                         if (response.success) {
+                             Swal.fire('Berhasil!', response.message, 'success').then(() => {
+                                 resetForm();
+                                 table.ajax.reload();
+                             });
+                         } else {
+                             Swal.fire('Gagal', response.message || 'Error.', 'error');
+                         }
+                     },
+                     error: () => Swal.fire('Error', 'Gagal menghubungi server.', 'error'),
+                     complete: () => $submitButton.prop('disabled', false).html('<i class="fas fa-paper-plane mr-2"></i> Ajukan Revisi')
+                 });
+             });
+
+             function resetForm() {
+                 $("#form-revisi-roster")[0].reset();
+                 $("#nik").val('');
+                 $("#searchKaryawan").val('');
+                 $("#karyawan-detail").fadeOut();
+                 $('#file_path').closest('.file-upload-wrapper').find('.file-name-display').text('Maksimal ukuran 1MB').removeClass('text-primary font-weight-bold').addClass('text-muted');
+                 $('#file_preview').hide();
+                 resetRosterFields();
+                 $('#form-revisi-roster').find('button[type="submit"]').prop('disabled', false);
+             }
+
+             function resetRosterFields(keepDateEnabled = false) {
+                 if(!keepDateEnabled) $("#tanggal_awal").val('').prop('disabled', true);
+                 $("#tanggal_akhir").val('').prop('disabled', true);
+                 $("#status_awal_display").html('<em class="text-muted font-italic">Pilih Karyawan & Tanggal terlebih dahulu...</em>');
+                 $("#status_awal").val('');
+                 resetRangeTableState();
+             }
+
+             loadRosterAndInitTable();
+        });
+    </script>
+}

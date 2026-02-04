@@ -1,0 +1,64 @@
+﻿body {
+    /* Animasi pada sidebar saat di-hover */
+    .sidebar
+
+{
+    transition: all 0.3s ease-in-out;
+}
+
+.sidebar:hover {
+    background-color: #2d3748; /* Warna sidebar saat di-hover */
+}
+
+/* Transisi pada item menu */
+.nav-link {
+    transition: transform 0.2s ease-in-out, color 0.3s ease;
+}
+
+    .nav-link:hover {
+        color: #4fd1c5; /* Warna teks saat di-hover */
+        transform: translateX(5px); /* Efek bergeser ke kanan saat di-hover */
+    }
+
+/* Animasi collapse pada dropdown */
+.collapse-inner {
+    transition: max-height 0.4s ease, opacity 0.4s ease;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+}
+
+.collapse.show .collapse-inner {
+    max-height: 500px; /* Atur nilai ini sesuai kebutuhan */
+    opacity: 1;
+}
+
+/* Efek bayangan halus saat dropdown dibuka */
+.collapse-inner a {
+    transition: box-shadow 0.3s ease;
+}
+
+    .collapse-inner a:hover {
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* Efek bayangan saat di-hover */
+    }
+
+/* Gaya tambahan untuk ikon di sidebar */
+.sidebar-brand-icon, .fa-fw {
+    animation: rotate-icon 1s ease infinite;
+}
+
+@keyframes rotate-icon {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    50% {
+        transform: rotate(15deg);
+    }
+
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+}

@@ -1,0 +1,470 @@
+﻿@model one_db.Models.vw_m_surat_pengajuan
+@{
+    Layout = null; // This page does not use a master layout
+
+    // Helper to format dates, for cleaner code
+    Func<DateTime?, string> FormatDate = dt => dt.HasValue ? dt.Value.ToString("yyyy-MM-dd") : "";
+
+    // Check if there are any valid attachments before displaying the section
+    bool hasAttachments = !string.IsNullOrEmpty(Model.file_path_surat_kematian) ||
+                           !string.IsNullOrEmpty(Model.file_path_ktp_duka) ||
+                           !string.IsNullOrEmpty(Model.file_path_kk_duka) ||
+                           !string.IsNullOrEmpty(Model.file_path_other_duka);
+
+    // QR codes pre-generated di server supaya ikut tercetak di PDF
+    var qrPemohon = ViewBag.QrPemohonUri as string;
+    var qrAtasan = ViewBag.QrAtasanUri as string;
+    var qrReviewManager = ViewBag.QrReviewManagerUri as string;
+}
+
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Formulir Pengajuan Santunan Duka - @Model.nama_lengkap</title>
+    <style>
+        /* CSS with the most aggressive adjustments for single-page fit */
+        html, body {
+            margin: 0 auto;
+            padding: 0;
+            background: #fff;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px; /* ✅ Final font size reduction */
+            line-height: 1.25; /* ✅ Tighten line height */
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .paper {
+            width: 190mm;
+            min-height: 267mm;
+            margin: 5px auto; /* Reduced margin */
+            padding: 8px 12px; /* Reduced padding */
+            box-sizing: border-box;
+            background: #fff;
+            border: 2px solid #000;
+        }
+
+        .header {
+            background: linear-gradient(#222,#000);
+            color: #fff;
+            padding: 4px 8px; /* Reduced padding */
+            text-align: center;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.6px;
+            border: 1px solid #000;
+        }
+
+        .intro {
+            margin-top: 4px; /* Reduced */
+            font-size: 11.5px;
+            color: #111;
+        }
+
+        .form {
+            margin-top: 6px; /* Reduced */
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 3px; /* Reduced */
+        }
+
+        .label {
+            width: 200px;
+            font-size: 11.5px;
+        }
+
+        .colon {
+            width: 12px;
+            text-align: center;
+            font-size: 11.5px;
+        }
+
+        .field {
+            flex: 1;
+        }
+
+        input[type="text"], input[type="date"] {
+            width: 100%;
+            height: 18px; /* Reduced height */
+            padding: 2px 5px; /* Reduced padding */
+            box-sizing: border-box;
+            border: 1px solid #9aa4b3;
+            background: #eef4fb !important;
+            font-size: 11.5px;
+        }
+
+        input, textarea {
+            border: none !important;
+            background-color: #fff !important;
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+        }
+
+            input:read-only, textarea:read-only {
+                background-color: #eef4fb !important;
+            }
+
+        .spacer {
+            height: 1px;
+        }
+        /* Reduced */
+        .note {
+            font-size: 11.5px;
+        }
+
+        .sig-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px; /* Reduced */
+        }
+
+            .sig-table th, .sig-table td {
+                border: 1px solid #000;
+                padding: 3px; /* Reduced */
+                vertical-align: top;
+            }
+
+            .sig-table tr:first-child th, .sig-table tr:first-child td {
+                font-weight: 700;
+                text-align: left;
+                padding: 4px; /* Reduced */
+                background: transparent;
+            }
+
+        .sig-placeholder {
+            width: 100%;
+            height: 130px; /* Adjusted to fit QR image */
+            border: 1px solid #aaa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+        }
+
+        .sig-bottom-labels {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 3px; /* Reduced */
+        }
+
+        .qr-img {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .qr-img-small {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .sig-small-box {
+            background: #eef4fb;
+            padding: 4px 8px; /* Reduced */
+            border: 1px solid #cfcfcf;
+            display: inline-block;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .ketentuan-title {
+            margin-top: 6px; /* Reduced */
+            background: #000;
+            color: #fff;
+            padding: 4px 8px; /* Reduced */
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .ketentuan {
+            margin-top: 3px; /* Reduced */
+            font-size: 10.5px; /* Reduced */
+            padding-left: 6px;
+        }
+
+            .ketentuan ol {
+                padding-left: 20px;
+                margin: 0;
+            }
+
+        .review-title {
+            margin-top: 5px; /* Reduced */
+            background: #000;
+            color: #fff;
+            padding: 4px 8px; /* Reduced */
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .review-box {
+            margin-top: 3px; /* Reduced */
+            border: 1px solid #000;
+            padding: 4px 8px; /* Reduced */
+            box-sizing: border-box;
+        }
+
+            .review-box > div {
+                margin-top: 3px !important;
+            }
+                /* Spacing inside review box */
+                .review-box > div:first-child {
+                    margin-top: 0 !important;
+                }
+
+        .inline-checks {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .hasil-title {
+            margin-top: 5px; /* Reduced */
+            background: #000;
+            color: #fff;
+            padding: 4px 8px; /* Reduced */
+            font-weight: 700;
+            display: inline-block;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .hasil-grid {
+            display: grid;
+            grid-template-columns: 30% 35% 35%;
+            gap: 8px;
+            margin-top: 5px; /* Reduced */
+            align-items: start;
+        }
+
+        .hasil-left {
+            border: 1px solid #000;
+            padding: 6px; /* Reduced */
+            min-height: 50px; /* Reduced */
+        }
+
+        .hasil-mid, .hasil-right {
+            background: #FFFFFFFF;
+            border: 1px solid #cfcfcf;
+            padding: 6px; /* Reduced */
+            min-height: 50px; /* Reduced */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .catatan-title {
+            font-weight: 700;
+            margin-top: 5px; /* Reduced */
+        }
+
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 5px; /* Reduced */
+            border: 1px solid #444;
+            background: #eef4fb;
+            font-size: 11.5px;
+            resize: none;
+        }
+
+        .tembusan {
+            margin-top: 5px; /* Reduced */
+            font-size: 11px;
+        }
+
+            .tembusan ul {
+                margin: 3px 0 0 18px; /* Reduced */
+            }
+
+        .mini-sig-placeholder {
+            width: 100%;
+            height: 110px; /* Adjusted to fit QR image */
+            border: 1px solid #aaa;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 5px; /* Reduced */
+        }
+                .sig-placeholder canvas {
+            display: block;
+            margin: 0 auto;
+        }
+                .mini-sig-placeholder canvas {
+            display: block;
+            margin: 0 auto;
+        }
+
+    </style>
+</head>
+<body onload="window.print();">
+    <div class="wrap">
+        <div class="paper" id="paper">
+            <div class="header">FORMULIR PENGAJUAN SANTUNAN DUKA DARI PERUSAHAAN MINING</div>
+
+            <div class="intro">
+                Dengan ini kami mohon persetujuan Manajemen untuk memberikan santunan duka kepada Karyawan dengan data sebagai berikut:
+            </div>
+
+            <div class="form">
+                <div class="row"><div class="label">Nama</div><div class="colon">:</div><div class="field"><input type="text" readonly value="@Model.nama_lengkap"></div></div>
+                <div class="row"><div class="label">NIK</div><div class="colon">:</div><div class="field"><input type="text" readonly value="@Model.nik"></div></div>
+                <div class="row"><div class="label">Status Kerja</div><div class="colon">:</div><div class="field"><input type="text" readonly value="@Model.posisi"></div></div>
+                <div class="row"><div class="label">Departemen</div><div class="colon">:</div><div class="field"><input type="text" readonly value="@Model.depart"></div></div>
+                <div class="row"><div class="label">Perusahaan</div><div class="colon">:</div><div class="field"><input type="text" readonly value="PT INDEXIM COALINDO"></div></div>
+                <div class="row"><div class="label">Nama Almarhum</div><div class="colon">:</div><div class="field"><input type="text" readonly value="@Model.nama_almarhum"></div></div>
+                <div class="row"><div class="label">Hubungan keluarga</div><div class="colon">:</div><div class="field"><input type="text" readonly value="@Model.hubungan_keluarga"></div></div>
+                <div class="row"><div class="label">Tanggal meninggal</div><div class="colon">:</div><div class="field"><input type="text" readonly value="@((Model.tgl_meninggal.HasValue ? Model.tgl_meninggal.Value.ToString("dd-MM-yyyy") : "-"))"></div></div>
+            </div>
+
+            <div class="spacer"></div>
+
+            <div class="note">Demikian permohonan pemberian santunan duka, sesuai kondisi / penjelasan di atas.</div>
+
+            <table class="sig-table" aria-label="tanda tangan">
+                <tr>
+                    <td style="width:40%;">Pemohon</td>
+                    <td style="width:40%;">Persetujuan Atasan</td>
+                    <td style="width:20%;">Catatan:</td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="sig-placeholder">
+                            @if (!string.IsNullOrEmpty(qrPemohon))
+                            {
+                                <img src="@qrPemohon" alt="QR Admin HC" class="qr-img" />
+                            }
+                            else
+                            {
+                                <div id="sigPemohon"></div>
+                            }
+                        </div>
+                        <div class="sig-bottom-labels">
+                            <div class="sig-small-box">HC</div>
+                            <div style="flex:1"></div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="sig-placeholder">
+                            @if (!string.IsNullOrEmpty(qrAtasan))
+                            {
+                                <img src="@qrAtasan" alt="QR Manager HCGS" class="qr-img" />
+                            }
+                            else
+                            {
+                                <div id="sigAtasan"></div>
+                            }
+                        </div>
+                        <div class="sig-bottom-labels">
+                            <div style="flex:1"></div>
+                            <div class="sig-small-box">HCGS Manager</div>
+                        </div>
+                    </td>
+                    <td>
+                        <textarea readonly style="width:100%; height:80px; box-sizing:border-box; padding:5px; background:#fff;">@Model.remarks</textarea>
+                    </td>
+                </tr>
+            </table>
+
+
+            <div class="ketentuan-title">Ketentuan:</div>
+            <div class="ketentuan">
+                <ol>
+                    <li>Santunan duka hanya diberikan bila yang meninggal adalah karyawan dan keluarga karyawan, yaitu suami/istri, anak, dan orang tua /mertua yang terdaftar di perusahaan</li>
+                    <li>Pengajuan klaim paling lama 3 (tiga) bulan dari tanggal meninggal</li>
+                    <li>Pengajuan santunan duka dari perusahaan mining, cukup dengan formulir ini (tidak perlu surat kematian)</li>
+                </ol>
+            </div>
+
+            <div class="review-title">Review HR</div>
+            <div class="review-box">
+                <div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <div style="width:260px;">Permohonan diterima HR tanggal</div>
+                        <div style="width:8px;text-align:center">:</div>
+                        <div style="flex:1"><input type="date" readonly value="@FormatDate(Model.tanggal_pengajuan)"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <div style="width:260px;">Status perkawinan karyawan</div>
+                        <div style="width:8px;text-align:center">:</div>
+                        <div style="flex:1" class="inline-checks">
+                            <label><input type="checkbox" disabled @(Model.status_hris == "Lajang" ? "checked" : "")> Lajang</label>
+                            <label><input type="checkbox" disabled @(Model.status_hris == "Menikah" ? "checked" : "")> Menikah</label>
+                            <label><input type="checkbox" disabled @(Model.status_hris == "Cerai" ? "checked" : "")> Cerai</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <div style="width:260px;">Pernah klaim</div>
+                        <div style="width:8px;text-align:center">:</div>
+                        <div style="flex:1" class="inline-checks">
+                            <label><input type="checkbox" disabled @(Model.pernah_klaim_duka != "Pernah" ? "checked" : "")> Tidak</label>
+                            <label><input type="checkbox" disabled @(Model.pernah_klaim_duka == "Pernah" ? "checked" : "")> Pernah, tanggal <input type="date" readonly class="small-date" value="@FormatDate(Model.tgl_klaim_duka_sebelumnya)"></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <div style="width:260px;">Nama almarhum di HRIS</div>
+                        <div style="width:8px;text-align:center">:</div>
+                        <div style="flex:1" class="inline-checks">
+                            <label><input type="checkbox" disabled @(Model.status_karyawan_saat_duka == "Sesuai" ? "checked" : "")> Sesuai</label>
+                            <label><input type="checkbox" disabled @(Model.status_karyawan_saat_duka == "Tidak Sesuai" ? "checked" : "")> Tidak sesuai</label>
+                            <label><input type="checkbox" disabled @(Model.status_karyawan_saat_duka == "Tidak Tercatat" ? "checked" : "")> Tidak tercatat</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hasil-title">Hasil Review</div>
+            <div class="hasil-grid" role="region" aria-label="Hasil Review">
+                <div class="hasil-left">
+                    <div style="margin-bottom:8px;"><label><input type="checkbox" disabled @(Model.status == "Disetujui" ? "checked" : "")> Dapat diberikan</label></div>
+                    <div><label><input type="checkbox" disabled @(Model.status == "Ditolak" ? "checked" : "")> Tidak dapat diberikan</label></div>
+                </div>
+                <div class="hasil-mid">
+                    <div class="mini-sig-placeholder"></div>
+                </div>
+
+                <div class="hasil-right">
+                    <div class="mini-sig-placeholder"></div>
+                </div>
+            </div>
+
+            <div class="catatan-title">Catatan:</div>
+            <textarea id="catatanHasil" readonly style="height:30px" placeholder="Catatan hasil review...">@Model.remarks</textarea>
+
+            <div class="tembusan">
+                <div style="font-weight:700">Tembusan:</div>
+                <ul>
+                    <li>HCGS Manager</li>
+                    <li>Finance &amp; Accounting</li>
+                </ul>
+            </div>
+
+          
+        </div>
+    </div>
+</body>
+</html>
+

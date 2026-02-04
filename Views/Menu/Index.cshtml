@@ -1,0 +1,492 @@
+﻿@model one_db.Models.tbl_r_menu
+@{
+    // ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div style="margin-bottom: 20px;">
+    <button onclick="btnAdd()" class="btn btn-primary btn-icon-split shadow-sm">
+        <span class="icon text-white-50">
+            <i class="fas fa-plus"></i>
+        </span>
+        <span class="text">Add Data</span>
+    </button>
+</div>
+
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">MASTER - @ViewBag.Title</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" width="100%" id="tableBS" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>TITLE</th>
+                        <th>COMPANY</th>
+                        <th>ROLE/KATEGORI</th>
+                        <th>TYPE</th>
+                        <th>LINK</th>
+                        <th>HIDDEN</th>
+                        <th>NEW TAB</th>
+                        <th>AKSI</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal Add/Update -->
+<div class="modal fade modalBS" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">FORM @ViewBag.Title</h4>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formBS" class="forms-sample">
+                    <input type="hidden" id="id" name="id" />
+                    <div class="form-group row">
+                        <label for="title" class="col-sm-3 col-form-label">Title</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" id="title" name="title" placeholder="Masukkan title" required>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="kategori_user_id" class="col-sm-3 col-form-label">Kategori User</label>
+                        <div class="col-sm-9">
+                            <select class="form-control form-control-md" id="kategori_user_id" name="kategori_user_id" required>
+                                <option value="">- Pilih kategori user -</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- BARU: Dropdown Company -->
+                    <div class="form-group row">
+                        <label for="comp_code" class="col-sm-3 col-form-label">Company</label>
+                        <div class="col-sm-9">
+                            <select class="form-control form-control-md" id="comp_code" name="comp_code">
+                                <!-- Opsi 'SEMUA' penting untuk menu global -->
+                                <option value="">- SEMUA COMPANY -</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- SELESAI BARU -->
+
+                    <div class="form-group row">
+                        <label for="type" class="col-sm-3 col-form-label">Type</label>
+                        <div class="col-sm-9">
+                            <select class="form-control form-control-md" id="type" name="type" required>
+                                <option value="">- Pilih kategori -</option>
+                                <option value="General">General</option>
+                                <option value="Master">Master</option>
+                                <option value="MaOwner">Manager Owner</option>
+                                <option value="HROwner">HR Owner</option>
+                                <option value="AdminOwner">Admin Owner</option>
+                                <option value="SafetyOwner">Safety Owner</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- PERBAIKAN: Input Group untuk Link -->
+                    <div class="form-group row">
+                        <label for="link_controller" class="col-sm-3 col-form-label">Link</label>
+                        <div class="col-sm-9">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="link_controller" name="link_controller" placeholder="Controller" required style="flex: 0 0 45%;">
+                                <div class="input-group-prepend input-group-append">
+                                    <span class="input-group-text">/</span>
+                                </div>
+                                <input type="text" class="form-control" id="link_function" name="link_function" placeholder="Function (cth: Index)" required>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- SELESAI PERBAIKAN -->
+
+                    <div class="form-group row">
+                        <label for="hidden" class="col-sm-3 col-form-label">Hidden</label>
+                        <div class="col-sm-9">
+                            <select class="form-control form-control-md" id="hidden" name="hidden" required>
+                                <option value="">- Pilih hidden -</option>
+                                <option value="true">True</option>
+                                <option value="false">False</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="new_tab" class="col-sm-3 col-form-label">New Tab</label>
+                        <div class="col-sm-9">
+                            <select class="form-control form-control-md" id="new_tab" name="new_tab" required>
+                                <option value="">- Pilih opsi new tab -</option>
+                                <option value="true">True</option>
+                                <option value="false">False</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- PERBAIKAN: Tombol dengan Ikon -->
+                    <div class="modal-footer">
+                        <button type="button" data-dismiss="modal" class="btn btn-light">
+                            <i class="fas fa-times mr-1"></i>Batal
+                        </button>
+                        <button type="button" id="btnSave" onclick="insertData()" class="btn btn-primary">
+                            <i class="fas fa-save mr-1"></i>Save
+                        </button>
+                        <button type="button" id="btnUpdate" onclick="updateData()" class="btn btn-primary">
+                            <i class="fas fa-sync-alt mr-1"></i>Update
+                        </button>
+                    </div>
+                    <!-- SELESAI PERBAIKAN -->
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@* End Modal *@
+
+@section styles {
+    <link href="~/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/css/alertify.min.css" />
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/css/themes/bootstrap.min.css" />
+
+    <style>
+        .checkbox-menu li label {
+            display: block;
+            padding: 3px 10px;
+            clear: both;
+            font-weight: normal;
+            line-height: 1.42857143;
+            color: #333;
+            white-space: nowrap;
+            margin: 0;
+            transition: background-color .4s ease;
+        }
+
+        .checkbox-menu li input {
+            margin: 0px 5px;
+            top: 2px;
+            position: relative;
+        }
+
+        .checkbox-menu li.active label {
+            background-color: #cbcbff;
+            font-weight: bold;
+        }
+
+        .checkbox-menu li label:hover,
+        .checkbox-menu li label:focus {
+            background-color: #f5f5f5;
+        }
+
+        .checkbox-menu li.active label:hover,
+        .checkbox-menu li.active label:focus {
+            background-color: #b8b8ff;
+        }
+
+        /* PERBAIKAN: Pastikan modal-footer tidak ikut form-group styling */
+        .modal-body .modal-footer {
+            padding: 1rem 0 0 0; /* Sesuaikan padding jika perlu */
+            border-top: 1px solid #e3e6f0;
+            margin-top: 1.5rem;
+        }
+    </style>
+}
+
+@section scripts {
+    <script src="~/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="~/vendor/datatables/dataTables.bootstrap4.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/alertify.min.js"></script>
+    <script>
+        var link = '@Url.Action("Function", "Controller")'
+        var controller_name = "@ViewBag.Controller"
+        var a
+        var dataTable
+
+        $(document).ready(function () {
+            // Set tema Alertify
+            alertify.defaults.theme.name = "bootstrap";
+
+            getCredentials()
+            getAll()
+            getKategoriUser()
+            getCompany() // <-- BARU
+
+            // --- BARU: Auto-remove spasi dari input controller/function ---
+            $('#link_controller, #link_function').on('input', function() {
+                $(this).val($(this).val().replace(/\s+/g, ''));
+            });
+        })
+
+        function btnAdd() {
+            $('#btnSave').show()
+            $('#btnUpdate').hide()
+            $('.modalBS').modal('show');
+            $('#formBS').trigger("reset")
+        }
+
+        function btnEdit(id) {
+            $('#btnSave').hide()
+            $('#btnUpdate').show()
+            $('#formBS').trigger("reset")
+            getData(id)
+            $('.modalBS').modal('show')
+        }
+
+        function getCredentials() {
+            //GetNRP
+            $('#insert_by').val("@Html.Raw(ViewBag.insert_by)")
+        }
+
+        function getAll() {
+            var link = '@Url.Action("GetAll", "Menu")';
+            dataTable = $("#tableBS").DataTable({
+                "order": [[1, "desc"]],
+                "ajax": {
+                    "url": link,
+                    "type": "GET",
+                    "datatype": "json"
+                },
+                "columns": [
+                    { "data": "title" },
+                    // --- PERBAIKAN: Tampilkan 'Semua' jika null ---
+                    {
+                        "data": "comp_code",
+                        "render": function(data) {
+                            return (data === null || data === "") ? '<span class="text-muted">- Semua -</span>' : data;
+                        }
+                    },
+                    {
+                        "data": "kategori_user_id",
+                        "render": function (data, type, dataToSet) { // <-- Perbaikan parameter
+                            if (data == 'ADMINISTRATOR') {
+                                return '<span class="badge badge-pill badge-primary">' + data + '</span>'
+                            } else if (data == 'USER SHE') {
+                                return '<span class="badge badge-pill badge-success">' + data + '</span>'
+                            } else {
+                                return '<span class="badge badge-pill badge-warning">' + data + '</span>'
+                            }
+                        }
+                    },
+
+                    { "data": "type" },
+                    {
+                        "data": "link_controller", // <-- Perbaikan: Cukup 1 data
+                        "render": function (data, type, row) { // <-- Render pakai 'row'
+                            return row.link_controller + '/' + row.link_function
+                        }
+                    },
+                    {
+                        "data": "hidden", // <-- Perbaikan: Cukup 1 data
+                        "render": function (data, type, dataToSet) {
+                            if (data == 'true') {
+                                return '<span class="badge badge-pill badge-success">' + data + '</span>'
+                            } else {
+                                return '<span class="badge badge-pill badge-danger">' + data + '</span>'
+                            }
+                        }
+                    },
+                    {
+                        "data": "new_tab", // <-- Perbaikan: Cukup 1 data
+                        "render": function (data, type, dataToSet) {
+                            if (data == 'true') {
+                                return '<span class="badge badge-pill badge-success">' + data + '</span>'
+                            } else {
+                                return '<span class="badge badge-pill badge-danger">' + data + '</span>'
+                            }
+                        }
+                    },
+                    {
+                        "data": "id", "render": function (data) {
+                            var a = '<button onclick="btnEdit(' + data + ')" class="btn btn-info btn-circle btn-sm">'
+                            a += '  <i class="fas fa-edit"></i>'
+                            a += '</button>'
+                            a += '<button onclick="deleteData(' + data + ')" class="btn btn-danger btn-circle btn-sm" style="margin-left: 5px;">'
+                            a += '  <i class="fa fa-trash"></i>'
+                            a += '</button>'
+                            return a
+                        },
+                        "orderable": false,
+                        "width": "100px", // <-- Perbaikan: Lebar aksi
+                        "searchable": false
+                    }
+                ],
+                "language": {
+                    "emptyTable": "Tidak ada data"
+                },
+                "createdRow": function (row, data, index) {
+                    $(row).find('td').css({
+                        'font-size': '14px' // <-- Perbaikan: Ukuran font lebih standar
+                        // 'font-weight': 'bold' // <-- Hapus: Terlalu tebal
+                    });
+                }
+            });
+            link = '@Url.Action("Function", "Controller")';
+        }
+
+        function getData(id) {
+            var link = '@Url.Action("Get", "Menu")';
+            $.ajax({
+                type: "GET",
+                url: link + '/' + id,
+                success: function (data) {
+                    if (data.success) {
+                        $('#id').val(data.data.id);
+                        $('#kategori_user_id').val(data.data.kategori_user_id);
+                        $('#comp_code').val(data.data.comp_code); // <-- BARU
+                        $('#title').val(data.data.title);
+                        $('#type').val(data.data.type);
+                        $('#link_controller').val(data.data.link_controller);
+                        $('#link_function').val(data.data.link_function);
+                        $('#hidden').val(data.data.hidden);
+                        $('#new_tab').val(data.data.new_tab);
+                    } else {
+                        alertify.error(data.message); // <-- PERBAIKAN: Ganti alert
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alertify.error('Terjadi kesalahan: ' + error); // <-- PERBAIKAN: Ganti alert
+                }
+            });
+        }
+
+
+        function insertData() {
+            link = link.replace("Controller", controller_name);
+            link = link.replace("Function", "Insert");
+
+            $.ajax({
+                type: "POST",
+                url: link,
+                data: $('#formBS').serialize(),
+                success: function (data) {
+                    if (data.success) {
+                        $('.modalBS').modal('hide');
+                        dataTable.ajax.reload();
+                        alertify.success('Data berhasil disimpan'); // <-- PERBAIKAN: Ganti alertify.notify
+                    } else {
+                        alertify.error(data.message); // <-- PERBAIKAN: Ganti alert
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alertify.error("An error occurred: " + error); // <-- PERBAIKAN: Ganti alert
+                }
+            });
+        }
+
+        function updateData() {
+            var id = $('#id').val();
+            var link = '@Url.Action("Update", "Menu")';
+            console.log(id);
+            $.ajax({
+                type: "POST",
+                url: link,
+                data: $('#formBS').serialize(),
+                success: function (data) {
+                    if (data.success) {
+                        $('.modalBS').modal('hide');
+                        dataTable.ajax.reload();
+                        alertify.success('Data berhasil diubah'); // <-- PERBAIKAN: Ganti alertify.notify
+                    } else {
+                        alertify.error(data.message); // <-- PERBAIKAN: Ganti alert
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alertify.error('Terjadi kesalahan: ' + error); // <-- PERBAIKAN: Ganti alert
+                }
+            });
+        }
+
+        function deleteData(id) {
+            var link = '@Url.Action("Delete", "Menu")';
+
+            // --- PERBAIKAN: Ganti confirm() dengan alertify.confirm ---
+            alertify.confirm(
+                'Konfirmasi Hapus', // Judul
+                'Apakah Anda yakin ingin menghapus data ini?', // Pesan
+                function () { // Callback saat OK
+                    $.ajax({
+                        type: 'POST',
+                        url: link + '/' + id,
+                        success: function (data) {
+                            if (data.success) {
+                                dataTable.ajax.reload();
+                                alertify.success('Data berhasil dihapus'); // <-- PERBAIKAN
+                            } else {
+                                alertify.error(data.message); // <-- PERBAIKAN
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            alertify.error('Terjadi kesalahan: ' + error); // <-- PERBAIKAN
+                        }
+                    });
+                },
+                function () { // Callback saat Batal
+                    alertify.error('Penghapusan dibatalkan');
+                }
+            ).set('labels', {ok:'Ya, Hapus!', cancel:'Batal'}); // Label tombol
+            // --- SELESAI PERBAIKAN ---
+        }
+
+        function getKategoriUser() {
+            var options = $("#kategori_user_id");
+            $.ajax({
+                type: 'GET',
+                url: '@Url.Action("GetAll", "KategoriUser")',
+                success: function (data) {
+                    if (data.success) {
+                        for (var a = 0; a < data.data.length; a++) {
+                            options.append($("<option />").val(data.data[a].kategori).text(data.data[a].kategori));
+                        }
+                    } else {
+                        alertify.error(data.message); // <-- PERBAIKAN: Ganti alert
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alertify.error("An error occurred while fetching data: " + error); // <-- PERBAIKAN: Ganti alert
+                }
+            });
+        }
+
+        // --- BARU: Fungsi Get Company ---
+        function getCompany() {
+            var options = $("#comp_code");
+            // Jangan reset, tambahkan ke opsi 'SEMUA COMPANY' yang sudah ada
+            // options.empty().append($("<option />").val("").text("- Pilih company -"));
+
+            $.ajax({
+                type: 'GET',
+                url: '@Url.Action("GetAll", "Company")', // Sesuai nama Controller Anda: CompanyController
+                success: function (data) {
+                    var dataList = data.data ?? (data.success ? data.data : (Array.isArray(data) ? data : null));
+
+                    if (dataList && Array.isArray(dataList)) {
+                        for (let i = 0; i < dataList.length; i++) {
+                            // Coba ambil 'company' (dari JSON) atau 'departemen' (dari model C# tbl_r_comp)
+                            var companyName = dataList[i].company || dataList[i].departemen;
+                            if(companyName) {
+                                options.append(
+                                    $("<option />")
+                                        .val(companyName) // <- Simpan NAMA sebagai value
+                                        .text(companyName) // <- Tampilkan NAMA
+                                );
+                            }
+                        }
+                    } else {
+                        alertify.error(data.message ?? "Gagal mengambil data company."); // <-- PERBAIKAN
+                    }
+                },
+                error: function () {
+                    alertify.error("Terjadi kesalahan saat mengambil data company."); // <-- PERBAIKAN
+                }
+            });
+        }
+        // --- SELESAI BARU ---
+
+    </script>
+}

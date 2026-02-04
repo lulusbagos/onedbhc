@@ -1,0 +1,17 @@
+﻿.fc-view-container .fc-month-view .fc-day-today {
+    background: rgba(255, 215, 0, 0.2) !important; /* Warna emas transparan */
+    border: 2px solid #ffd700 !important; /* Garis emas */
+    box-shadow: 0 0 15px #ffd700 !important; /* Efek glow */
+    animation: pulseGlow 1.5s infinite alternate; /* Animasi glow */
+    border-radius: 8px; /* Sudut lebih halus */
+}
+
+@keyframes pulseGlow {
+    from {
+        box-shadow: 0 0 5px #ffd700;
+    }
+
+    to {
+        box-shadow: 0 0 20px #ffd700;
+    }
+}

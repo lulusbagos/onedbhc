@@ -1,0 +1,212 @@
+﻿@model one_db.Models.tbl_m_roster_keterangan
+@{
+    ViewData["Title"] = "Jadwal Kerja";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="font-weight-bold text-primary mb-0">
+        <i class="fas fa-calendar-check"></i> Jadwal Kerja
+    </h2>
+    <button onclick="btnAdd()" class="btn btn-gradient-primary shadow-sm px-4">
+        <i class="fas fa-plus mr-2"></i> Tambah Data
+    </button>
+</div>
+
+<div class="card border-0 shadow-lg rounded-3">
+    <div class="card-body p-4">
+        <table class="table table-hover align-middle" id="tableBS" width="100%">
+            <thead class="bg-primary text-white">
+                <tr>
+                    <th>Kode</th>
+                    <th>Keterangan</th>
+                    <th>Warna</th>
+                    <th style="width:120px;">Aksi</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Glassmorphism -->
+<div class="modal fade modalBS" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); border-radius: 1rem;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title font-weight-bold text-primary">
+                    <i class="fas fa-pen-nib"></i> Form Jadwal Kerja
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" style="color:#444;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formBS" class="needs-validation">
+                    <input type="hidden" id="id" name="id" />
+                    <div class="form-group">
+                        <label>Kode</label>
+                        <input type="text" class="form-control rounded-pill" id="kode" name="kode" placeholder="Masukkan kode jadwal" required>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label>Keterangan</label>
+                        <input type="text" class="form-control rounded-pill" id="keterangan" name="keterangan" placeholder="Masukkan keterangan" required>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label>Warna</label>
+                        <input type="color" class="form-control" id="warna" name="warna" style="height:45px; border-radius: 0.5rem;">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" id="btnSave" onclick="insertData()" class="btn btn-success px-4 rounded-pill shadow-sm">Simpan</button>
+                <button type="button" id="btnUpdate" onclick="updateData()" class="btn btn-info px-4 rounded-pill shadow-sm">Update</button>
+                <button type="button" data-dismiss="modal" class="btn btn-light border px-4 rounded-pill">Batal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section styles {
+    <link href="~/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet" />
+    <style>
+        .btn-gradient-primary {
+            background: linear-gradient(45deg, #007bff, #00bcd4);
+            color: white;
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+            .btn-gradient-primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+            }
+
+        .dataTables_wrapper .dataTables_filter input {
+            border-radius: 20px;
+            padding: 5px 10px;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: #f0f8ff;
+            transition: background-color 0.2s ease;
+        }
+    </style>
+}
+
+@section scripts {
+    <script src="~/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="~/vendor/datatables/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/alertify.min.js"></script>
+
+    <script>
+        var baseLink = '@Url.Action("Function", "Controller")';
+        var controllerName = "@ViewBag.Controller";
+        var dataTable;
+
+        $(document).ready(function () {
+            getAll();
+        });
+
+        function btnAdd() {
+            $('#btnSave').show();
+            $('#btnUpdate').hide();
+            $('#formBS').trigger("reset");
+            $('.modalBS').modal('show');
+        }
+
+        function btnEdit(id) {
+            $('#btnSave').hide();
+            $('#btnUpdate').show();
+            getData(id);
+            $('.modalBS').modal('show');
+        }
+
+        function getAll() {
+            var link = baseLink.replace("Controller", controllerName).replace("Function", "GetAll");
+
+            dataTable = $("#tableBS").DataTable({
+                destroy: true,
+                ajax: { url: link, type: "GET", datatype: "json", dataSrc: "data" },
+                columns: [
+                    { data: "kode" },
+                    { data: "keterangan" },
+                    {
+                        data: "warna",
+                        render: function (data) {
+                            return `<div style="background:${data};width:50px;height:20px;border-radius:5px;border:1px solid #ccc;"></div>`;
+                        }
+                    },
+                    {
+                        data: "id",
+                        render: function (data) {
+                            return `
+                                <div class="d-flex justify-content-center">
+                                    <button onclick="btnEdit('${data}')" class="btn btn-outline-info btn-sm mr-2">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="deleteData('${data}')" class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>`;
+                        }
+                    }
+                ],
+                language: {
+                    emptyTable: "🚀 Belum ada data roster — yuk tambahkan satu!"
+                }
+            });
+        }
+
+        function getData(id) {
+            var link = baseLink.replace("Controller", controllerName).replace("Function", "Get");
+            $.ajax({
+                type: "GET",
+                url: `${link}?id=${id}`,
+                success: function (res) {
+                    if (res.success) {
+                        $('#id').val(res.data.id);
+                        $('#kode').val(res.data.kode);
+                        $('#keterangan').val(res.data.keterangan);
+                        $('#warna').val(res.data.warna);
+                    } else {
+                        alertify.error(res.message);
+                    }
+                },
+                error: () => alertify.error("Gagal memuat data.")
+            });
+        }
+
+        function insertData() {
+            var link = baseLink.replace("Controller", controllerName).replace("Function", "Insert");
+            $.post(link, $('#formBS').serialize(), function (res) {
+                if (res.success) {
+                    $('.modalBS').modal('hide');
+                    alertify.success('Data roster disimpan!');
+                    dataTable.ajax.reload();
+                } else alertify.error(res.message);
+            });
+        }
+
+        function updateData() {
+            var link = baseLink.replace("Controller", controllerName).replace("Function", "Update");
+            $.post(link, $('#formBS').serialize(), function (res) {
+                if (res.success) {
+                    $('.modalBS').modal('hide');
+                    alertify.success('Data roster diupdate!');
+                    dataTable.ajax.reload();
+                } else alertify.error(res.message);
+            });
+        }
+
+        function deleteData(id) {
+            if (!confirm("Yakin mau hapus roster ini?")) return;
+            var link = baseLink.replace("Controller", controllerName).replace("Function", "Delete");
+            $.post(`${link}?id=${id}`, function (res) {
+                if (res.success) {
+                    alertify.success('Data roster dihapus!');
+                    dataTable.ajax.reload();
+                } else alertify.error(res.message);
+            });
+        }
+    </script>
+}

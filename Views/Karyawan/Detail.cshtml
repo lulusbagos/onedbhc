@@ -1,0 +1,619 @@
+﻿@model one_db.Models.vw_m_karyawan
+@{
+    ViewData["Title"] = "Detail Karyawan";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var dummyPelanggaranList = new List<dynamic>
+    {
+        new { Jenis = "Surat Teguran", Tanggal = new DateTime(2025, 3, 3), Keterangan = "Tidak menaati waktu kerja.", Hukuman = "Teguran Lisan", Icon = "fa-file-alt", Color = "text-warning" },
+        new { Jenis = "Surat Peringatan I", Tanggal = new DateTime(2025, 6, 15), Keterangan = "Kelalaian dalam tugas.", Hukuman = "Potong Gaji", Icon = "fa-exclamation-circle", Color = "text-danger" },
+        new { Jenis = "Skorsing", Tanggal = new DateTime(2025, 9, 1), Keterangan = "Pelanggaran berat terhadap K3.", Hukuman = "Skorsing 3 Hari", Icon = "fa-ban", Color = "text-danger font-weight-bold" }
+    };
+    var photoUrl = !string.IsNullOrEmpty(Model.url_foto)
+        ? Url.Action("GetPhoto", "Karyawan", new { filename = Model.url_foto, id_personal = Model.id_personal })
+        : Url.Content("~/images/default-avatar.png");
+}
+
+@section Styles {
+    <style>
+        /* --- SCREEN STYLES (TAMPILAN WEB) --- */
+        body {
+            background-color: #f0f2f5;
+        }
+
+        .btn-back, .btn-print {
+            background-color: #fff;
+            border: 1px solid #d1d3e2;
+            color: #5a5c69;
+            transition: all 0.2s;
+        }
+
+            .btn-back:hover, .btn-print:hover {
+                background-color: #f8f9fc;
+                border-color: #b1b3c2;
+            }
+
+        .profile-header-card {
+            background: linear-gradient(135deg, #4e73df 0%, #36b9cc 100%);
+            border: none;
+            color: white;
+            margin-bottom: 2rem;
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+            border-radius: .75rem;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            object-fit: cover;
+        }
+
+        .profile-info {
+            margin-left: 1.5rem;
+        }
+
+        .profile-name {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .profile-position-dept {
+            font-size: 1.1rem;
+            font-weight: 300;
+            margin-bottom: 0.5rem;
+            opacity: 0.9;
+        }
+
+        .profile-meta {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .status-pill {
+            padding: .5rem 1rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .status-aktif {
+            background-color: #1cc88a;
+            border: 2px solid rgba(255,255,255,0.5);
+        }
+
+        .status-nonaktif {
+            background-color: #e74a3b;
+            border: 2px solid rgba(255,255,255,0.5);
+        }
+
+        .nav-tabs {
+            border-bottom: 2px solid #e3e6f0;
+        }
+
+            .nav-tabs .nav-link {
+                border: none;
+                border-bottom: 2px solid transparent;
+                color: #5a5c69;
+                font-weight: 600;
+                padding: 1rem 1.5rem;
+                transition: all 0.2s;
+            }
+
+                .nav-tabs .nav-link:hover {
+                    border-bottom-color: #d1d3e2;
+                    color: #4e73df;
+                }
+
+                .nav-tabs .nav-link.active {
+                    border-bottom-color: #4e73df;
+                    color: #4e73df;
+                    background-color: transparent;
+                }
+
+        .tab-content {
+            background-color: #fff;
+            border: 1px solid #e3e6f0;
+            border-top: none;
+            padding: 2rem;
+            border-radius: 0 0 .35rem .35rem;
+            box-shadow: 0 .15rem 1.75rem 0 rgba(58,59,69,.15);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .info-grid-item {
+            display: flex;
+            align-items: flex-start;
+        }
+
+            .info-grid-item .icon {
+                font-size: 1.25rem;
+                color: #4e73df;
+                margin-right: 1rem;
+                width: 25px;
+                text-align: center;
+            }
+
+            .info-grid-item dt {
+                font-size: 0.8rem;
+                font-weight: 700;
+                color: #858796;
+                text-transform: uppercase;
+                margin-bottom: 0.25rem;
+            }
+
+            .info-grid-item dd {
+                font-size: 1rem;
+                font-weight: 500;
+                color: #3a3b45;
+                margin: 0;
+                word-break: break-word;
+            }
+
+        h5.section-title {
+            font-weight: 700;
+            color: #3a3b45;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e3e6f0;
+        }
+
+        .violation-table th {
+            background-color: #f8f9fc;
+            border-bottom: 2px solid #e3e6f0;
+            font-weight: 600;
+        }
+
+        .violation-table td {
+            vertical-align: middle;
+        }
+
+        .no-violation {
+            padding: 3rem;
+            color: #858796;
+        }
+
+        .print-only {
+            display: none;
+        }
+
+        /* --- PRINT STYLES (TAMPILAN CETAK) --- */
+        @@media print {
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: #fff;
+                color: #000;
+                font-size: 9pt;
+            }
+
+            .screen-only, .no-print {
+                display: none !important;
+            }
+
+            .print-only {
+                display: block;
+            }
+
+            .print-container {
+                border: 1px solid #ccc;
+                padding: 20px;
+            }
+
+            .print-header {
+                text-align: center;
+                border-bottom: 2px solid #000;
+                padding-bottom: 15px;
+                margin-bottom: 15px;
+            }
+
+                .print-header h1 {
+                    font-size: 20pt;
+                    margin: 0;
+                    font-weight: 600;
+                }
+
+                .print-header p {
+                    font-size: 11pt;
+                    margin: 5px 0 0;
+                }
+
+            .print-main {
+                display: flex;
+                gap: 20px;
+            }
+
+            .print-col-1 {
+                width: 30%;
+            }
+
+            .print-col-2 {
+                width: 70%;
+            }
+
+            .print-avatar {
+                width: 120px;
+                height: 120px;
+                border-radius: 8px;
+                border: 1px solid #ddd;
+                object-fit: cover;
+                margin: 0 auto 15px;
+                display: block;
+            }
+
+            .print-section {
+                margin-bottom: 15px;
+            }
+
+                .print-section h3 {
+                    font-size: 11pt;
+                    font-weight: 600;
+                    border-bottom: 1px solid #ccc;
+                    padding-bottom: 5px;
+                    margin-bottom: 8px;
+                    text-transform: uppercase;
+                }
+
+            .print-dl {
+                margin-bottom: 0;
+            }
+
+                .print-dl dt {
+                    font-weight: 600;
+                    color: #555;
+                    float: left;
+                    width: 45%;
+                    padding-right: 5px;
+                }
+
+                .print-dl dd {
+                    margin-left: 45%;
+                    margin-bottom: 4px;
+                    font-weight: normal;
+                }
+
+            .print-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 15px;
+            }
+
+                .print-table th, .print-table td {
+                    border: 1px solid #ccc;
+                    padding: 5px;
+                    text-align: left;
+                }
+
+                .print-table th {
+                    background-color: #f2f2f2;
+                    font-weight: 600;
+                }
+
+            .print-footer {
+                text-align: center;
+                margin-top: 20px;
+                font-size: 8pt;
+                color: #888;
+            }
+
+            a {
+                text-decoration: none;
+                color: #000;
+            }
+        }
+    </style>
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4 no-print">
+        <a href="@Url.Action("Index", "Karyawan")" class="btn btn-back shadow-sm">
+            <i class="fas fa-arrow-left fa-sm"></i> Kembali ke Daftar
+        </a>
+        <a href="#" onclick="window.print(); return false;" class="btn btn-print shadow-sm">
+            <i class="fas fa-print fa-sm"></i> Cetak Profil
+        </a>
+    </div>
+
+    <!-- =================================================================================== -->
+    <!--                            TAMPILAN WEB / LAYAR (SCREEN-ONLY)                       -->
+    <!-- =================================================================================== -->
+    <div class="screen-only">
+        <!-- Profile Header Card -->
+        <div class="card profile-header-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="profile-avatar-wrapper">
+                        <img src="@photoUrl" alt="Foto Karyawan" class="profile-avatar"
+                             onerror="this.onerror=null; this.src='@Url.Content("~/images/default-avatar.png")';" />
+                    </div>
+                    <div class="profile-info">
+                        <h2 class="profile-name">@Display(Model.nama_lengkap)</h2>
+                        <p class="profile-position-dept">@Display(Model.posisi) di @Display(Model.depart)</p>
+                        <div class="profile-meta">
+                            <span><i class="fas fa-id-card fa-fw"></i> NIK: <strong>@Display(Model.no_nik)</strong></span>
+                            <span class="mx-2">|</span>
+                            <span><i class="fas fa-passport fa-fw"></i> No. KTP: <strong>@Display(Model.no_ktp)</strong></span>
+                        </div>
+                    </div>
+                    <div class="ml-auto text-right">
+                        @{
+                            string statusClass = Model.tgl_nonaktif == null ? "status-aktif" : "status-nonaktif";
+                        }
+                        <div class="status-pill @statusClass shadow-sm">
+                            @(Model.tgl_nonaktif == null ? "Aktif" : "Non-Aktif")
+                        </div>
+                        @if (Model.tgl_nonaktif != null)
+                        {
+                            <small class="d-block mt-1" style="color: rgba(255,255,255,0.7);">Sejak: @Display(Model.tgl_nonaktif, "dd MMM yyyy")</small>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabbed Navigation -->
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation"><a class="nav-link active" id="pribadi-tab" data-toggle="tab" href="#pribadi" role="tab"><i class="fas fa-user-circle mr-2"></i>Data Pribadi</a></li>
+            <li class="nav-item" role="presentation"><a class="nav-link" id="kepegawaian-tab" data-toggle="tab" href="#kepegawaian" role="tab"><i class="fas fa-briefcase mr-2"></i>Kepegawaian</a></li>
+            <li class="nav-item" role="presentation"><a class="nav-link" id="kontak-tab" data-toggle="tab" href="#kontak" role="tab"><i class="fas fa-address-book mr-2"></i>Kontak & Finansial</a></li>
+            <li class="nav-item" role="presentation"><a class="nav-link" id="pendidikan-tab" data-toggle="tab" href="#pendidikan" role="tab"><i class="fas fa-user-graduate mr-2"></i>Pendidikan & Lainnya</a></li>
+            <li class="nav-item" role="presentation"><a class="nav-link" id="pelanggaran-tab" data-toggle="tab" href="#pelanggaran" role="tab"><i class="fas fa-exclamation-triangle mr-2"></i>Riwayat Pelanggaran</a></li>
+        </ul>
+
+        <div class="tab-content" id="myTabContent">
+            <!-- Data Pribadi Tab -->
+            <div class="tab-pane fade show active" id="pribadi" role="tabpanel">
+                <div class="info-grid">
+                    <div class="info-grid-item"><i class="icon fas fa-birthday-cake"></i><div><dt>Tempat, Tgl Lahir</dt><dd>@DisplayTempatTanggalLahir(Model.tmp_lahir, Model.tgl_lahir)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-map-marker-alt"></i><div><dt>Alamat KTP</dt><dd>@Display(Model.alamat_ktp)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-praying-hands"></i><div><dt>Agama</dt><dd>@Display(Model.agama)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-venus-mars"></i><div><dt>Jenis Kelamin</dt><dd>@Display(Model.jk)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-ring"></i><div><dt>Status Pernikahan</dt><dd>@Display(Model.stat_nikah)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-flag"></i><div><dt>Warga Negara</dt><dd>@Display(Model.warga_negara)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-users"></i><div><dt>No. Kartu Keluarga</dt><dd>@Display(Model.no_kk)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-female"></i><div><dt>Nama Ibu Kandung</dt><dd>@Display(Model.nama_ibu)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-male"></i><div><dt>Nama Ayah Kandung</dt><dd>@Display(Model.nama_ayah)</dd></div></div>
+                </div>
+            </div>
+            <!-- Kepegawaian Tab -->
+            <div class="tab-pane fade" id="kepegawaian" role="tabpanel">
+                <div class="info-grid">
+                    <div class="info-grid-item"><i class="icon fas fa-building"></i><div><dt>Nama Perusahaan</dt><dd>@Display(Model.nama_perusahaan)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-sitemap"></i><div><dt>Perusahaan Induk</dt><dd>@Display(Model.parent)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-network-wired"></i><div><dt>Hierarki Perusahaan</dt><dd>@Display(Model.hirarki_perusahaan)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-calendar-check"></i><div><dt>Tgl Mulai Bekerja</dt><dd>@Display(Model.doh, "dd MMMM yyyy")</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-layer-group"></i><div><dt>Level / Grade</dt><dd>@DisplayGabung(Model.level, Model.grade, " / ")</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-map-pin"></i><div><dt>Lokasi Kerja</dt><dd>@Display(Model.lokker)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-inbox"></i><div><dt>Lokasi Diterima</dt><dd>@Display(Model.lokterima)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-plane-departure"></i><div><dt>Point of Hire (POH)</dt><dd>@Display(Model.poh)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-suitcase"></i><div><dt>Status Tinggal</dt><dd>@Display(Model.stat_tinggal)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-tags"></i><div><dt>Klasifikasi</dt><dd>@Display(Model.klasifikasi)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-calendar-alt"></i><div><dt>Jadwal Kerja</dt><dd>@Display(Model.roster)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-play-circle"></i><div><dt>Tgl Aktif</dt><dd>@Display(Model.tgl_aktif, "dd MMMM yyyy")</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-stop-circle"></i><div><dt>Tgl Non-Aktif</dt><dd>@Display(Model.tgl_nonaktif, "dd MMMM yyyy")</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-comment-dots"></i><div><dt>Alasan Non-Aktif</dt><dd>@Display(Model.alasan_nonaktif)</dd></div></div>
+                </div>
+            </div>
+            <!-- Kontak & Finansial Tab -->
+            <div class="tab-pane fade" id="kontak" role="tabpanel">
+                <h5 class="section-title">Informasi Kontak</h5>
+                <div class="info-grid mb-4">
+                    <div class="info-grid-item"><i class="icon fas fa-mobile-alt"></i><div><dt>No. Handphone 1</dt><dd>@Display(Model.hp_1)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-phone-alt"></i><div><dt>No. Handphone 2</dt><dd>@Display(Model.hp_2)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-envelope"></i><div><dt>Email Kantor</dt><dd>@Display(Model.email_kantor)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-envelope-open-text"></i><div><dt>Email Pribadi</dt><dd>@Display(Model.email_pribadi)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-first-aid"></i><div><dt>Kontak Darurat</dt><dd>@DisplayKontakDarurat(Model.nama_ec, Model.relasi_ec, Model.hp_ec)</dd></div></div>
+                </div>
+                <h5 class="section-title">Informasi Finansial & Pajak</h5>
+                <div class="info-grid">
+                    <div class="info-grid-item"><i class="icon fas fa-university"></i><div><dt>Bank</dt><dd>@Display(Model.bank)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-credit-card"></i><div><dt>No. Rekening</dt><dd>@Display(Model.no_rek)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-user-check"></i><div><dt>Atas Nama Rekening</dt><dd>@Display(Model.nama_pemilik)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-file-invoice-dollar"></i><div><dt>No. NPWP</dt><dd>@Display(Model.no_npwp)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-heartbeat"></i><div><dt>BPJS Kesehatan</dt><dd>@Display(Model.no_bpjskes)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-user-shield"></i><div><dt>BPJS Ketenagakerjaan</dt><dd>@Display(Model.no_bpjstk)</dd></div></div>
+                </div>
+            </div>
+            <!-- Pendidikan & Lainnya Tab -->
+            <div class="tab-pane fade" id="pendidikan" role="tabpanel">
+                <h5 class="section-title">Pendidikan Terakhir</h5>
+                <div class="info-grid mb-4">
+                    <div class="info-grid-item"><i class="icon fas fa-graduation-cap"></i><div><dt>Tingkat Pendidikan</dt><dd>@Display(Model.pendidikan)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-school"></i><div><dt>Nama Institusi</dt><dd>@Display(Model.nama_sekolah)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-book"></i><div><dt>Jurusan</dt><dd>@Display(Model.jurusan)</dd></div></div>
+                </div>
+                <h5 class="section-title">Informasi Lainnya</h5>
+                <div class="info-grid">
+                    <div class="info-grid-item"><i class="icon fas fa-hashtag"></i><div><dt>No. Equity</dt><dd>@Display(Model.no_equity)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-link"></i><div><dt>URL Pendukung</dt><dd>@Display(Model.url_pendukung)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-file-archive"></i><div><dt>URL Berkas Non-Aktif</dt><dd>@Display(Model.url_berkas_nonaktif)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-info-circle"></i><div><dt>Info Pelanggaran</dt><dd>@Display(Model.info_pelanggaran)</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-calendar-plus"></i><div><dt>Tgl Dibuat</dt><dd>@Display(Model.tgl_buat, "dd MMMM yyyy HH:mm")</dd></div></div>
+                    <div class="info-grid-item"><i class="icon fas fa-sync"></i><div><dt>Tgl Replikasi</dt><dd>@Display(Model.tgl_replikasi, "dd MMMM yyyy HH:mm")</dd></div></div>
+                </div>
+            </div>
+            <!-- Riwayat Pelanggaran Tab -->
+            <div class="tab-pane fade" id="pelanggaran" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-hover violation-table mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 5%;"></th>
+                                <th>Jenis Pelanggaran</th>
+                                <th>Tanggal</th>
+                                <th>Keterangan</th>
+                                <th>Hukuman</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (dummyPelanggaranList.Any())
+                            {
+                                @foreach (var p in dummyPelanggaranList)
+                                {
+                                    <tr>
+                                        <td class="text-center"><i class="fas @p.Icon @p.Color"></i></td>
+                                        <td>@p.Jenis</td>
+                                        <td>@p.Tanggal.ToString("dd MMM yyyy")</td>
+                                        <td>@p.Keterangan</td>
+                                        <td>@p.Hukuman</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center no-violation"><i class="fas fa-check-circle fa-2x text-success mb-2"></i><br>Tidak ada riwayat pelanggaran.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================================== -->
+    <!--                               TAMPILAN CETAK (PRINT-ONLY)                           -->
+    <!-- =================================================================================== -->
+    <div class="print-only">
+        <div class="print-container">
+            <header class="print-header">
+                <h1>Profil Karyawan</h1>
+                <p>@Display(Model.nama_perusahaan)</p>
+            </header>
+            <main class="print-main">
+                <div class="print-col-1">
+                    <img src="@photoUrl" class="print-avatar" onerror="this.onerror=null; this.src='@Url.Content("~/images/default-avatar.png")';" />
+                    <section class="print-section">
+                        <h3>Kontak</h3>
+                        <dl class="print-dl">
+                            <dt>Handphone</dt>
+                            <dd>@Display(Model.hp_1)</dd>
+                            <dt>Email Kantor</dt>
+                            <dd>@Display(Model.email_kantor)</dd>
+                            <dt>Email Pribadi</dt>
+                            <dd>@Display(Model.email_pribadi)</dd>
+                        </dl>
+                    </section>
+                    <section class="print-section">
+                        <h3>Finansial & Pajak</h3>
+                        <dl class="print-dl">
+                            <dt>Bank</dt>
+                            <dd>@DisplayGabung(Model.bank, Model.no_rek, " - ")</dd>
+                            <dt>Atas Nama</dt>
+                            <dd>@Display(Model.nama_pemilik)</dd>
+                            <dt>NPWP</dt>
+                            <dd>@Display(Model.no_npwp)</dd>
+                            <dt>BPJS Kes.</dt>
+                            <dd>@Display(Model.no_bpjskes)</dd>
+                            <dt>BPJS TK</dt>
+                            <dd>@Display(Model.no_bpjstk)</dd>
+                        </dl>
+                    </section>
+                </div>
+                <div class="print-col-2">
+                    <section class="print-section">
+                        <h3>@Display(Model.nama_lengkap)</h3>
+                        <dl class="print-dl">
+                            <dt>Posisi</dt>
+                            <dd>@Display(Model.posisi)</dd>
+                            <dt>Departemen</dt>
+                            <dd>@Display(Model.depart)</dd>
+                            <dt>NIK</dt>
+                            <dd>@Display(Model.no_nik)</dd>
+                            <dt>No. KTP</dt>
+                            <dd>@Display(Model.no_ktp)</dd>
+                        </dl>
+                    </section>
+                    <section class="print-section">
+                        <h3>Data Pribadi</h3>
+                        <dl class="print-dl">
+                            <dt>TTL</dt>
+                            <dd>@DisplayTempatTanggalLahir(Model.tmp_lahir, Model.tgl_lahir)</dd>
+                            <dt>Alamat</dt>
+                            <dd>@Display(Model.alamat_ktp)</dd>
+                            <dt>Agama</dt>
+                            <dd>@Display(Model.agama)</dd>
+                            <dt>Jenis Kelamin</dt>
+                            <dd>@Display(Model.jk)</dd>
+                            <dt>Status Nikah</dt>
+                            <dd>@Display(Model.stat_nikah)</dd>
+                        </dl>
+                    </section>
+                    <section class="print-section">
+                        <h3>Data Kepegawaian</h3>
+                        <dl class="print-dl">
+                            <dt>Tgl. Masuk</dt>
+                            <dd>@Display(Model.doh, "dd MMMM yyyy")</dd>
+                            <dt>Level/Grade</dt>
+                            <dd>@DisplayGabung(Model.level, Model.grade, " / ")</dd>
+                            <dt>Lokasi Kerja</dt>
+                            <dd>@Display(Model.lokker)</dd>
+                            <dt>POH</dt>
+                            <dd>@Display(Model.poh)</dd>
+                            <dt>Status</dt>
+                            <dd>@(Model.tgl_nonaktif == null ? "Aktif" : "Non-Aktif")</dd>
+                        </dl>
+                    </section>
+                </div>
+            </main>
+            <section class="print-section">
+                <h3>Riwayat Pelanggaran</h3>
+                <table class="print-table">
+                    <thead><tr><th>Jenis</th><th>Tanggal</th><th>Keterangan</th><th>Hukuman</th></tr></thead>
+                    <tbody>
+                        @if (dummyPelanggaranList.Any())
+                        {
+                            @foreach (var p in dummyPelanggaranList)
+                            {
+                                <tr><td>@p.Jenis</td><td>@p.Tanggal.ToString("dd/MM/yy")</td><td>@p.Keterangan</td><td>@p.Hukuman</td></tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="4" style="text-align: center;">Tidak ada riwayat pelanggaran.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+            <footer class="print-footer">
+                Dokumen ini dicetak pada @DateTime.Now.ToString("dd MMMM yyyy, HH:mm") WITA
+            </footer>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string Display(string? value, string placeholder = "-") => !string.IsNullOrEmpty(value) ? value : placeholder;
+    string Display(DateTime? date, string format = "dd MMMM yyyy", string placeholder = "-") => date.HasValue ? date.Value.ToString(format) : placeholder;
+    string DisplayTempatTanggalLahir(string? tempat, DateTime? tanggal, string placeholder = "-")
+    {
+        string tempatStr = !string.IsNullOrEmpty(tempat) ? tempat : "";
+        string tanggalStr = tanggal.HasValue ? tanggal.Value.ToString("dd MMMM yyyy") : "";
+        if (string.IsNullOrEmpty(tempatStr) && string.IsNullOrEmpty(tanggalStr)) return placeholder;
+        return $"{tempatStr}, {tanggalStr}".Trim(',', ' ');
+    }
+    string DisplayGabung(string? val1, string? val2, string separator = " / ", string placeholder = "-")
+    {
+        var parts = new[] { val1, val2 }.Where(s => !string.IsNullOrEmpty(s));
+        return parts.Any() ? string.Join(separator, parts) : placeholder;
+    }
+    string DisplayKontakDarurat(string? nama, string? relasi, string? hp, string placeholder = "-")
+    {
+        if (string.IsNullOrEmpty(nama) && string.IsNullOrEmpty(hp)) return placeholder;
+        string namaStr = Display(nama, "N/A");
+        string relasiStr = !string.IsNullOrEmpty(relasi) ? $" ({relasi})" : "";
+        string hpStr = !string.IsNullOrEmpty(hp) ? $" - {hp}" : "";
+        return $"{namaStr}{relasiStr}{hpStr}";
+    }
+}
+

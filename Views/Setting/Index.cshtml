@@ -1,0 +1,96 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">MASTER - @ViewBag.Title</h6>
+    </div>
+    <div class="card-body">
+        <form id="formBS">
+            <input type="hidden" id="id" name="id" />
+            <div class="form-group">
+                <label for="nama">Nama Aplikasi</label>
+                <input type="text" class="form-control" id="nama" name="nama">
+            </div>
+            <div class="form-group">
+                <label for="description">Deskripsi Aplikasi</label>
+                <input type="text" class="form-control" id="description" name="description">
+            </div>
+
+            <button type="button" onclick="updateData()" id="btnSave" class="btn btn-primary">Save</button>
+        </form>
+    </div>
+</div>
+
+
+@section styles {
+    <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet" />
+}
+
+@section scripts {
+    <script src="~/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="~/vendor/datatables/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/alertify.min.js"></script>
+    <script>
+        var link = '@Url.Action("Function", "Controller")'
+        var controller_name = "@ViewBag.Controller"
+        var dataTable
+
+        $(document).ready(function () {
+            getData()
+        })
+
+        function getData() {
+            link = link.replace("Controller", controller_name);
+            link = link.replace("Function", "Get");
+
+            $.ajax({
+                type: "GET",
+                url: link,
+                success: function (response) {
+                    if (response.success) {
+                        var data = response.data;
+                        $('#id').val(data.id);
+                        $('#nama').val(data.nama);
+                        $('#description').val(data.description);
+
+                    } else {
+                        alert("Terjadi kesalahan: " + response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("Terjadi kesalahan: ", error);
+                    alert("Terjadi kesalahan saat mengambil data.");
+                }
+            });
+            link = '@Url.Action("Function", "Controller")';
+        }
+
+        function updateData() {
+            var id = $('#id').val();
+            var link = '@Url.Action("Update", "Setting")';
+            $.ajax({
+                type: "POST",
+                url: link + '/' + id,
+                data: $('#formBS').serialize(),
+                success: function (data) {
+                    if (data.success) {
+                        alertify.notify('Data berhasil diubah', 'success', 5);
+                        location.reload();
+                    } else {
+                        alert(data.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("Terjadi kesalahan: ", error);
+                    alert("Terjadi kesalahan saat mengupdate data.");
+                }
+            })
+            link = '@Url.Action("Function", "Controller")';
+        }
+    </script>
+
+}

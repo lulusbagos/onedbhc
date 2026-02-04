@@ -1,0 +1,632 @@
+﻿@{
+    ViewData["Title"] = "Persetujuan Manager";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css" />
+    <style>
+        :root {
+            --primary-dark: #343a40;
+            --secondary-gray: #6c757d;
+            --light-gray-bg: #f8f9fc;
+            --border-color: #e3e6f0;
+            --skk-color: #4e73df;
+            --pernikahan-color: #6610f2;
+            --duka-color: #5a5c69;
+            --warning-color: #f6c23e; /* Warna kuning untuk pending */
+        }
+
+        .stats-card {
+            border-left: 4px solid;
+            border-radius: .35rem;
+            transition: transform 0.2s;
+        }
+
+            .stats-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+            }
+
+        .stats-card-pending {
+            border-left-color: var(--warning-color);
+        }
+
+        .stats-card i {
+            font-size: 2rem;
+            color: #dddfeb;
+        }
+
+        .badge-jenis {
+            padding: 0.4em 0.8em;
+            font-size: 0.8rem;
+            color: #fff;
+            border-radius: 50px;
+        }
+
+        .badge-skk {
+            background-color: var(--skk-color);
+        }
+
+        .badge-pernikahan {
+            background-color: var(--pernikahan-color);
+        }
+
+        .badge-duka {
+            background-color: var(--duka-color);
+        }
+
+        .modal-header-skk {
+            background-color: var(--skk-color);
+            color: white;
+        }
+
+        .modal-header-pernikahan {
+            background-color: var(--pernikahan-color);
+            color: white;
+        }
+
+        .modal-header-duka {
+            background-color: var(--duka-color);
+            color: white;
+        }
+
+        .modal-header-default {
+            background-color: var(--primary-dark);
+            color: white;
+        }
+
+        .modal-header .close {
+            color: white;
+            text-shadow: none;
+            opacity: 0.9;
+        }
+
+        .modal-body {
+            background-color: var(--light-gray-bg);
+        }
+
+            .modal-body .nav-tabs {
+                border-bottom: 2px solid var(--border-color);
+            }
+
+                .modal-body .nav-tabs .nav-link {
+                    font-weight: 600;
+                    color: var(--secondary-gray);
+                    border: none;
+                    border-bottom: 2px solid transparent;
+                    padding: 1rem 1.25rem;
+                    transition: all 0.2s ease;
+                }
+
+                    .modal-body .nav-tabs .nav-link:hover {
+                        border-bottom-color: var(--secondary-gray);
+                    }
+
+                    .modal-body .nav-tabs .nav-link.active {
+                        color: var(--primary-dark);
+                        background-color: #fff;
+                        border: 1px solid var(--border-color);
+                        border-bottom: 1px solid #fff;
+                        margin-bottom: -1px;
+                    }
+
+            .modal-body .tab-content {
+                padding: 1.5rem;
+                background-color: #fff;
+                border: 1px solid var(--border-color);
+                border-top: none;
+                border-radius: 0 0 .35rem .35rem;
+            }
+
+        /* PERBAIKAN: Style untuk iframe preview */
+        #tab-preview {
+            background-color: #333; /* Latar belakang gelap untuk kontras */
+            padding: 1rem;
+            border-radius: 0 0 .35rem .35rem;
+        }
+
+        #preview-iframe {
+            width: 100%;
+            height: 60vh; /* Tinggi 60% dari viewport */
+            border: 1px solid #dee2e6;
+            background-color: #fff; /* Latar belakang iframe putih */
+            border-radius: .25rem;
+        }
+
+
+        .detail-card {
+            border: 1px solid var(--border-color);
+            border-radius: .35rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.03);
+        }
+
+            .detail-card .card-header {
+                background-color: var(--light-gray-bg);
+                font-weight: 700;
+                color: var(--primary-dark);
+                border-bottom: 1px solid var(--border-color);
+                padding: 0.75rem 1.25rem;
+            }
+
+        .detail-list dt {
+            font-weight: 500;
+            color: #858796;
+            padding-top: 5px;
+        }
+
+        .detail-list dd {
+            font-weight: 600;
+            color: #5a5c69;
+            margin-bottom: 0.75rem;
+            padding-top: 5px;
+        }
+
+        .file-list-group .list-group-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            border-color: var(--border-color);
+            transition: background-color 0.15s ease-in-out;
+        }
+
+            .file-list-group .list-group-item:hover {
+                background-color: #f8f9fa;
+            }
+
+        .file-list-group .file-name {
+            font-weight: 600;
+            color: #5a5c69;
+        }
+
+        .action-section {
+            background-color: var(--light-gray-bg);
+            border: 1px solid var(--border-color);
+            border-radius: .35rem;
+            padding: 1.5rem;
+        }
+
+        #remarks-section {
+            transition: all 0.3s ease-in-out;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+            #remarks-section.show {
+                max-height: 500px;
+                opacity: 1;
+                transform: translateY(0);
+                margin-top: 1rem;
+            }
+
+        /* Pastikan tombol simpan terlihat jelas */
+        #btnSimpanTindakan.btn-secondary {
+            background-color: #858796;
+            border-color: #858796;
+        }
+
+    </style>
+}
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Dasbor Persetujuan Manager</h1>
+    </div>
+
+    <!-- Kartu Statistik -->
+    <div class="row">
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card stats-card stats-card-pending shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Menunggu Persetujuan Anda</div>
+                            <div id="count-pending" class="h5 mb-0 font-weight-bold text-gray-800">0</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-hourglass-half fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Tambahkan kartu lain jika perlu -->
+    </div>
+
+    <!-- Tabel Pengajuan -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Daftar Pengajuan Menunggu Persetujuan</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="tableApprovalManager" class="table table-hover" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Jenis Pengajuan</th>
+                            <th>Nama Karyawan</th>
+                            <th>Departemen</th>
+                            <th>Tgl. Pengajuan</th>
+                            <th>Diajukan Oleh</th> <!-- Tambah kolom Diajukan Oleh -->
+                            <th class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detail & Tindakan -->
+<div class="modal fade" id="modalDetail" tabindex="-1" role="dialog" aria-labelledby="modalDetailLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header modal-header-default">
+                <h5 class="modal-title" id="modalDetailLabel"><i class="fas fa-file-alt mr-2"></i>Proses Persetujuan Manager</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Nav Tabs -->
+                <ul class="nav nav-tabs" id="approvalTab" role="tablist">
+                    <li class="nav-item"><a class="nav-link active" id="tab-detail-button" data-toggle="tab" href="#tab-detail" role="tab"><i class="fas fa-info-circle mr-2"></i>Detail Pengajuan</a></li>
+                    <!-- PERBAIKAN: Tambah Tab Preview -->
+                    <li class="nav-item"><a class="nav-link" id="tab-preview-button" data-toggle="tab" href="#tab-preview" role="tab"><i class="fas fa-file-invoice mr-2"></i>Preview Surat</a></li>
+                    <li class="nav-item"><a class="nav-link" id="tab-dokumen-button" data-toggle="tab" href="#tab-dokumen" role="tab"><i class="fas fa-paperclip mr-2"></i>Dokumen Pendukung</a></li>
+                    <li class="nav-item"><a class="nav-link" id="tab-tindakan-button" data-toggle="tab" href="#tab-tindakan" role="tab"><i class="fas fa-gavel mr-2"></i>Tindakan Persetujuan</a></li>
+                </ul>
+                <!-- Tab Content -->
+                <div class="tab-content" id="approvalTabContent">
+                    <!-- Tab Detail -->
+                    <div class="tab-pane fade show active" id="tab-detail" role="tabpanel">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="card detail-card">
+                                    <div class="card-header"><i class="fas fa-user-tie mr-2"></i>Informasi Karyawan</div>
+                                    <div class="card-body"><dl class="row detail-list mb-0" id="detail-karyawan-content"></dl></div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card detail-card">
+                                    <div class="card-header"><i class="fas fa-file-invoice mr-2"></i>Detail Pengajuan</div>
+                                    <div class="card-body"><dl class="row detail-list mb-0" id="detail-pengajuan-content"></dl></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Tambah bagian Remarks Admin -->
+                        <div class="card detail-card mt-3">
+                            <div class="card-header"><i class="fas fa-comment-dots mr-2"></i>Catatan dari Admin Reviewer</div>
+                            <div class="card-body">
+                                <p id="admin-remarks-content" class="mb-0 text-muted"><em>Tidak ada catatan.</em></p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- PERBAIKAN: Tambah Tab Pane Preview -->
+                    <div class="tab-pane fade" id="tab-preview" role="tabpanel">
+                        <p class="text-muted small">Ini adalah preview dokumen yang akan dihasilkan jika disetujui. Dokumen Santunan Duka belum termasuk lampiran.</p>
+                        <iframe id="preview-iframe" src="about:blank" title="Preview Dokumen"></iframe>
+                    </div>
+                    <!-- Tab Dokumen -->
+                    <div class="tab-pane fade" id="tab-dokumen" role="tabpanel">
+                        <div class="card detail-card">
+                            <div class="card-header"><i class="fas fa-folder-open mr-2"></i>Daftar Dokumen Terlampir</div>
+                            <div class="card-body"><div class="list-group file-list-group" id="detail-dokumen-content"></div></div>
+                        </div>
+                    </div>
+                    <!-- Tab Tindakan -->
+                    <div class="tab-pane fade" id="tab-tindakan" role="tabpanel">
+                        <div class="action-section">
+                            <h5 class="mb-3 font-weight-bold text-gray-800"><i class="fas fa-gavel mr-2"></i>Tindakan Persetujuan</h5>
+                            <input type="hidden" id="approvalId" /> <!-- Simpan ID pengajuan -->
+                            <div class="mb-3">
+                                <label class="form-label font-weight-bold">Pilih Tindakan:</label>
+                                <div class="form-check" style="font-size: 1.1rem;"><input class="form-check-input" type="radio" name="approvalAction" id="actionSetuju" value="Disetujui" required><label class="form-check-label" for="actionSetuju"><i class="fas fa-check-circle text-success mr-2"></i>Setujui Pengajuan</label></div>
+                                <div class="form-check mt-2" style="font-size: 1.1rem;"><input class="form-check-input" type="radio" name="approvalAction" id="actionTolak" value="Ditolak" required><label class="form-check-label" for="actionTolak"><i class="fas fa-times-circle text-danger mr-2"></i>Tolak Pengajuan</label></div>
+                            </div>
+                            <div id="remarks-section">
+                                <label for="remarks" class="form-label font-weight-bold">Catatan / Alasan Penolakan <span id="remarks-required-label" class="text-danger d-none">*</span></label>
+                                <textarea class="form-control" id="remarks" rows="3" placeholder="Berikan catatan (opsional jika setuju), atau alasan penolakan (wajib jika tolak)..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-secondary" id="btnSimpanTindakan" disabled><i class="fas fa-hand-pointer mr-2"></i>Pilih Tindakan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(document).ready(function () {
+            const baseUrl = '@Url.Content("~/")'; // Gunakan ini untuk path file
+
+            // Inisialisasi DataTable
+            const table = $('#tableApprovalManager').DataTable({
+                "ajax": {
+                    "url": `${baseUrl}SuratPengajuan/GetForManagerApproval`, // Endpoint API
+                    "type": "GET",
+                    "datatype": "json",
+                    "error": function (xhr, error, thrown) {
+                        console.error("Error loading manager approval data:", error, thrown);
+                        Swal.fire('Error', 'Gagal memuat data persetujuan. Coba refresh halaman.', 'error');
+                    }
+                },
+                "columns": [
+                    { "data": null, "render": (data, type, row, meta) => meta.row + 1, "width": "5%", "className": "text-center" },
+                    { "data": "jenis_pengajuan", "render": function(data) {
+                        let badgeClass = '';
+                        let icon = '';
+                        if (data === 'Surat Keterangan Kerja') { badgeClass = 'badge-skk'; icon = 'fas fa-file-alt mr-1'; }
+                        else if (data === 'Hadiah Pernikahan') { badgeClass = 'badge-pernikahan'; icon = 'fas fa-ring mr-1'; }
+                        else if (data === 'Santunan Duka') { badgeClass = 'badge-duka'; icon = 'fas fa-cross mr-1'; }
+                        return `<span class="badge-jenis ${badgeClass}"><i class="${icon}"></i>${data || 'N/A'}</span>`;
+                    }},
+                    { "data": "nama_lengkap", "render": (data, type, row) => `<strong>${data || '(Nama Tidak Ditemukan)'}</strong><br><small class="text-muted">NIK: ${row.nik || '-'}</small>` },
+                    { "data": "depart", "defaultContent": "-" },
+                    { "data": "tanggal_pengajuan", "render": (data) => data ? new Date(data).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-' },
+                    { "data": "insert_by", "defaultContent": "-" }, // Kolom Diajukan Oleh
+                    {
+                        "data": "id", "className": "text-center", "orderable": false,
+                        "render": function (data, type, row) {
+                            return `<button class="btn btn-sm btn-primary btn-proses" data-id="${data}" title="Proses Pengajuan"><i class="fas fa-cogs fa-sm mr-1"></i> Proses</button>`;
+                        }
+                    }
+                ],
+                "order": [[4, "asc"]], // Urutkan berdasarkan Tgl. Pengajuan terlama dulu
+                "language": {
+                     "emptyTable": "Tidak ada pengajuan yang menunggu persetujuan Anda saat ini.",
+                     "info": "Menampilkan _START_ s/d _END_ dari _TOTAL_ pengajuan",
+                     "infoEmpty": "Tidak ada data",
+                     "infoFiltered": "(difilter dari _MAX_ total data)",
+                     "lengthMenu": "Tampilkan _MENU_ data",
+                     "loadingRecords": "Memuat...",
+                     "processing": "Sedang memproses...",
+                     "search": "Cari:",
+                     "zeroRecords": "Tidak ada data yang cocok",
+                     "paginate": { "first": "Awal", "last": "Akhir", "next": "Berikutnya", "previous": "Sebelumnya" }
+                 },
+                 "processing": true,
+                "drawCallback": function (settings) {
+                     // Update count pending
+                    $('#count-pending').text(this.api().rows({ search: 'applied' }).data().length);
+                    // Re-attach event listener
+                    $('.btn-proses').off('click').on('click', function () {
+                         const rowData = table.row($(this).closest('tr')).data();
+                         if (rowData) {
+                             displayDetails(rowData);
+                         } else {
+                             console.error("Could not get row data for button click.");
+                         }
+                    });
+                    // Re-init tooltips if any
+                    $('[data-toggle="tooltip"]').tooltip('dispose').tooltip({ container: 'body' });
+                }
+            });
+
+            // --- Logika Modal Detail ---
+
+            function displayDetails(data) {
+                 // Reset state modal
+                resetModalApproval(); // Panggil fungsi reset lengkap
+                $('#approvalId').val(data.id);
+                $('#approvalTab a[href="#tab-detail"]').tab('show'); // Kembali ke tab pertama
+
+                // Set warna header modal
+                const modalHeader = $('#modalDetail .modal-header');
+                modalHeader.removeClass('modal-header-skk modal-header-pernikahan modal-header-duka modal-header-default');
+                if (data.jenis_pengajuan === 'Surat Keterangan Kerja') modalHeader.addClass('modal-header-skk');
+                else if (data.jenis_pengajuan === 'Hadiah Pernikahan') modalHeader.addClass('modal-header-pernikahan');
+                else if (data.jenis_pengajuan === 'Santunan Duka') modalHeader.addClass('modal-header-duka');
+                else modalHeader.addClass('modal-header-default'); // Fallback
+
+                // Format tanggal helper
+                const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-';
+                const f = (val) => val ? $('<div>').text(val).html() : '-'; // Basic escaping
+
+                // Isi Detail Karyawan
+                // Data ini (nama_lengkap, depart, posisi, doh) sudah otomatis
+                // data yang dikoreksi Admin, berkat logika di GetBasePengajuanQuery
+                $('#detail-karyawan-content').html(`
+                    <dt class="col-sm-4">Nama</dt><dd class="col-sm-8">${f(data.nama_lengkap)}</dd>
+                    <dt class="col-sm-4">NIK</dt><dd class="col-sm-8">${f(data.nik)}</dd>
+                    <dt class="col-sm-4">Departemen</dt><dd class="col-sm-8">${f(data.depart)}</dd>
+                    <dt class="col-sm-4">Posisi</dt><dd class="col-sm-8">${f(data.posisi)}</dd>
+                     <dt class="col-sm-4">Tgl. Masuk</dt><dd class="col-sm-8">${formatDate(data.doh)}</dd>
+                `);
+
+                // Isi Detail Pengajuan (Termasuk Nomor, Status Karyawan, dan Verifikasi Duka dari Admin)
+                let detailPengajuan = `
+                    <dt class="col-sm-4">Tgl. Pengajuan</dt><dd class="col-sm-8">${formatDate(data.tanggal_pengajuan)}</dd>
+                    <dt class="col-sm-4">Diajukan Oleh</dt><dd class="col-sm-8">${f(data.insert_by)}</dd>
+                    <dt class="col-sm-4">Status Saat Ini</dt><dd class="col-sm-8"><span class="badge badge-warning">${f(data.status)}</span></dd>
+                `;
+                if (data.jenis_pengajuan === 'Surat Keterangan Kerja') {
+                     detailPengajuan += `<dt class="col-sm-4">Keperluan</dt><dd class="col-sm-8">${f(data.keperluan)}</dd>`;
+                     detailPengajuan += `<dt class="col-sm-4">Nomor Surat (Draft)</dt><dd class="col-sm-8">${f(data.nomor)}</dd>`; // Tampilkan nomor dari admin
+                     detailPengajuan += `<dt class="col-sm-4">Status Karyawan</dt><dd class="col-sm-8">${f(data.status_karyawan)}</dd>`; // Tampilkan status dari admin
+                }
+                else if (data.jenis_pengajuan === 'Hadiah Pernikahan') {
+                    detailPengajuan += `<dt class="col-sm-4">Tgl. Menikah</dt><dd class="col-sm-8">${formatDate(data.tgl_menikah)}</dd><dt class="col-sm-4">Nama Pasangan</dt><dd class="col-sm-8">${f(data.nama_pasangan)}</dd>`;
+                }
+                else if (data.jenis_pengajuan === 'Santunan Duka') {
+                    detailPengajuan += `<dt class="col-sm-4">Nama Almarhum</dt><dd class="col-sm-8">${f(data.nama_almarhum)}</dd><dt class="col-sm-4">Hubungan</dt><dd class="col-sm-8">${f(data.hubungan_keluarga)}</dd><dt class="col-sm-4">Tgl. Meninggal</dt><dd class="col-sm-8">${formatDate(data.tgl_meninggal)}</dd>`;
+                     // PERUBAHAN: Tampilkan Verifikasi Duka dari Admin di sini
+                    detailPengajuan += `<dt class="col-sm-12 text-primary mt-3">--- Verifikasi HRD (Hasil Review Admin) ---</dt>`;
+                    detailPengajuan += `<dt class="col-sm-5">Status HRIS</dt><dd class="col-sm-7">${f(data.status_hris) || '(Belum Diverifikasi)'}</dd>`;
+                    detailPengajuan += `<dt class="col-sm-5">Nama Keluarga (DB)</dt><dd class="col-sm-7">${f(data.status_karyawan_saat_duka) || '(Belum Diverifikasi)'}</dd>`;
+                    detailPengajuan += `<dt class="col-sm-5">Pernah Klaim</dt><dd class="col-sm-7">${f(data.pernah_klaim_duka) || '(Belum Diverifikasi)'}</dd>`;
+                    detailPengajuan += `<dt class="col-sm-5">Tgl Klaim Sblmnya</dt><dd class="col-sm-7">${formatDate(data.tgl_klaim_duka_sebelumnya)}</dd>`;
+                }
+                $('#detail-pengajuan-content').html(detailPengajuan);
+
+                 // Tampilkan Remarks Admin Reviewer
+                 $('#admin-remarks-content').html(data.remarks ? $('<div>').text(data.remarks).html() : '<em class="text-muted">Tidak ada catatan dari Admin.</em>');
+
+
+                // Isi Daftar Dokumen
+                $('#detail-dokumen-content').html(generateFileLinks(data));
+
+                // PERBAIKAN: Set Iframe Preview URL (tambahkan &preview=true)
+                let printUrl = `${baseUrl}SuratPengajuan/PrintView?id=${data.id}&preview=true`;
+                // Dokumen duka menggunakan URL gabungan HANYA jika sudah selesai
+                // Karena manajer me-review SEBELUM selesai, kita gunakan PrintDuka biasa
+                if (data.jenis_pengajuan === 'Santunan Duka') {
+                    // Gunakan PrintView yang akan me-routing ke PrintDuka
+                    printUrl = `${baseUrl}SuratPengajuan/PrintView?id=${data.id}&preview=true`;
+                } else if (data.jenis_pengajuan === 'Hadiah Pernikahan') {
+                    // Gunakan PrintView yang akan me-routing ke PrintPernikahan
+                     printUrl = `${baseUrl}SuratPengajuan/PrintView?id=${data.id}&preview=true`;
+                }
+                $('#preview-iframe').attr('src', printUrl);
+
+
+                // Tampilkan Modal
+                $('#modalDetail').modal('show');
+            }
+
+            function generateFileLinks(data) {
+                const fileMap = {
+                    "file_path_buku_nikah": "Buku Nikah",
+                    "file_path_ktp_pernikahan": "KTP (Pernikahan)",
+                    "file_path_surat_kematian": "Surat Kematian",
+                    "file_path_ktp_duka": "KTP (Duka)",
+                    "file_path_kk_duka": "Kartu Keluarga (Duka)",
+                    "file_path_other_duka": "Dokumen Lainnya"
+                 };
+                let linksHtml = ''; let hasFiles = false;
+                for (const key in fileMap) {
+                    if (data[key]) {
+                        hasFiles = true;
+                         let fileUrl = data[key];
+                         // Pastikan URL selalu mulai dengan /
+                         if (fileUrl && !fileUrl.startsWith('/')) { fileUrl = '/' + fileUrl; }
+                        linksHtml += `<div class="list-group-item">
+                                        <span class="file-name"><i class="fas fa-file-pdf text-danger mr-2"></i>${fileMap[key]}</span>
+                                        <a href="${baseUrl}${fileUrl ? fileUrl.substring(1) : '#'}" ${fileUrl ? 'target="_blank"' : ''} class="btn btn-sm btn-outline-primary ${fileUrl ? '' : 'disabled'}"><i class="fas fa-eye mr-1"></i>Lihat File</a>
+                                      </div>`;
+                    }
+                }
+                return hasFiles ? linksHtml : '<p class="text-center text-muted m-3">Tidak ada dokumen terlampir.</p>';
+            }
+
+            // --- Logika Tindakan Persetujuan ---
+            $('input[name="approvalAction"]').change(function() {
+                const simpanButton = $('#btnSimpanTindakan');
+                simpanButton.prop('disabled', false); // Aktifkan tombol
+                const isRejected = (this.value === 'Ditolak');
+
+                $('#remarks-section').toggleClass('show', isRejected);
+                $('#remarks-required-label').toggleClass('d-none', !isRejected); // Tampilkan tanda * jika tolak
+                $('#remarks').prop('required', isRejected); // Set required jika tolak
+
+                if (isRejected) {
+                    simpanButton.removeClass('btn-secondary btn-success').addClass('btn-danger').html('<i class="fas fa-times-circle mr-2"></i>Konfirmasi Tolak');
+                } else {
+                    simpanButton.removeClass('btn-secondary btn-danger').addClass('btn-success').html('<i class="fas fa-check-circle mr-2"></i>Konfirmasi Setuju');
+                }
+            });
+
+            function submitApproval() {
+                const status = $('input[name="approvalAction"]:checked').val();
+                if (!status) { Swal.fire('Peringatan', 'Pilih tindakan (Setuju atau Tolak) terlebih dahulu.', 'warning'); return; }
+
+                const id = $('#approvalId').val();
+                const remarksText = $('#remarks').val().trim();
+
+                // Validasi remarks jika menolak
+                if (status === 'Ditolak' && !remarksText) {
+                     Swal.fire('Gagal', 'Alasan penolakan wajib diisi jika Anda memilih Tolak.', 'error');
+                     $('#remarks').focus(); // Fokus ke textarea
+                     return;
+                }
+
+                let payload = { id, newStatus: status, remarks: remarksText };
+
+                // Konfirmasi sebelum submit
+                Swal.fire({
+                     title: `Konfirmasi Persetujuan`,
+                     text: `Anda yakin ingin ${status === 'Disetujui' ? 'menyetujui' : 'menolak'} pengajuan ini? Tindakan ini tidak dapat dibatalkan.`,
+                     icon: status === 'Disetujui' ? 'question' : 'warning',
+                     showCancelButton: true,
+                     confirmButtonColor: status === 'Disetujui' ? '#1cc88a' : '#e74a3b',
+                     cancelButtonColor: '#858796',
+                     confirmButtonText: `Ya, ${status === 'Disetujui' ? 'Setujui' : 'Tolak'}!`,
+                     cancelButtonText: 'Batal'
+                }).then((result) => {
+                     if (result.isConfirmed) {
+                         sendApprovalRequest(payload); // Kirim request setelah konfirmasi
+                     }
+                });
+            }
+
+             // Fungsi terpisah untuk mengirim request
+             function sendApprovalRequest(payload) {
+                 const submitButton = $('#btnSimpanTindakan');
+                 submitButton.prop('disabled', true).html('<span class="spinner-border spinner-border-sm mr-2"></span>Memproses...');
+
+                 fetch(`${baseUrl}SuratPengajuan/ProsesApprovalManager`, {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify(payload)
+                 })
+                 .then(res => {
+                      if (!res.ok) {
+                           // Coba baca pesan error dari server
+                           return res.json().then(errData => {
+                                throw new Error(errData.message || `HTTP error! status: ${res.status}`);
+                           }).catch(() => { throw new Error(`HTTP error! status: ${res.status}`); });
+                      }
+                      return res.json();
+                 })
+                 .then(result => {
+                     if (result.success) {
+                         $('#modalDetail').modal('hide');
+                         Swal.fire('Berhasil!', result.message, 'success');
+                         table.ajax.reload(null, false); // Reload tabel tanpa reset paging
+                     } else {
+                         Swal.fire('Gagal', result.message || 'Terjadi kesalahan.', 'error');
+                     }
+                 })
+                 .catch(error => {
+                     console.error('Error submitting approval:', error);
+                     Swal.fire('Error', error.message || 'Terjadi kesalahan saat menghubungi server.', 'error');
+                 })
+                 .finally(() => {
+                      // Kembalikan tombol ke state awal setelah selesai
+                      resetModalApproval(); // Panggil fungsi reset
+                 });
+             }
+
+             // Fungsi reset state modal setelah submit atau ditutup
+             function resetModalApproval() {
+                 $('#approvalId').val('');
+                 $('#remarks').val('');
+                 $('input[name="approvalAction"]').prop('checked', false);
+                 $('#remarks-section').removeClass('show');
+                 $('#remarks-required-label').addClass('d-none');
+                 $('#btnSimpanTindakan').prop('disabled', true).removeClass('btn-success btn-danger').addClass('btn-secondary').html('<i class="fas fa-hand-pointer mr-2"></i>Pilih Tindakan');
+                 // PERBAIKAN: Kosongkan iframe saat modal di-reset
+                 $('#preview-iframe').attr('src', 'about:blank');
+             }
+
+            // PERBAIKAN: Reset iframe juga saat modal ditutup (hidden.bs.modal)
+            $('#modalDetail').on('hidden.bs.modal', function () {
+                 resetModalApproval();
+            });
+
+
+            $('#btnSimpanTindakan').click(submitApproval);
+
+        });
+    </script>
+}

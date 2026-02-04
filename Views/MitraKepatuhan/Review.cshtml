@@ -1,0 +1,661 @@
+﻿@model one_db.Controllers.MitraReviewViewModel
+@{
+    ViewData["Title"] = ViewBag.Title ?? $"Review Pengajuan: {Model.Pengajuan?.nama_pt}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var pengajuan = Model.Pengajuan; // Alias for easier access
+    var uploadLink = Url.Action("Upload", "MitraKepatuhan", new { id = pengajuan?.id }, protocol: Context?.Request?.Scheme);
+    // Pastikan AllMasterDocuments tidak null sebelum di-group
+    var allDocumentsByGroup = Model.AllMasterDocuments?.GroupBy(d => d.grup).OrderBy(g => g.Key) ?? Enumerable.Empty<IGrouping<string, tbl_m_dokumen_kepatuhan>>();
+}
+
+@section Styles {
+    <!-- CSS tambahan jika diperlukan -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        body {
+            background: linear-gradient(120deg, #0a7cff, #6a5cff, #1cc88a);
+            background-size: 180% 180%;
+            animation: bgFlow 18s ease infinite;
+        }
+
+        @@keyframes bgFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .card {
+            border: none;
+            border-radius: 0.85rem;
+            box-shadow: 0 18px 40px rgba(10, 124, 255, 0.18);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, rgba(10,124,255,0.12), rgba(108,99,255,0.12));
+            border-bottom: none;
+        }
+
+        .document-checklist-group {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e3e6f0; /* Garis pemisah antar grup */
+        }
+
+            .document-checklist-group:last-child {
+                border-bottom: none;
+                margin-bottom: 0;
+                padding-bottom: 0;
+            }
+
+            .document-checklist-group h6 {
+                margin-bottom: 0.75rem;
+                color: #5a5c69; /* Warna sub-heading SB Admin 2 */
+            }
+
+        .custom-control-label::before,
+        .custom-control-label::after {
+            top: .1rem; /* Sesuaikan posisi vertikal checkbox/radio */
+            left: -1.75rem;
+        }
+
+        .custom-control-label {
+            padding-left: 0.5rem; /* Beri jarak antara checkbox dan teks */
+            cursor: pointer;
+        }
+
+        .custom-control-input:disabled ~ .custom-control-label {
+            color: #b7b9cc; /* Warna teks disabled */
+            cursor: not-allowed;
+        }
+
+            .custom-control-input:disabled ~ .custom-control-label::before {
+                background-color: #eaecf4; /* Warna background disabled */
+            }
+
+        /* Styling untuk card detail pengajuan */
+        .detail-label {
+            font-weight: 600;
+            color: #5a5c69;
+        }
+
+        .detail-value {
+            color: #3a3b45;
+        }
+
+        /* [BARU] Style untuk label kategori risiko */
+        .risk-category-label {
+            margin-bottom: 0.25rem; /* Kurangi margin bawah */
+        }
+
+        .risk-category-options .custom-control {
+            margin-bottom: 0.5rem; /* Beri jarak antar radio button */
+        }
+
+        /* Container transition biar smooth pas muncul */
+        .risk-category-section {
+            transition: all 0.4s ease-in-out;
+            padding: 15px;
+            border-radius: 12px;
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        /* Label utama */
+        .risk-category-label {
+            font-size: 1.1rem;
+            color: #222;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Radio group spacing */
+        .risk-category-options {
+            margin-top: 10px;
+        }
+
+        /* Custom radio style */
+        .risk-category-radio {
+            accent-color: #007bff; /* warna default biru */
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+
+        /* Label radio */
+        .custom-control-label {
+            margin-left: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #444;
+            transition: color 0.3s ease;
+        }
+
+            /* Hover efek biar interaktif */
+            .custom-control-label:hover {
+                color: #007bff;
+            }
+
+        /* Warna dinamis sesuai kategori */
+        input[value="High Risk"]:checked + label {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        input[value="Medium Risk"]:checked + label {
+            color: #ffc107;
+            font-weight: bold;
+        }
+
+        input[value="Low Risk"]:checked + label {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+    </style>
+}
+
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Approval">Approval Kepatuhan</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Review: @pengajuan?.nama_pt</li>
+        </ol>
+    </nav>
+    <h1 class="h3 mb-4 text-gray-800">@ViewData["Title"]</h1>
+
+    <!-- Tampilkan Pesan Sukses/Error dari TempData -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+
+    <form asp-action="SubmitReview" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Pengajuan.id" /> <!-- ID Pengajuan -->
+
+        <div class="row">
+            <!-- Kolom Kiri: Detail Pengajuan & Form Review -->
+            <div class="col-lg-7">
+                <!-- Card Detail Pengajuan -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-info-circle mr-2"></i>Detail Pengajuan</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-2">
+                            <div class="col-sm-4 detail-label">Nama Perusahaan:</div>
+                            <div class="col-sm-8 detail-value">@pengajuan?.nama_pt</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4 detail-label">Perusahaan Induk:</div>
+                            <div class="col-sm-8 detail-value">@pengajuan?.pt_owner ?? "-"</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4 detail-label">Email PT:</div>
+                            <div class="col-sm-8 detail-value">@pengajuan?.email_pt ?? "-"</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4 detail-label">Provinsi:</div>
+                            <div class="col-sm-8 detail-value">@pengajuan?.provinsi ?? "-"</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4 detail-label">Kabupaten/Kota:</div>
+                            <div class="col-sm-8 detail-value">@pengajuan?.kabupaten ?? "-"</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4 detail-label">Kecamatan:</div>
+                            <div class="col-sm-8 detail-value">@pengajuan?.kecamatan ?? "-"</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4 detail-label">Kelurahan/Desa:</div>
+                            <div class="col-sm-8 detail-value">@pengajuan?.kelurahan ?? "-"</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4 detail-label">Catatan Pengaju:</div>
+                            <div class="col-sm-8 detail-value">@pengajuan?.review_singkat ?? "-"</div>
+                        </div>
+                        <hr>
+                        <div class="row mb-2">
+                            <div class="col-sm-4 detail-label">Diajukan Oleh:</div>
+                            <div class="col-sm-8 detail-value">@pengajuan?.insert_by ?? "-"</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4 detail-label">Tanggal Pengajuan:</div>
+                            <div class="col-sm-8 detail-value">@pengajuan?.created_at.ToString("dd MMMM yyyy, HH:mm") ?? "-"</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4 detail-label">Status Saat Ini:</div>
+                            <div class="col-sm-8 detail-value">
+                                @{
+                                    string badgeClass = "badge-secondary";
+                                    if (pengajuan?.status_pengajuan == "Menunggu Review") badgeClass = "badge-warning";
+                                    else if (pengajuan?.status_pengajuan == "Menunggu Upload Dokumen") badgeClass = "badge-info";
+                                    else if (pengajuan?.status_pengajuan == "Menunggu Review Dokumen") badgeClass = "badge-primary";
+                                    else if (pengajuan?.status_pengajuan == "Perlu Perbaikan Upload") badgeClass = "badge-danger";
+                                    else if (pengajuan?.status_pengajuan == "Disetujui") badgeClass = "badge-success";
+                                    else if (pengajuan?.status_pengajuan == "Ditolak") badgeClass = "badge-danger";
+                                }
+                                <span class="badge @badgeClass">@pengajuan?.status_pengajuan</span>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(pengajuan?.review_by))
+                        {
+                            <hr>
+                            <div class="row mb-2">
+                                <div class="col-sm-4 detail-label">Direview Oleh:</div>
+                                <!-- [DIEDIT] Explicit check for HasValue -->
+                                <div class="col-sm-8 detail-value">@pengajuan.review_by (@(pengajuan.review_at.HasValue? pengajuan.review_at.Value.ToString("dd MMM yyyy, HH:mm") : "-"))</div>
+                            </div>
+                        }
+                        <hr>
+                        <div class="row align-items-center">
+                            <div class="col-sm-4 detail-label">Link Upload:</div>
+                            <div class="col-sm-8">
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control" id="uploadLinkInput" value="@uploadLink" readonly>
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-outline-primary" id="copyUploadLink"><i class="fas fa-copy"></i></button>
+                                    </div>
+                                </div>
+                            <small class="text-muted">Bagikan ke mitra jika perlu mengunggah dokumen.</small>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-sm-12">
+                                <div class="alert alert-info mb-2">
+                                    <strong>Pilihan:</strong> salin link di atas untuk dikirim ke mitra atau lanjut unggah dokumen secara langsung di halaman Upload.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+
+                <!-- Form Review Admin OHS -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-edit mr-2"></i>Review Pengajuan</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="font-weight-bold">Perusahaan Induk</label>
+                            <select asp-for="Pengajuan.pt_owner" class="form-control">
+                                <option value="">-- Pilih Perusahaan Induk --</option>
+                                <option value="PT INDEXIM COALINDO">PT INDEXIM COALINDO</option>
+                                <option value="PT KALIMANTAN PRIMA PERSADA">PT KALIMANTAN PRIMA PERSADA</option>
+                                <option value="PT UNGGUL DINAMIKA UTAMA">PT UNGGUL DINAMIKA UTAMA</option>
+                                <option value="PT MEGA GLOBAL ENERGY">PT MEGA GLOBAL ENERGY</option>
+                                <option value="LAINNYA">LAINNYA (NON-GROUP)</option>
+                            </select>
+                            <small class="form-text text-muted">Tentukan induk/kategori agar reviewer tepat.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="approveIncomplete" name="approve_incomplete" value="true">
+                                <label class="custom-control-label" for="approveIncomplete">Setujui meski dokumen belum lengkap</label>
+                            </div>
+                            <small class="form-text text-muted">Wajib menyertakan alasan dan bukti foto jika ada dokumen yang belum lengkap.</small>
+                        </div>
+                        <div class="form-group incomplete-extra" style="display:none;">
+                            <label class="font-weight-bold">Alasan & Bukti</label>
+                            <textarea class="form-control mb-2" name="approve_incomplete_reason" id="approveIncompleteReason" rows="3" placeholder="Jelaskan alasan dokumen belum lengkap..."></textarea>
+                            <div class="input-group">
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" id="approveIncompleteProof">
+                                    <label class="custom-file-label" for="approveIncompleteProof">Upload bukti foto/pdf</label>
+                                </div>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-primary" type="button" id="btnUploadProof"><i class="fas fa-upload"></i></button>
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-1" id="proofStatus">Format: JPG/PNG/PDF, maks 10MB.</small>
+                            <input type="hidden" name="approve_incomplete_proof" id="approveIncompleteProofPath" />
+                        </div>
+
+                        <!-- Status Pengajuan -->
+                        <div class="form-group">
+                            <label asp-for="Pengajuan.status_pengajuan" class="font-weight-bold">Status Pengajuan <span class="text-danger">*</span></label>
+                            <div class="pl-3">
+                                <div class="custom-control custom-radio mb-2">
+                                    <input type="radio" id="statusDisetujui" asp-for="Pengajuan.status_pengajuan" value="Disetujui" class="custom-control-input" required>
+                                    <label class="custom-control-label" for="statusDisetujui">Disetujui</label>
+                                    <small class="form-text text-muted">Jika disetujui, pilih kategori risiko dan dokumen yang wajib diunggah.</small>
+                                </div>
+                                <div class="custom-control custom-radio mb-2">
+                                    <input type="radio" id="statusUpload" asp-for="Pengajuan.status_pengajuan" value="Menunggu Upload Dokumen" class="custom-control-input" required>
+                                    <label class="custom-control-label" for="statusUpload">Menunggu Upload Dokumen</label>
+                                    <small class="form-text text-muted">Gunakan bila dokumen sudah ditentukan dan menunggu unggah mitra.</small>
+                                </div>
+                                <div class="custom-control custom-radio">
+                                    <input type="radio" id="statusDitolak" asp-for="Pengajuan.status_pengajuan" value="Ditolak" class="custom-control-input" required>
+                                    <label class="custom-control-label" for="statusDitolak">Ditolak</label>
+                                    <small class="form-text text-muted">Jika ditolak, wajib memberikan catatan.</small>
+                                </div>
+                                <div class="custom-control custom-radio mt-2">
+                                    <input type="radio" id="statusMenunggu" asp-for="Pengajuan.status_pengajuan" value="Menunggu Review" class="custom-control-input" required>
+                                    <label class="custom-control-label" for="statusMenunggu">Kembalikan ke Menunggu Review</label>
+                                    <small class="form-text text-muted">Mengembalikan status ke awal, hapus kategori risiko jika sudah diisi.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+
+                        <!-- [BARU] Kategori Risiko Perusahaan -->
+                        <div class="form-group risk-category-section" style="display: @((pengajuan?.status_pengajuan == "Disetujui" || pengajuan?.status_pengajuan == "Menunggu Upload Dokumen") ? "block" : "none");">
+                            <label asp-for="Pengajuan.remark" class="font-weight-bold risk-category-label">
+                                Kategori Risiko Perusahaan <span class="text-danger">*</span>
+                            </label>
+                            <div class="pl-3 risk-category-options">
+                                <div class="custom-control custom-radio">
+                                    <input type="radio" id="riskHigh" asp-for="Pengajuan.remark" value="High Risk" class="custom-control-input risk-category-radio">
+                                    <label class="custom-control-label" for="riskHigh">🔥 High Risk</label>
+                                </div>
+                                <div class="custom-control custom-radio">
+                                    <input type="radio" id="riskMedium" asp-for="Pengajuan.remark" value="Medium Risk" class="custom-control-input risk-category-radio">
+                                    <label class="custom-control-label" for="riskMedium">⚡ Medium Risk</label>
+                                </div>
+                                <div class="custom-control custom-radio">
+                                    <input type="radio" id="riskLow" asp-for="Pengajuan.remark" value="Low Risk" class="custom-control-input risk-category-radio">
+                                    <label class="custom-control-label" for="riskLow">🌿 Low Risk</label>
+                                </div>
+                            </div>
+                        </div>
+                        <hr class="risk-category-section" style="display: @((pengajuan?.status_pengajuan == "Disetujui" || pengajuan?.status_pengajuan == "Menunggu Upload Dokumen") ? "block" : "none");">
+
+
+                        <!-- Catatan Admin OHS -->
+                        <div class="form-group">
+                            <label asp-for="Pengajuan.catatan_admin" class="font-weight-bold">Catatan Admin OHS</label>
+                            <textarea asp-for="Pengajuan.catatan_admin" class="form-control" rows="4" placeholder="Berikan catatan review, alasan penolakan (jika ditolak), atau informasi tambahan lainnya..."></textarea>
+                        </div>
+
+                        <!-- Tombol Aksi -->
+                        <div class="mt-4 text-right">
+                            <a asp-action="Approval" class="btn btn-secondary mr-2">
+                                <i class="fas fa-arrow-left mr-1"></i> Kembali ke Daftar
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save mr-1"></i> Simpan Hasil Review
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kolom Kanan: Checklist Dokumen Wajib (hanya tampil jika "Disetujui" dipilih) -->
+            <div class="col-lg-5" id="document-checklist-panel" style="display: @((pengajuan?.status_pengajuan == "Disetujui" || pengajuan?.status_pengajuan == "Menunggu Upload Dokumen") ? "block" : "none");">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 bg-light d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-check-square mr-2"></i>Pilih Dokumen Kepatuhan yang Wajib Diunggah</h6>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mr-1" id="checkAllBtn">Pilih Semua</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="uncheckAllBtn">Batal Pilih Semua</button>
+                        </div>
+                    </div>
+                    <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                        <p class="text-muted small">Pilih dokumen yang relevan dan wajib dilengkapi oleh <strong>@pengajuan?.nama_pt</strong>.</p>
+                        <hr>
+                        @if (Model.AllMasterDocuments != null && Model.AllMasterDocuments.Any())
+                        {
+                            var currentGroupIndex = 0;
+                            foreach (var group in allDocumentsByGroup)
+                            {
+                                <div class="document-checklist-group">
+                                    <h6 class="font-weight-bold">@group.Key</h6>
+                                    @foreach (var doc in group.OrderBy(d => d.id))
+                                    {
+                                        var inputId = $"doc_{doc.id}";
+                                        bool isChecked = Model.RequiredDocumentIds?.Contains(doc.id) ?? false;
+
+                                        <div class="custom-control custom-checkbox mb-2 ml-2">
+                                            <input type="checkbox"
+                                                   class="custom-control-input document-checkbox"
+                                                   id="@inputId"
+                                                   name="RequiredDocumentIds"
+                                                   value="@doc.id"
+                                                   @(isChecked ? "checked" : "")>
+                                            <label class="custom-control-label small" for="@inputId">
+                                                (@doc.id) @doc.nama_dokumen
+                                            </label>
+                                            <small class="form-text text-muted ml-4" style="margin-top: -5px;">@doc.deskripsi</small>
+                                        </div>
+                                    }
+                                </div>
+                                currentGroupIndex++;
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-danger">Tidak ada data master dokumen kepatuhan yang ditemukan.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+</div>
+
+@section Scripts {
+    <!-- Library JS (jQuery & Bootstrap Bundle sudah ada di _Layout) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Ambil elemen panel checklist, radio button status, dan section kategori risiko
+            const checklistPanel = $('#document-checklist-panel');
+            const radioStatus = $('input[name="Pengajuan.status_pengajuan"]');
+            const riskCategorySection = $('.risk-category-section'); // Section Kategori Risiko (label dan radio)
+            const radioRiskCategory = $('.risk-category-radio'); // Radio button Kategori Risiko
+            const checkAllBtn = $('#checkAllBtn');
+            const uncheckAllBtn = $('#uncheckAllBtn');
+            const checkboxes = $('.document-checkbox'); // Semua checkbox dokumen
+            const statusUpload = $('#statusUpload');
+            const statusDisetujui = $('#statusDisetujui');
+            const approveIncomplete = $('#approveIncomplete');
+            const incompleteExtra = $('.incomplete-extra');
+            const proofInput = $('#approveIncompleteProof');
+            const proofPathInput = $('#approveIncompleteProofPath');
+            const proofStatus = $('#proofStatus');
+            const btnUploadProof = $('#btnUploadProof');
+
+            // Fungsi untuk menampilkan/menyembunyikan panel checklist DAN Kategori Risiko
+            function toggleDependentSections() {
+                if (statusDisetujui.is(':checked') || statusUpload.is(':checked')) {
+                    checklistPanel.slideDown();
+                    riskCategorySection.slideDown(); // Tampilkan Kategori Risiko
+                    // Set 'required' untuk Kategori Risiko jika Disetujui
+                    radioRiskCategory.prop('required', true);
+                } else {
+                    checklistPanel.slideUp();
+                    riskCategorySection.slideUp(); // Sembunyikan Kategori Risiko
+                    // Hapus 'required' dan reset pilihan Kategori Risiko jika status bukan Disetujui
+                    radioRiskCategory.prop('required', false);
+                    if (!$('#statusDisetujui').is(':checked')) {
+                         radioRiskCategory.prop('checked', false); // Uncheck Kategori Risiko
+                    }
+                }
+            }
+
+            // Panggil fungsi saat halaman dimuat
+            toggleDependentSections();
+
+            // Panggil fungsi setiap kali pilihan radio STATUS berubah
+            radioStatus.on('change', function() {
+                toggleDependentSections();
+
+                // Validasi catatan jika ditolak
+                const catatanTextarea = $('#Pengajuan_catatan_admin');
+                if ($('#statusDitolak').is(':checked')) {
+                    catatanTextarea.prop('required', true);
+                    catatanTextarea.attr('placeholder', 'Wajib diisi jika status ditolak...');
+                } else {
+                    catatanTextarea.prop('required', false);
+                    catatanTextarea.attr('placeholder', 'Berikan catatan review...');
+                }
+            });
+
+            // Fungsi untuk tombol Pilih Semua / Batal Pilih Semua Dokumen
+            checkAllBtn.on('click', function() {
+                checkboxes.prop('checked', true);
+            });
+            uncheckAllBtn.on('click', function() {
+                checkboxes.prop('checked', false);
+            });
+
+            $('#copyUploadLink').on('click', function () {
+                const linkInput = document.getElementById('uploadLinkInput');
+                linkInput.select();
+                linkInput.setSelectionRange(0, 99999);
+                document.execCommand('copy');
+                Swal.fire('Disalin', 'Link upload disalin ke clipboard.', 'success');
+            });
+
+            approveIncomplete.on('change', function () {
+                incompleteExtra.toggle(this.checked);
+            });
+
+            proofInput.on('change', function () {
+                const fileName = this.files && this.files[0] ? this.files[0].name : 'Upload bukti foto/pdf';
+                $(this).next('.custom-file-label').text(fileName);
+                proofStatus.text('Format: JPG/PNG/PDF, maks 10MB.');
+            });
+
+            btnUploadProof.on('click', function () {
+                const files = proofInput[0].files;
+                if (!files || !files.length) {
+                    Swal.fire('Peringatan', 'Pilih file bukti terlebih dahulu.', 'warning');
+                    return;
+                }
+                const formData = new FormData();
+                formData.append('pengajuanId', '@pengajuan?.id');
+                formData.append('proof', files[0]);
+
+                btnUploadProof.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+                $.ajax({
+                    url: '@Url.Action("UploadApprovalProof", "MitraKepatuhan")',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (resp) {
+                        if (resp && resp.success) {
+                            proofPathInput.val(resp.path);
+                            proofStatus.text(`Bukti terunggah: ${resp.fileName}`);
+                            Swal.fire('Berhasil', 'Bukti diunggah.', 'success');
+                        } else {
+                            proofStatus.text(resp.message || 'Gagal mengunggah bukti.');
+                            Swal.fire('Gagal', resp.message || 'Gagal mengunggah bukti.', 'error');
+                        }
+                    },
+                    error: function () {
+                        proofStatus.text('Gagal mengunggah bukti.');
+                        Swal.fire('Error', 'Tidak dapat mengunggah bukti.', 'error');
+                    },
+                    complete: function () {
+                        btnUploadProof.prop('disabled', false).html('<i class="fas fa-upload"></i>');
+                    }
+                });
+            });
+
+
+                // Konfirmasi sebelum submit
+                $('form').on('submit', function(e){
+                    // Validasi catatan jika ditolak
+                     if ($('#statusDitolak').is(':checked') && $('#Pengajuan_catatan_admin').val().trim() === '') {
+                        e.preventDefault();
+                    Swal.fire('Peringatan!', 'Catatan Admin OHS wajib diisi jika status pengajuan adalah Ditolak.', 'warning');
+                    $('#Pengajuan_catatan_admin').focus();
+                    return false;
+                }
+
+                // Validasi Kategori Risiko & Checklist Dokumen jika Disetujui
+                 if ($('#statusDisetujui').is(':checked')) {
+                    // Cek Kategori Risiko
+                    let isRiskSelected = false;
+                    radioRiskCategory.each(function() {
+                        if ($(this).is(':checked')) {
+                            isRiskSelected = true;
+                            return false;
+                        }
+                    });
+                    if (!isRiskSelected) {
+                        e.preventDefault();
+                        Swal.fire('Peringatan!', 'Silakan pilih Kategori Risiko Perusahaan jika status pengajuan "Disetujui".', 'warning');
+                         $('html, body').animate({ scrollTop: riskCategorySection.first().offset().top - 70 }, 500);
+                        return false;
+                    }
+
+                    // Cek Checklist Dokumen
+                    let isAnyChecked = false;
+                    checkboxes.each(function() {
+                        if ($(this).is(':checked')) {
+                            isAnyChecked = true;
+                            return false;
+                        }
+                    });
+                    if (!isAnyChecked) {
+                         e.preventDefault();
+                         Swal.fire('Peringatan!', 'Jika status pengajuan "Disetujui", Anda harus memilih minimal satu dokumen kepatuhan yang wajib diunggah.', 'warning');
+                         $('html, body').animate({ scrollTop: checklistPanel.offset().top - 70 }, 500);
+                         return false;
+                    }
+                 }
+
+                if (approveIncomplete.is(':checked')) {
+                    if (!$('#approveIncompleteReason').val().trim()) {
+                        e.preventDefault();
+                        Swal.fire('Peringatan!', 'Alasan wajib diisi saat menyetujui meski dokumen belum lengkap.', 'warning');
+                        return false;
+                    }
+                    if (!proofPathInput.val()) {
+                        e.preventDefault();
+                        Swal.fire('Peringatan!', 'Unggah bukti foto/pdf terlebih dahulu.', 'warning');
+                        return false;
+                    }
+                }
+
+
+                // Konfirmasi umum (pindahkan konfirmasi setelah validasi)
+                e.preventDefault(); // Hentikan submit default DULU untuk menampilkan konfirmasi
+
+                Swal.fire({
+                    title: 'Konfirmasi Penyimpanan',
+                    text: "Apakah Anda yakin ingin menyimpan hasil review ini?",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, Simpan!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                         Swal.fire({
+                            title: 'Menyimpan...',
+                            allowOutsideClick: false,
+                            didOpen: () => { Swal.showLoading() }
+                         });
+                         e.target.submit();
+                    }
+                });
+            });
+
+        }); // End $(document).ready
+    </script>
+}
+

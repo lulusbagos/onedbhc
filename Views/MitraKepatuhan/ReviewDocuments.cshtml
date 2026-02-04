@@ -1,0 +1,533 @@
+﻿@model List<one_db.Models.tbl_r_dokumen_mitra>
+@{
+    ViewData["Title"] = ViewBag.Title ?? "Review Dokumen Kepatuhan";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var pengajuan = ViewBag.Pengajuan as one_db.Models.tbl_r_mitra_pengajuan; // Ambil data pengajuan
+    // Kelompokkan dokumen berdasarkan grup master
+    var documentsByGroup = Model.GroupBy(d => d.DokumenMaster?.grup ?? "Lainnya")
+                               .OrderBy(g => g.Key);
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        .document-group {
+            margin-bottom: 2rem;
+        }
+
+        .document-group-header {
+            font-size: 1.15rem; /* Sedikit lebih besar */
+            font-weight: 600;
+            color: #5a5c69;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #e3e6f0;
+        }
+
+        .document-review-item {
+            padding: 1.5rem; /* Padding lebih besar */
+            border: 1px solid #eaecf4;
+            border-radius: 0.5rem; /* Sudut lebih bulat */
+            margin-bottom: 1.5rem;
+            background-color: #fff; /* Latar putih */
+            box-shadow: 0 0.1rem 0.5rem rgba(0,0,0,0.05); /* Shadow halus */
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.35em 0.7em;
+            border-radius: 0.25rem;
+            vertical-align: middle; /* Sejajarkan badge */
+        }
+
+        .status-wajib {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-diunggah {
+            color: #856404;
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+        }
+        /* Kuning untuk "Sudah Diunggah" */
+        .status-ditolak {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-disetujui {
+            color: #155724;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+
+        .file-link { /* [DIEDIT] Ganti nama class */
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+
+        .review-form label {
+            font-weight: 600;
+            color: #5a5c69;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .review-form .form-control {
+            font-size: 0.9rem;
+        }
+
+        .review-form .custom-control-label {
+            font-weight: 400; /* Normal */
+            font-size: 0.9rem;
+        }
+
+        .btn-save-review {
+            font-size: 0.85rem;
+            padding: 0.4rem 0.8rem;
+        }
+            /* Style untuk tombol loading */
+            .btn-save-review .loading-spinner {
+                display: none; /* Sembunyikan default */
+                margin-right: 5px;
+            }
+
+            .btn-save-review.loading .loading-spinner {
+                display: inline-block; /* Tampilkan saat loading */
+            }
+
+            .btn-save-review.loading .button-text {
+                display: none; /* Sembunyikan teks saat loading */
+            }
+        /* [BARU] Style untuk tombol preview */
+        .btn-preview-file {
+            font-size: 0.85rem;
+            padding: 0.4rem 0.8rem;
+        }
+
+        .finalize-card {
+            border: none;
+            border-radius: 0.8rem;
+            box-shadow: 0 14px 32px rgba(10,124,255,0.15);
+            background: linear-gradient(135deg, rgba(10,124,255,0.08), rgba(108,99,255,0.08));
+        }
+    </style>
+}
+
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Approval">Approval Kepatuhan</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Review Dokumen: @pengajuan?.nama_pt</li>
+        </ol>
+    </nav>
+    <h1 class="h3 mb-4 text-gray-800">@ViewData["Title"]</h1>
+
+    <!-- Tampilkan Pesan Sukses/Error dari TempData -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <!-- Informasi Pengajuan -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-building mr-2"></i>Informasi Perusahaan</h6>
+            <div class="small text-muted">Link upload publik ada di bawah</div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>Nama Perusahaan:</strong> @pengajuan?.nama_pt
+                </div>
+                <div class="col-md-4">
+                    @{
+                        var badgeClass = "badge-secondary";
+                        if (pengajuan?.status_pengajuan == "Menunggu Review") badgeClass = "badge-warning";
+                        else if (pengajuan?.status_pengajuan == "Menunggu Upload Dokumen") badgeClass = "badge-info";
+                        else if (pengajuan?.status_pengajuan == "Menunggu Review Dokumen") badgeClass = "badge-primary";
+                        else if (pengajuan?.status_pengajuan == "Perlu Perbaikan Upload") badgeClass = "badge-danger";
+                        else if (pengajuan?.status_pengajuan == "Disetujui") badgeClass = "badge-success";
+                        else if (pengajuan?.status_pengajuan == "Ditolak") badgeClass = "badge-danger";
+                    }
+                    <strong>Status:</strong> <span class="badge @badgeClass">@pengajuan?.status_pengajuan</span>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group input-group-sm">
+                        @{
+                            var publicLink = Url.Action("UploadPublic", "MitraKepatuhan", new { id = pengajuan?.id, token = pengajuan?.upload_token }, protocol: Context?.Request?.Scheme);
+                        }
+                        <input type="text" class="form-control" id="publicUploadLink" value="@publicLink" readonly>
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-primary" type="button" id="copyPublicLink"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-1">Bagikan ke mitra jika mereka perlu upload sendiri.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel Finalisasi -->
+    <div class="card finalize-card mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-clipboard-check mr-2"></i>Finalisasi Pengajuan</h6>
+            <small class="text-muted">Setujui langsung dari sini.</small>
+        </div>
+        <div class="card-body">
+            <div class="custom-control custom-checkbox mb-3">
+                <input type="checkbox" class="custom-control-input" id="approveIncompleteDocs">
+                <label class="custom-control-label" for="approveIncompleteDocs">
+                    Setujui meski dokumen belum lengkap (wajib alasan + bukti)
+                </label>
+            </div>
+            <div id="incompleteReasonWrap" style="display:none;">
+                <div class="form-group">
+                    <label>Alasan</label>
+                    <textarea class="form-control" id="incompleteReason" rows=3 placeholder="Jelaskan mengapa dokumen belum lengkap..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Bukti Foto/PDF</label>
+                    <div class="input-group">
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="incompleteProofFile" accept=".jpg,.jpeg,.png,.pdf">
+                            <label class="custom-file-label" for="incompleteProofFile">Pilih bukti...</label>
+                        </div>
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-primary" type="button" id="btnUploadProofFinalize"><i class="fas fa-upload"></i></button>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-1" id="finalizeProofStatus">Format: JPG/PNG/PDF, maks 10MB.</small>
+                    <input type="hidden" id="finalizeProofPath" />
+                </div>
+            </div>
+            <div class="text-right">
+                <button class="btn btn-success" id="btnFinalizeDocs"><i class="fas fa-check mr-1"></i> Setujui Pengajuan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daftar Dokumen untuk Direview -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-tasks mr-2"></i>Review Dokumen Kepatuhan Mitra</h6>
+        </div>
+        <div class="card-body">
+            @if (Model != null && Model.Any())
+            {
+                foreach (var group in documentsByGroup)
+                {
+                    <div class="document-group">
+                        <h5 class="document-group-header">@group.Key</h5>
+                        @foreach (var docItem in group.OrderBy(d => d.DokumenMaster?.id))
+                        {
+                            var masterDoc = docItem.DokumenMaster;
+                            if (masterDoc == null) continue;
+
+                            string statusText = docItem.status_dokumen ?? "Wajib Diunggah";
+                            string statusClass = "status-wajib";
+                            if (statusText == "Sudah Diunggah") statusClass = "status-diunggah";
+                            else if (statusText == "Ditolak") statusClass = "status-ditolak";
+                            else if (statusText == "Disetujui") statusClass = "status-disetujui";
+
+                            <div class="document-review-item" id="review-item-@docItem.id">
+                                <div class="row">
+                                    <!-- Kolom Kiri: Info & File -->
+                                    <div class="col-md-6 border-right">
+                                        <h6 class="font-weight-bold text-dark mb-1">(@masterDoc.id) @masterDoc.nama_dokumen</h6>
+                                        <p class="text-sm text-muted mb-3">@masterDoc.deskripsi</p>
+
+                                        <strong>Status Saat Ini:</strong>
+                                        <span class="status-badge @statusClass ml-2" id="status-badge-@docItem.id">@statusText</span>
+                                        <br>
+
+                                        @if (!string.IsNullOrEmpty(docItem.file_path))
+                                        {
+                                            <!-- [DIEDIT] Tombol Preview -->
+                                            <a href="@docItem.file_path" target="_blank" class="btn btn-info btn-sm mt-3 btn-preview-file" title="Lihat/Unduh file yang diunggah">
+                                                <i class="fas fa-eye mr-1"></i> Preview File
+                                            </a>
+                                            <small class="text-muted d-block mt-1">Diunggah: @(docItem.uploaded_at.HasValue? docItem.uploaded_at.Value.ToString("dd MMM yyyy, HH:mm") : "-")</small>
+                                            <small class="text-muted d-block mt-1 file-link">Nama Asli: @(docItem.file_name_original ?? "-")</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted mt-3 d-inline-block"><i class="fas fa-exclamation-triangle text-warning mr-1"></i> File belum diunggah oleh mitra.</span>
+                                        }
+                                    </div>
+
+                                    <!-- Kolom Kanan: Form Review -->
+                                    <div class="col-md-6 review-form pl-md-4">
+                                        <form class="form-review-document" data-doc-item-id="@docItem.id">
+                                            <div class="form-group mb-3">
+                                                <label>Ubah Status Dokumen <span class="text-danger">*</span></label>
+                                                <div class="pl-3">
+                                                    <div class="custom-control custom-radio mb-1">
+                                                        <input type="radio" id="status-setuju-@docItem.id" name="status_dokumen_@docItem.id" value="Disetujui" class="custom-control-input review-status" @(docItem.status_dokumen == "Disetujui" ? "checked" : "") required @(string.IsNullOrEmpty(docItem.file_path) ? "disabled" : "")>
+                                                        <label class="custom-control-label" for="status-setuju-@docItem.id">Disetujui</label>
+                                                    </div>
+                                                    <div class="custom-control custom-radio">
+                                                        <input type="radio" id="status-tolak-@docItem.id" name="status_dokumen_@docItem.id" value="Ditolak" class="custom-control-input review-status" @(docItem.status_dokumen == "Ditolak" ? "checked" : "") required @(string.IsNullOrEmpty(docItem.file_path) ? "disabled" : "")>
+                                                        <label class="custom-control-label" for="status-tolak-@docItem.id">Ditolak</label>
+                                                    </div>
+                                                    <!-- Opsi reset status -->
+                                                    <div class="custom-control custom-radio mt-1">
+                                                        <input type="radio" id="status-reset-@docItem.id" name="status_dokumen_@docItem.id" value="Sudah Diunggah" class="custom-control-input review-status" @(docItem.status_dokumen == "Sudah Diunggah" ? "checked" : "") required @(string.IsNullOrEmpty(docItem.file_path) ? "disabled" : "")>
+                                                        <label class="custom-control-label" for="status-reset-@docItem.id">Reset ke "Sudah Diunggah"</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="catatan-@docItem.id">Catatan Review</label>
+                                                <textarea id="catatan-@docItem.id" class="form-control review-catatan" rows="3" placeholder="Berikan catatan (wajib jika ditolak)...">@docItem.catatan_review</textarea>
+                                            </div>
+                                            <div class="text-right">
+                                                <button type="submit" class="btn btn-success btn-sm btn-save-review" @(string.IsNullOrEmpty(docItem.file_path) ? "disabled" : "")>
+                                                    <i class="fas fa-spinner fa-spin loading-spinner"></i> <!-- Spinner Loading -->
+                                                    <span class="button-text"><i class="fas fa-save mr-1"></i> Simpan Review</span>
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="alert alert-warning">Mitra ini belum mengunggah dokumen apapun atau tidak ada dokumen yang diwajibkan.</div>
+            }
+
+            <div class="mt-5 text-right">
+                <a asp-action="Approval" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left mr-1"></i> Kembali ke Daftar Approval
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <!-- Library JS (jQuery & Bootstrap Bundle sudah ada di _Layout) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/id.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            moment.locale('id');
+
+            $('#copyPublicLink').on('click', function () {
+                const linkInput = document.getElementById('publicUploadLink');
+                linkInput.select();
+                linkInput.setSelectionRange(0, 99999);
+                document.execCommand('copy');
+                Swal.fire('Disalin', 'Link upload publik disalin ke clipboard.', 'success');
+            });
+
+            const approveIncomplete = $('#approveIncompleteDocs');
+            const reasonWrap = $('#incompleteReasonWrap');
+            const reasonInput = $('#incompleteReason');
+            const proofFile = $('#incompleteProofFile');
+            const proofStatus = $('#finalizeProofStatus');
+            const proofPathInput = $('#finalizeProofPath');
+            const btnUploadProof = $('#btnUploadProofFinalize');
+            const btnFinalize = $('#btnFinalizeDocs');
+
+            approveIncomplete.on('change', function(){
+                reasonWrap.toggle(this.checked);
+            });
+
+            proofFile.on('change', function () {
+                const name = this.files && this.files[0] ? this.files[0].name : 'Pilih bukti...';
+                $(this).next('.custom-file-label').text(name);
+                proofStatus.text('Format: JPG/PNG/PDF, maks 10MB.');
+            });
+
+            btnUploadProof.on('click', function(){
+                const files = proofFile[0].files;
+                if (!files || !files.length) {
+                    Swal.fire('Peringatan', 'Pilih file bukti terlebih dahulu.', 'warning');
+                    return;
+                }
+                const formData = new FormData();
+                formData.append('pengajuanId', '@pengajuan?.id');
+                formData.append('proof', files[0]);
+                btnUploadProof.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+                $.ajax({
+                    url: '@Url.Action("UploadApprovalProof", "MitraKepatuhan")',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(resp){
+                        if (resp && resp.success) {
+                            proofPathInput.val(resp.path);
+                            proofStatus.text(`Bukti terunggah: ${resp.fileName}`);
+                            Swal.fire('Berhasil', 'Bukti diunggah.', 'success');
+                        } else {
+                            proofStatus.text(resp.message || 'Gagal mengunggah bukti.');
+                            Swal.fire('Gagal', resp.message || 'Gagal mengunggah bukti.', 'error');
+                        }
+                    },
+                    error: function(){
+                        proofStatus.text('Gagal mengunggah bukti.');
+                        Swal.fire('Error', 'Tidak dapat mengunggah bukti.', 'error');
+                    },
+                    complete: function(){
+                        btnUploadProof.prop('disabled', false).html('<i class="fas fa-upload"></i>');
+                    }
+                });
+            });
+
+            btnFinalize.on('click', function(){
+                const approve = approveIncomplete.is(':checked');
+                const reason = reasonInput.val().trim();
+                const proofPath = proofPathInput.val();
+
+                if (approve) {
+                    if (!reason) {
+                        Swal.fire('Peringatan', 'Alasan wajib diisi.', 'warning');
+                        return;
+                    }
+                    if (!proofPath) {
+                        Swal.fire('Peringatan', 'Unggah bukti foto/pdf terlebih dahulu.', 'warning');
+                        return;
+                    }
+                }
+
+                btnFinalize.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Memproses...');
+                $.ajax({
+                    url: '@Url.Action("FinalizeDocuments", "MitraKepatuhan")',
+                    type: 'POST',
+                    data: {
+                        pengajuanId: '@pengajuan?.id',
+                        approveIncomplete: approve,
+                        reason: reason,
+                        proofPath: proofPath
+                    },
+                    success: function(resp){
+                        if (resp && resp.success) {
+                            Swal.fire('Berhasil', resp.message || 'Pengajuan disetujui.', 'success')
+                                .then(()=> location.reload());
+                        } else {
+                            Swal.fire('Gagal', resp.message || 'Gagal memproses.', 'error');
+                            btnFinalize.prop('disabled', false).html('<i class="fas fa-check mr-1"></i> Setujui Pengajuan');
+                        }
+                    },
+                    error: function(){
+                        Swal.fire('Error', 'Tidak dapat memproses.', 'error');
+                        btnFinalize.prop('disabled', false).html('<i class="fas fa-check mr-1"></i> Setujui Pengajuan');
+                    }
+                });
+            });
+
+            // ======================================
+            // Handle Submit Review per Dokumen (AJAX)
+            // ======================================
+            $('.form-review-document').on('submit', function(e) {
+                e.preventDefault(); // Mencegah submit form biasa
+
+                const form = this;
+                const docItemId = $(form).data('doc-item-id');
+                const saveButton = $(form).find('.btn-save-review');
+                const statusRadio = $(form).find('input[name="status_dokumen_'+ docItemId +'"]:checked');
+                const catatan = $(form).find('.review-catatan').val().trim();
+                const statusBadge = $('#status-badge-' + docItemId);
+
+                // Validasi: Status harus dipilih
+                if (!statusRadio.val()) {
+                     Swal.fire('Peringatan!', 'Silakan pilih status dokumen (Disetujui/Ditolak/Reset).', 'warning');
+                     return;
+                }
+                const newStatus = statusRadio.val();
+
+                // Validasi: Catatan wajib jika ditolak
+                if (newStatus === 'Ditolak' && catatan === '') {
+                    Swal.fire('Peringatan!', 'Catatan review wajib diisi jika status dokumen ditolak.', 'warning');
+                    $(form).find('.review-catatan').focus();
+                    return;
+                }
+
+                // Tampilkan loading
+                saveButton.addClass('loading').prop('disabled', true);
+
+                const reviewData = {
+                    id: docItemId,
+                    status: newStatus,
+                    catatan: catatan
+                };
+
+                // Kirim AJAX ke Controller
+                $.ajax({
+                    url: '@Url.Action("SubmitFileReview", "MitraKepatuhan")', // Action di Controller
+                    type: 'POST',
+                    contentType: 'application/json', // Kirim sebagai JSON
+                    data: JSON.stringify(reviewData),
+                    success: function(response) {
+                        saveButton.removeClass('loading').prop('disabled', false);
+
+                        if (response.success) {
+                            Swal.fire({
+                                toast: true,
+                                icon: 'success',
+                                title: response.message || 'Review berhasil disimpan',
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 2500,
+                                timerProgressBar: true
+                            });
+
+                            // Update Status Badge
+                            statusBadge.text(newStatus);
+                            statusBadge.removeClass('status-wajib status-diunggah status-ditolak status-disetujui'); // Hapus semua class
+                            if (newStatus === 'Sudah Diunggah') statusBadge.addClass('status-diunggah');
+                            else if (newStatus === 'Ditolak') statusBadge.addClass('status-ditolak');
+                            else if (newStatus === 'Disetujui') statusBadge.addClass('status-disetujui');
+
+                            // Opsional: Tambahkan indikasi visual bahwa sudah disimpan (misal, ubah warna tombol)
+                            saveButton.removeClass('btn-success').addClass('btn-outline-success').html('<i class="fas fa-check mr-1"></i> Tersimpan');
+                            setTimeout(() => { // Kembalikan tombol setelah beberapa saat
+                                saveButton.removeClass('btn-outline-success').addClass('btn-success').html('<span class="button-text"><i class="fas fa-save mr-1"></i> Simpan Review</span>');
+                            }, 3000);
+
+
+                        } else {
+                            Swal.fire('Gagal!', response.message || 'Gagal menyimpan review.', 'error');
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                         saveButton.removeClass('loading').prop('disabled', false);
+                         console.error("AJAX Error:", textStatus, errorThrown, jqXHR.responseText);
+                         Swal.fire('Error Server!', 'Tidak dapat menghubungi server. Coba lagi nanti.', 'error');
+                    }
+                });
+            });
+
+             // Optional: Saat status berubah, reset tombol simpan ke state awal
+             $('.review-status, .review-catatan').on('change input', function(){
+                 const form = $(this).closest('form');
+                 const saveButton = form.find('.btn-save-review');
+                 if (saveButton.hasClass('btn-outline-success')) {
+                     saveButton.removeClass('btn-outline-success').addClass('btn-success').html('<span class="button-text"><i class="fas fa-save mr-1"></i> Simpan Review</span>');
+                 }
+             });
+
+
+        }); // End $(document).ready
+    </script>
+}
+

@@ -1,0 +1,466 @@
+﻿@{
+    ViewData["Title"] = ViewBag.Title;
+}
+
+<!-- Style untuk sticky column DAN tampilan profesional -->
+<style>
+    body {
+        background-color: #f4f7f6; /* Latar belakang halaman yang sedikit abu-abu */
+    }
+
+    .table-responsive {
+        max-height: 70vh;
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+    .table th,
+    .table td {
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    /* === GAYA BARU: Profesional === */
+
+    .card {
+        border: 0; /* Hapus border, andalkan shadow */
+        border-radius: 0.5rem; /* Sudut sedikit lebih bulat */
+    }
+
+    .card-header {
+        /* Dikelola oleh class 'bg-dark text-white' */
+        border-top-left-radius: 0.5rem;
+        border-top-right-radius: 0.5rem;
+        border-bottom: 0;
+    }
+
+    .form-label {
+        font-weight: 500; /* Label filter lebih tebal */
+    }
+
+    .btn {
+        transition: all 0.2s ease-in-out; /* Transisi untuk semua tombol */
+    }
+
+    /* Efek "keren" saat hover tombol */
+    .btn-primary:hover, .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+
+    /* Header tabel lebih "tegas" */
+    .table thead th {
+        position: -webkit-sticky;
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        background-color: #e9ecef; /* Warna header tabel lebih gelap */
+    }
+
+    .legend-title {
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 8px;
+        margin-bottom: 16px;
+    }
+
+    .legend-box {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        margin-right: 8px;
+        border: 1px solid #ccc;
+        vertical-align: middle;
+        border-radius: 4px; /* Sudut kotak legenda */
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* === AKHIR GAYA BARU === */
+
+
+    /* Kolom NIK (sticky) */
+    .table thead th:nth-child(1),
+    .table tbody td:nth-child(1) {
+        position: -webkit-sticky;
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        background-color: #fff;
+        border-right: 2px solid #dee2e6;
+    }
+
+    /* Kolom Nama Karyawan (sticky) */
+    .table thead th:nth-child(2),
+    .table tbody td:nth-child(2) {
+        position: -webkit-sticky;
+        position: sticky;
+        left: 120px; /* Sesuaikan lebar kolom NIK */
+        z-index: 2;
+        background-color: #fff;
+        border-right: 2px solid #dee2e6;
+    }
+
+    /* Kolom Departemen (sticky) */
+    .table thead th:nth-child(3),
+    .table tbody td:nth-child(3) {
+        position: -webkit-sticky;
+        position: sticky;
+        left: 320px; /* Sesuaikan lebar NIK + Nama */
+        z-index: 2;
+        background-color: #fff;
+        border-right: 2px solid #dee2e6;
+    }
+
+    /* Kolom Posisi (sticky) */
+    .table thead th:nth-child(4),
+    .table tbody td:nth-child(4) {
+        position: -webkit-sticky;
+        position: sticky;
+        left: 470px; /* Sesuaikan lebar NIK + Nama + Dept */
+        z-index: 2;
+        background-color: #fff;
+        border-right: 2px solid #dee2e6;
+    }
+
+    /* Atur z-index untuk header sticky kiri agar di atas header sticky atas */
+    .table thead th:nth-child(1),
+    .table thead th:nth-child(2),
+    .table thead th:nth-child(3),
+    .table thead th:nth-child(4) {
+        z-index: 4;
+        background-color: #e9ecef; /* Pastikan header sticky kiri punya warna yg sama */
+    }
+</style>
+
+<!-- Ganti card shadow-sm border-light -> card shadow border-0 -->
+<div class="card shadow border-0">
+    <!-- Ganti card-header -> card-header bg-dark text-white -->
+    <div class="card-header bg-dark text-white">
+        <h4 class="card-title mb-0">@ViewBag.Title</h4>
+    </div>
+    <div class="card-body">
+        <!-- Filter -->
+        <div class="row g-3 mb-3 align-items-end">
+            <div class="col-md-3">
+                <label for="tglMulai" class="form-label">Tanggal Mulai</label>
+                <input type="date" id="tglMulai" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label for="tglSelesai" class="form-label">Tanggal Selesai</label>
+                <input type="date" id="tglSelesai" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label for="filterDepartemen" class="form-label">Departemen</label>
+                <select id="filterDepartemen" class="form-select">
+                    <option value="">Semua Departemen</option>
+                    <!-- Opsi departemen akan dimuat di sini -->
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button id="btnTampilkan" class="btn btn-primary me-2">
+                    <i class="fas fa-eye me-1"></i> Tampilkan
+                </button>
+                <button id="btnDownloadExcel" class="btn btn-success">
+                    <i class="fas fa-file-excel me-1"></i> Download Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Spinner Loading -->
+        <div id="loadingSpinner" class="text-center my-5" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Memuat data jadwal kerja...</p>
+        </div>
+
+        <!-- Konten Tabel Jadwal Kerja -->
+        <div id="rosterContainer" class="table-responsive" style="display: none;">
+            <table class="table table-bordered table-hover table-sm">
+                <thead id="rosterThead">
+                    <!-- Header tabel akan di-generate oleh JavaScript -->
+                </thead>
+                <tbody id="rosterTbody">
+                    <!-- Isi tabel akan di-generate oleh JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Legenda -->
+        <div id="legendaContainer" class="mt-4">
+            <!-- Tambahkan class 'legend-title' -->
+            <h5 class="legend-title">Legenda Status</h5>
+            <div id="legendaRow" class="row">
+                <!-- Legenda akan dimuat di sini -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Variabel global untuk menyimpan data
+        let allRosterData = [];
+        let allKaryawanData = {}; // Ubah jadi object/map untuk lookup cepat
+        let allKeteranganData = {}; // Ubah jadi object/map
+
+        // Fungsi untuk format tanggal YYYY-MM-DD (menggunakan waktu lokal agar tidak bergeser hari)
+        function formatDate(date) {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        // Fungsi untuk mengambil data awal (Roster, Karyawan, Keterangan, Dept)
+        async function loadInitialData() {
+            const spinner = $('#loadingSpinner');
+            const container = $('#rosterContainer');
+            spinner.show();
+            container.hide();
+
+            try {
+                // 1. Fetch Roster
+                const rosterPromise = fetch('@Url.Action("GetAllRoster", "Roster")')
+                    .then(res => res.json());
+
+                // 2. Fetch Karyawan
+                const karyawanPromise = fetch('@Url.Action("GetKaryawanList", "Roster")')
+                    .then(res => res.json());
+
+                // 3. Fetch Keterangan (Legenda)
+                const keteranganPromise = fetch('@Url.Action("GetAll", "Roster")')
+                    .then(res => res.json());
+
+                // 4. Fetch Departemen (untuk filter)
+                const departemenPromise = fetch('@Url.Action("GetDepartments", "Roster")')
+                    .then(res => res.json());
+
+                // Tunggu semua selesai
+                const [rosterRes, karyawanRes, keteranganRes, departemenRes] = await Promise.all([
+                    rosterPromise,
+                    karyawanPromise,
+                    keteranganPromise,
+                    departemenPromise
+                ]);
+
+                // Proses Roster
+                if (rosterRes.success) {
+                    allRosterData = rosterRes.data;
+                } else {
+                    console.error('Gagal memuat roster:', rosterRes.message);
+                }
+
+                // Proses Karyawan (jadikan Map)
+                if (karyawanRes.success) {
+                    allKaryawanData = karyawanRes.data.reduce((map, kry) => {
+                        map[kry.no_nik] = kry; // key = NIK
+                        return map;
+                    }, {});
+                } else {
+                    console.error('Gagal memuat karyawan:', karyawanRes.message);
+                }
+
+                // Proses Keterangan (Legenda)
+                if (keteranganRes.success) {
+                    renderLegenda(keteranganRes.data);
+                    // Jadikan map untuk pewarnaan sel
+                    allKeteranganData = keteranganRes.data.reduce((map, ket) => {
+                        map[ket.kode] = ket.warna; // key = Kode Status
+                        return map;
+                    }, {});
+                } else {
+                    console.error('Gagal memuat keterangan:', keteranganRes.message);
+                }
+
+                // Proses Departemen (Filter Dropdown)
+                if (departemenRes.success) {
+                    const deptSelect = $('#filterDepartemen');
+                    const seenDepart = new Set();
+                    departemenRes.data.forEach(dept => {
+                        const name = dept.depart?.trim();
+                        if (!name || seenDepart.has(name)) return;
+                        seenDepart.add(name);
+                        deptSelect.append(new Option(name, name));
+                    });
+                } else {
+                    console.error('Gagal memuat departemen:', departemenRes.message);
+                }
+
+            } catch (error) {
+                console.error('Error saat memuat data awal:', error);
+                alert('Terjadi kesalahan saat memuat data. Silakan coba lagi.');
+            } finally {
+                // Tampilkan data hari ini saat pertama kali load
+                renderPivotTable();
+            }
+        }
+
+        // Fungsi untuk merender legenda
+        function renderLegenda(keteranganData) {
+            const legendaRow = $('#legendaRow');
+            legendaRow.empty();
+            if (keteranganData.length === 0) {
+                legendaRow.html('<div class="col-12"><p>Data legenda tidak ditemukan.</p></div>');
+                return;
+            }
+
+            keteranganData.forEach(item => {
+                const color = item.warna || '#FFFFFF';
+                const legendHtml = `
+                    <div class="col-md-3 col-sm-6 mb-2">
+                        <span class="legend-box" style="background-color: ${color};"></span>
+                        <strong>${item.kode}</strong>: ${item.keterangan}
+                    </div>
+                `;
+                legendaRow.append(legendHtml);
+            });
+        }
+
+
+        // Fungsi untuk merender tabel pivot
+        function renderPivotTable() {
+            const tglMulai = $('#tglMulai').val();
+            const tglSelesai = $('#tglSelesai').val();
+            const departemen = $('#filterDepartemen').val();
+
+            if (!tglMulai || !tglSelesai) {
+                // Ganti alert dengan non-blocking notifikasi jika Anda punya library (spt Toastr)
+                alert('Silakan pilih rentang tanggal terlebih dahulu.');
+                return;
+            }
+
+            const startDate = new Date(tglMulai);
+            const endDate = new Date(tglSelesai);
+
+            if (endDate < startDate) {
+                alert('Tanggal Selesai tidak boleh kurang dari Tanggal Mulai.');
+                return;
+            }
+
+            const spinner = $('#loadingSpinner');
+            const container = $('#rosterContainer');
+            spinner.show();
+            container.hide();
+
+            // 1. Filter data karyawan berdasarkan departemen (jika dipilih)
+            let niksToDisplay = [];
+
+            if (!departemen) { // Semua departemen
+                niksToDisplay = Object.keys(allKaryawanData);
+            } else { // Departemen spesifik
+                niksToDisplay = Object.keys(allKaryawanData).filter(nik => {
+                    return allKaryawanData[nik] && allKaryawanData[nik].depart === departemen;
+                });
+            }
+
+            // Urutkan NIK
+            niksToDisplay.sort();
+
+
+            // 2. Buat header tanggal
+            const dateHeaders = [];
+            for (let dt = new Date(startDate); dt <= endDate; dt.setDate(dt.getDate() + 1)) {
+                dateHeaders.push(formatDate(new Date(dt)));
+            }
+
+            // 3. Bangun struktur data pivot
+            const pivotData = {};
+            allRosterData.forEach(item => {
+                const itemDate = formatDate(new Date(item.working_date));
+                // Hanya proses NIK yang ada di daftar tampil dan dalam rentang tanggal
+                if (allKaryawanData[item.nik] && niksToDisplay.includes(item.nik) && itemDate >= tglMulai && itemDate <= tglSelesai) {
+                    if (!pivotData[item.nik]) {
+                        pivotData[item.nik] = {};
+                    }
+                    pivotData[item.nik][itemDate] = item.status;
+                }
+            });
+
+            // 4. Render Header Tabel
+            const thead = $('#rosterThead');
+            thead.empty();
+            let headerHtml = '<tr>';
+            headerHtml += '<th style="min-width: 120px;">NIK</th>';
+            headerHtml += '<th style="min-width: 200px;">Nama Karyawan</th>';
+            headerHtml += '<th style="min-width: 150px;">Departemen</th>';
+            headerHtml += '<th style="min-width: 150px;">Posisi</th>';
+            dateHeaders.forEach(date => {
+                headerHtml += `<th>${date}</th>`;
+            });
+            headerHtml += '</tr>';
+            thead.html(headerHtml);
+
+            // 5. Render Body Tabel
+            const tbody = $('#rosterTbody');
+            tbody.empty();
+            if (niksToDisplay.length === 0) {
+                const colCount = dateHeaders.length + 4;
+                tbody.html(`<tr><td colspan="${colCount}" class="text-center">Tidak ada data karyawan untuk departemen ini.</td></tr>`);
+                spinner.hide();
+                container.show();
+                return;
+            }
+
+            niksToDisplay.forEach(nik => {
+                const karyawan = allKaryawanData[nik]; // Ambil detail karyawan
+                const userRoster = pivotData[nik] || {};
+
+                let rowHtml = '<tr>';
+                // Kolom Info Karyawan
+                rowHtml += `<td>${nik}</td>`;
+                rowHtml += `<td>${karyawan?.nama_lengkap || 'N/A'}</td>`;
+                rowHtml += `<td>${karyawan?.depart || 'N/A'}</td>`;
+                rowHtml += `<td>${karyawan?.posisi || 'N/A'}</td>`;
+
+                // Kolom Tanggal (Status)
+                dateHeaders.forEach(date => {
+                    const status = userRoster[date] || '';
+                    const color = allKeteranganData[status] || '#FFFFFF'; // Ambil warna dari map
+                    rowHtml += `<td style="background-color: ${color};">${status}</td>`;
+                });
+
+                rowHtml += '</tr>';
+                tbody.append(rowHtml);
+            });
+
+            spinner.hide();
+            container.show();
+        }
+
+        // --- Event Listeners ---
+        $(document).ready(function () {
+            // Set tanggal default: awal dan akhir bulan berjalan
+            const today = new Date();
+            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            $('#tglMulai').val(formatDate(firstDayOfMonth));
+            $('#tglSelesai').val(formatDate(lastDayOfMonth));
+
+            // Muat data awal
+            loadInitialData();
+
+            // Klik tombol Tampilkan
+            $('#btnTampilkan').on('click', renderPivotTable);
+
+            // Klik tombol Download Excel
+            $('#btnDownloadExcel').on('click', function () {
+                const tglMulai = $('#tglMulai').val();
+                const tglSelesai = $('#tglSelesai').val();
+                const kdDepart = $('#filterDepartemen').val() || '';
+
+                if (!tglMulai || !tglSelesai) {
+                    alert('Silakan pilih rentang tanggal terlebih dahulu.');
+                    return;
+                }
+
+                let url = `@Url.Action("DownloadExcelReport", "Roster")?tglMulai=${tglMulai}&tglSelesai=${tglSelesai}`;
+                if (kdDepart) {
+                    url += `&kdDepart=${encodeURIComponent(kdDepart)}`;
+                }
+                window.location.href = url; // Trigger download
+            });
+        });
+    </script>
+}
+

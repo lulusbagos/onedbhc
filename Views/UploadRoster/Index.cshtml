@@ -1,0 +1,2136 @@
+﻿@using System.Text.Json
+
+@using one_db.Controllers
+
+@using one_db.Models
+
+
+
+@{
+
+    ViewData["Title"] = ViewBag.Title;
+
+    var settingMenu = ViewBag.SettingMenu as tbl_m_setting_menu;
+
+    bool isUploadAllowed = ViewBag.IsUploadAllowed ?? false;
+
+    string periodeText = "Periode upload jadwal kerja belum diatur.";
+
+    if (settingMenu != null && settingMenu.awal.HasValue && settingMenu.akhir.HasValue)
+
+    {
+
+        periodeText = $"Periode Upload Dibuka: {settingMenu.awal.Value:dd MMMM yyyy} - {settingMenu.akhir.Value:dd MMMM yyyy}";
+
+    }
+
+
+
+    List<UploadRosterController.ValidationErrorDto> errorDetails = null;
+
+    if (TempData["ErrorDetails"] != null)
+
+    {
+
+        errorDetails = JsonSerializer.Deserialize<List<UploadRosterController.ValidationErrorDto>>(TempData["ErrorDetails"].ToString());
+
+    }
+
+
+
+    UploadRosterController.RosterPreviewDto previewData = null;
+
+    if (TempData["PreviewData"] != null)
+
+    {
+
+        previewData = JsonSerializer.Deserialize<UploadRosterController.RosterPreviewDto>(TempData["PreviewData"].ToString());
+
+    }
+
+
+
+    var rosterKeterangan = ViewBag.RosterKeterangan as List<tbl_m_roster_keterangan> ?? new List<tbl_m_roster_keterangan>();
+
+    var colorMap = rosterKeterangan.ToDictionary(k => k.kode, k => k.warna);
+
+}
+
+
+
+<style>
+
+    /* --- THEME VARIABLES --- */
+
+    :root {
+        --bg-color: #ffffff;
+        --text-color: #212529;
+        --card-bg: #ffffff;
+        --card-header-bg: #f8f9fa;
+        --table-bg: #ffffff;
+        --table-header-bg: #f8f9fa;
+        --table-sticky-bg: #f8f9fa;
+        --table-border-color: #dee2e6;
+        --input-bg: #ffffff;
+        --input-border-color: #ced4da;
+        --muted-text-color: #6c757d;
+        --primary-color: #0d6efd;
+        --primary-text-color: #ffffff;
+    }
+
+
+
+    [data-theme="dark"] {
+        --bg-color: #212529;
+        --text-color: #dee2e6;
+        --card-bg: #343a40;
+        --card-header-bg: #495057;
+        --table-bg: #343a40;
+        --table-header-bg: #495057;
+        --table-sticky-bg: #495057;
+        --table-border-color: #495057;
+        --input-bg: #495057;
+        --input-border-color: #6c757d;
+        --muted-text-color: #adb5bd;
+        --primary-color: #0d6efd; /* Keep primary color for contrast */
+
+        --primary-text-color: #ffffff;
+    }
+
+
+
+    body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+
+
+    .card {
+        background-color: var(--card-bg);
+        border-color: var(--table-border-color);
+    }
+
+
+
+    .card-header {
+        background-color: var(--card-header-bg);
+        border-bottom-color: var(--table-border-color);
+    }
+
+
+
+    .card-footer {
+        background-color: var(--card-header-bg); /* Use header bg for footer too */
+
+        border-top-color: var(--table-border-color);
+    }
+
+
+
+    .table {
+        color: var(--text-color);
+        border-color: var(--table-border-color);
+    }
+
+
+
+        .table > :not(caption) > * > * { /* Target table cells */
+
+            background-color: var(--table-bg);
+            border-color: var(--table-border-color);
+        }
+
+
+
+    .table-hover > tbody > tr:hover > * {
+        background-color: rgba(128, 128, 128, 0.1); /* Subtle hover for both modes */
+    }
+
+
+
+    .thead-light th { /* Keep specific header style */
+
+        background-color: var(--table-header-bg) !important; /* Force override */
+    }
+
+
+
+    .roster-table th, .roster-table td:first-child { /* Sticky elements */
+
+        background-color: var(--table-sticky-bg);
+    }
+
+
+
+    .roster-table td:first-child {
+        border-right-color: var(--table-border-color);
+    }
+
+
+
+    .form-control, .form-select {
+        background-color: var(--input-bg);
+        color: var(--text-color);
+        border-color: var(--input-border-color);
+    }
+
+
+
+        .form-control::placeholder {
+            color: var(--muted-text-color);
+        }
+
+
+
+        .form-control:focus {
+            background-color: var(--input-bg); /* Maintain background on focus */
+
+            color: var(--text-color);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(var(--primary-color), 0.25); /* Adjust focus ring */
+        }
+
+
+
+    .input-group-text {
+        background-color: var(--card-header-bg); /* Match input background */
+
+        border-color: var(--input-border-color);
+        color: var(--muted-text-color);
+    }
+
+
+
+    .breadcrumb-item.active {
+        color: var(--muted-text-color);
+    }
+
+
+
+    .alert-success {
+        background-color: #d1e7dd;
+        border-color: #badbcc;
+        color: #0f5132;
+    }
+
+
+
+    .alert-warning {
+        background-color: #fff3cd;
+        border-color: #ffecb5;
+        color: #664d03;
+    }
+
+
+
+    .alert-danger {
+        background-color: #f8d7da;
+        border-color: #f5c2c7;
+        color: #842029;
+    }
+
+
+
+    [data-theme="dark"] .alert-success {
+        background-color: #0f5132;
+        border-color: #1a743e;
+        color: #d1e7dd;
+    }
+
+
+
+    [data-theme="dark"] .alert-warning {
+        background-color: #664d03;
+        border-color: #806004;
+        color: #fff3cd;
+    }
+
+
+
+    [data-theme="dark"] .alert-danger {
+        background-color: #842029;
+        border-color: #a52834;
+        color: #f8d7da;
+    }
+
+
+
+    .list-group-item {
+        background-color: transparent; /* Make list items transparent */
+
+        border-color: var(--table-border-color);
+    }
+
+
+
+    .badge.bg-secondary {
+        background-color: #6c757d !important;
+        color: #fff;
+    }
+
+
+
+    [data-theme="dark"] .badge.bg-secondary {
+        background-color: #adb5bd !important;
+        color: #212529;
+    }
+
+
+
+    [data-theme="dark"] .text-muted {
+        color: var(--muted-text-color) !important;
+    }
+
+
+
+    /* --- ANIMASI & GAYA PROFESIONAL --- */
+
+    .animated {
+        animation-duration: 0.6s;
+        animation-fill-mode: both;
+    }
+
+
+
+    @@keyframes fadeInUp {
+
+        from {
+            opacity: 0;
+            transform: translate3d(0, 20px, 0);
+        }
+
+
+
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+
+
+    .fadeInUp {
+        animation-name: fadeInUp;
+    }
+
+
+
+    .btn {
+        transition: all 0.2s ease-in-out;
+    }
+
+
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+
+
+    .error-highlight {
+        color: #D82D3B;
+        font-weight: bold;
+        animation: pulse 1.5s infinite;
+    }
+
+
+
+    @@keyframes pulse {
+
+        0% {
+            transform: scale(1);
+        }
+
+
+
+        50% {
+            transform: scale(1.05);
+        }
+
+
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+
+
+    .table-responsive {
+        max-height: 65vh;
+    }
+
+
+
+    #uploadBtn .spinner-border, #confirmBtn .spinner-border {
+        display: none;
+    }
+
+
+
+    .roster-table th {
+        position: sticky;
+        top: 0;
+        /* background-color: var(--table-header-bg); -> Handled by thead-light */
+
+        z-index: 10;
+        min-width: 120px;
+    }
+
+
+
+        .roster-table th:first-child {
+            left: 0;
+            z-index: 20;
+            min-width: 250px;
+        }
+
+
+
+    .roster-table td:first-child {
+        position: sticky;
+        left: 0;
+        /* background-color: var(--table-sticky-bg); -> Applied directly now */
+
+        z-index: 5;
+        font-weight: 500;
+        /* border-right-color: var(--table-border-color); -> Applied directly now */
+    }
+
+
+
+    .roster-cell {
+        text-align: center;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, outline 0.1s ease;
+        min-width: 60px;
+        padding: 0.5rem 0.2rem !important;
+        user-select: none; /* Prevent text selection during multi-select */
+
+        outline: 2px solid transparent; /* For selection */
+
+        outline-offset: -2px;
+    }
+
+
+
+        .roster-cell:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            z-index: 30;
+        }
+
+        /* Style for selected cells */
+
+        .roster-cell.cell-selected {
+            outline: 2px solid var(--primary-color);
+            box-shadow: inset 0 0 10px rgba(var(--primary-color-rgb), 0.3); /* Inner shadow */
+        }
+
+
+
+
+
+    /* --- DRAG & DROP AREA --- */
+
+    #dropZone {
+        border: 2px dashed var(--input-border-color);
+        border-radius: 0.375rem; /* Match form-control */
+
+        padding: 2rem 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+        margin-bottom: 1rem; /* Space below drop zone */
+    }
+
+
+
+        #dropZone.drag-over {
+            border-color: var(--primary-color);
+            background-color: rgba(var(--primary-color-rgb), 0.1);
+        }
+
+
+
+        #dropZone p {
+            margin: 0;
+            color: var(--muted-text-color);
+        }
+
+
+
+        #dropZone i {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+    /* Hide default file input visually but keep accessible */
+
+    #file {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+
+
+    #fileLabel {
+        /* Style label like a button if needed, or just keep it simple */
+
+        display: block; /* Make it take full width if needed */
+
+        margin-top: 10px;
+    }
+
+
+
+
+
+    /* --- PALETTE ROSTER --- */
+
+    #rosterPalette {
+        display: none;
+        position: absolute;
+        width: 250px; /* Lebar palet sedikit lebih besar */
+
+        background-color: var(--card-bg);
+        border: 1px solid var(--input-border-color);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        z-index: 1000;
+        padding: 0; /* Remove padding, apply to children */
+
+        animation-duration: 0.2s;
+        color: var(--text-color); /* Ensure text color matches theme */
+    }
+
+
+
+    @@keyframes popIn {
+
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+
+
+    .popIn {
+        animation-name: popIn;
+    }
+
+
+
+    #rosterPalette .palette-header {
+        padding: 8px 12px;
+        font-weight: bold;
+        border-bottom: 1px solid var(--input-border-color);
+        background-color: var(--card-header-bg);
+        border-top-left-radius: 8px; /* Match outer radius */
+
+        border-top-right-radius: 8px;
+    }
+
+    /* Palette search input */
+
+    #paletteSearch {
+        width: 100%;
+        padding: 6px 10px;
+        border: none;
+        border-bottom: 1px solid var(--input-border-color);
+        box-sizing: border-box; /* Include padding/border in width */
+
+        font-size: 0.9rem;
+        background-color: var(--input-bg);
+        color: var(--text-color);
+    }
+
+
+
+        #paletteSearch:focus {
+            outline: none;
+            border-bottom-color: var(--primary-color);
+        }
+
+
+
+
+
+    #rosterPalette .palette-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+        gap: 5px;
+        padding: 10px;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+
+
+
+        /* Custom scrollbar for palette grid */
+
+        #rosterPalette .palette-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+
+
+        #rosterPalette .palette-grid::-webkit-scrollbar-track {
+            background: var(--card-header-bg);
+            border-radius: 3px;
+        }
+
+
+
+        #rosterPalette .palette-grid::-webkit-scrollbar-thumb {
+            background: var(--muted-text-color);
+            border-radius: 3px;
+        }
+
+
+
+            #rosterPalette .palette-grid::-webkit-scrollbar-thumb:hover {
+                background: #555;
+            }
+
+
+
+
+
+    #rosterPalette .palette-item {
+        border: 1px solid var(--input-border-color);
+        border-radius: 4px;
+        padding: 8px 5px; /* Adjust padding */
+
+        text-align: center;
+        cursor: pointer;
+        transition: background-color 0.2s, transform 0.1s ease;
+        font-size: 0.85rem; /* Slightly smaller font */
+
+        font-weight: bold;
+        overflow: hidden; /* Hide overflow */
+
+        text-overflow: ellipsis; /* Add ellipsis if text too long */
+
+        white-space: nowrap; /* Prevent wrapping */
+    }
+
+
+
+        #rosterPalette .palette-item:hover {
+            background-color: rgba(128, 128, 128, 0.15); /* Subtle hover */
+
+            transform: scale(1.05);
+        }
+
+        /* Hide filtered items */
+
+        #rosterPalette .palette-item.hidden {
+            display: none;
+        }
+
+
+
+    /* --- THEME TOGGLE --- */
+
+    #themeToggle {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1050; /* Ensure it's above most elements */
+
+        background-color: var(--card-bg);
+        border: 1px solid var(--input-border-color);
+        color: var(--text-color);
+    }
+
+
+
+        #themeToggle:hover {
+            background-color: var(--card-header-bg);
+        }
+
+
+
+
+
+    /* --- RESPONSIVE ADJUSTMENTS --- */
+
+    @@media (max-width: 768px) {
+
+        .roster-table th, .roster-table td {
+            min-width: 80px;
+        }
+
+
+
+            .roster-table th:first-child, .roster-table td:first-child {
+                min-width: 150px;
+            }
+
+
+
+        #themeToggle {
+            bottom: 10px;
+            right: 10px;
+        }
+        /* Adjust toggle position */
+    }
+
+</style>
+
+
+
+<div class="container-fluid px-4">
+
+    <h1 class="mt-4 animated fadeInUp">@ViewBag.Title</h1>
+
+    <ol class="breadcrumb mb-4 animated fadeInUp" style="animation-delay: 0.1s;">
+
+        <li class="breadcrumb-item active">Upload, Pratinjau, dan Simpan Roster Karyawan</li>
+
+    </ol>
+
+
+
+    <!-- Theme Toggle Button -->
+
+    <button id="themeToggle" class="btn btn-sm rounded-circle shadow" data-bs-toggle="tooltip" data-bs-placement="left" title="Ganti Tema">
+
+        <i class="fas fa-moon"></i> <!-- Default to moon icon -->
+
+    </button>
+
+
+
+    <!-- Alert Periode -->
+    @if (previewData == null)
+
+    {
+
+        <div class="alert @(isUploadAllowed ? "alert-success" : "alert-warning") animated fadeInUp" style="animation-delay: 0.2s;" role="alert">
+
+            <i class="fas @(isUploadAllowed ? "fa-check-circle" : "fa-info-circle") me-2"></i>
+
+            <strong>Informasi:</strong> @periodeText
+
+        </div>
+
+    }
+
+    <!-- Alert Sukses/Error -->
+    @if (TempData["SuccessMessage"] != null)
+
+    {
+
+        <div class="alert alert-success alert-dismissible fade show animated fadeInUp" role="alert">
+
+            <strong><i class="fas fa-check-circle me-2"></i>Sukses!</strong> @Html.Raw(TempData["SuccessMessage"])
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+
+        </div>
+
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+
+    {
+
+        <div class="alert alert-danger alert-dismissible fade show animated fadeInUp" role="alert">
+
+            <strong><i class="fas fa-exclamation-triangle me-2"></i>Gagal!</strong> @Html.Raw(TempData["ErrorMessage"])
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+
+        </div>
+
+    }
+
+
+
+    <!-- SECTION PRATINJAU -->
+    @if (previewData != null)
+
+    {
+
+        <div class="card mb-4 border-primary animated fadeInUp">
+
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+
+                <span><i class="fas fa-edit me-1"></i>Pratinjau & Edit Jadwal Roster (Langkah 2 dari 2)</span>
+
+                <span class="badge bg-light text-primary">Total Karyawan: @previewData.Employees.Count</span>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="row mb-3 align-items-center">
+
+                    <div class="col-md-7 col-lg-8">
+
+                        <p class="mb-md-0 small text-muted">
+
+                            <i class="fas fa-mouse-pointer me-1"></i>Klik sel untuk mengubah. Gunakan <strong>Ctrl/Cmd+Klik</strong> atau <strong>Shift+Klik</strong> untuk memilih banyak sel.
+
+                            Jika sudah benar, klik <strong>"Simpan Jadwal"</strong>.
+
+                        </p>
+
+                    </div>
+
+                    <div class="col-md-5 col-lg-4">
+
+                        <div class="input-group input-group-sm">
+
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+
+                            <input type="text" id="searchInput" class="form-control" placeholder="Cari NIK atau Nama..." />
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="table-responsive">
+
+                    <table class="table table-bordered table-hover table-sm roster-table" id="previewTable">
+
+                        <thead class="thead-light">
+
+                            <tr>
+
+                                <th>NIK - Nama Karyawan</th>
+
+                                @foreach (var date in previewData.Dates)
+
+                                {
+
+                                    <th>@date.ToString("dd MMM")<br /><small class="text-muted">@date.ToString("yyyy")</small></th>
+
+                                }
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            <!-- Data dimuat oleh JavaScript -->
+
+                            <tr><td colspan="@(previewData.Dates.Count + 1)" class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div> Memuat data...</td></tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <!-- Pagination -->
+
+                <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap">
+
+                    <div id="paginationInfo" class="text-muted small mb-2 mb-md-0"></div>
+
+                    <nav><ul class="pagination pagination-sm mb-0" id="paginationControls"></ul></nav>
+
+                </div>
+
+
+
+            </div>
+
+            <div class="card-footer bg-light">
+
+                <form asp-action="ConfirmAndSave" method="post" id="confirmForm">
+
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="rosterDataJson" id="rosterDataJsonInput" value="@previewData.RosterDataJson" />
+
+                    <button type="submit" class="btn btn-success" id="confirmBtn" data-bs-toggle="tooltip" title="Simpan semua perubahan ke database">
+
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+
+                        <i class="fas fa-save me-2 icon"></i><span class="text">Simpan Jadwal</span>
+
+                    </button>
+
+                    <a asp-action="Index" class="btn btn-secondary" data-bs-toggle="tooltip" title="Batalkan proses dan kembali ke halaman upload">
+
+                        <i class="fas fa-times me-2"></i>Batal
+
+                    </a>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    }
+
+    <!-- SECTION UPLOAD AWAL -->
+
+
+
+    <div class="row animated fadeInUp" style="animation-delay: 0.3s;">
+
+        <!-- Kolom Upload -->
+
+        <div class="col-lg-7">
+
+            <div class="card mb-4">
+
+                <div class="card-header"><i class="fas fa-file-upload me-1"></i>Upload File Roster (Langkah 1 dari 2)</div>
+
+                <div class="card-body">
+
+                    <!-- Drag and Drop Area -->
+
+                    <div id="dropZone" class="@(isUploadAllowed ? "" : "disabled")">
+
+                        <i class="fas fa-cloud-upload-alt"></i>
+
+                        <p>Tarik & Lepas file Excel (.xlsx/.xls) di sini, atau klik untuk memilih</p>
+
+                    </div>
+
+
+
+                    <form asp-action="Upload" method="post" enctype="multipart/form-data" id="uploadForm">
+
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+
+                            <!-- Visually hidden file input, linked to drop zone and label -->
+
+                            <input class="form-control" type="file" id="file" name="file" accept=".xlsx, .xls" @(isUploadAllowed ? "" : "disabled") required />
+
+                            <label for="file" id="fileLabel" class="form-label visually-hidden">Pilih File Excel (.xlsx / .xls)</label> <!-- Label for accessibility -->
+
+                            <div id="fileNameDisplay" class="form-text text-muted mt-1">Belum ada file dipilih.</div> <!-- Display selected file name -->
+
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+
+                            <button type="submit" class="btn btn-primary" id="uploadBtn" @(isUploadAllowed ? "" : "disabled") data-bs-toggle="tooltip" title="Validasi file dan lanjutkan ke pratinjau">
+
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+
+                                <i class="fas fa-arrow-right me-2 icon"></i><span class="text">Lanjut ke Pratinjau</span>
+
+                            </button>
+
+                            <a asp-action="DownloadTemplate" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Unduh file template Excel">
+
+                                <i class="fas fa-download me-2"></i>Unduh Template
+
+                            </a>
+
+                        </div>
+
+                        @if (!isUploadAllowed)
+
+                        {
+
+                            <div class="form-text text-danger mt-2"><i class="fas fa-lock me-1"></i>Upload dinonaktifkan karena di luar periode.</div>
+
+                        }
+
+                    </form>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- Detail Kesalahan -->
+            @if (errorDetails != null && errorDetails.Any())
+
+            {
+
+                <div class="card mb-4 border-danger animated fadeInUp">
+
+                    <div class="card-header bg-danger text-white"><i class="fas fa-bug me-1"></i>Detail Kesalahan Validasi</div>
+
+                    <div class="card-body">
+
+                        <p class="text-danger small"><i class="fas fa-info-circle me-1"></i>Harap perbaiki data pada baris yang ditandai di file Excel Anda, lalu unggah kembali.</p>
+
+                        <div class="table-responsive" style="max-height: 250px;">
+
+                            <table class="table table-sm table-bordered table-striped table-hover">
+
+                                <thead class="table-light"><tr><th>Baris Excel</th><th>Data Bermasalah</th><th>Keterangan</th></tr></thead>
+
+                                <tbody>
+
+                                    @foreach (var error in errorDetails.OrderBy(e => e.Row))
+
+                                    {
+
+                                        <tr><td>@error.Row</td><td class="error-highlight">@error.OffendingValue</td><td>@error.Message</td></tr>
+
+                                    }
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            }
+
+        </div>
+
+
+
+        <!-- Kolom Kanan (Legenda & Petunjuk) -->
+
+        <div class="col-lg-5">
+
+            <!-- Legenda -->
+
+            <div class="card mb-4">
+
+                <div class="card-header"><i class="fas fa-book-open me-1"></i>Legenda Kode Roster</div>
+
+                <div class="card-body py-2 px-3" style="max-height: 300px; overflow-y: auto;">
+
+                    <ul class="list-group list-group-flush">
+
+                        @foreach (var item in rosterKeterangan)
+
+                        {
+
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+
+                                <span>
+
+                                    <span class="badge me-2" style="background-color:@item.warna; border: 1px solid #ddd; width: 20px; display: inline-block;">&nbsp;</span>
+
+                                    <small>@item.keterangan</small>
+
+                                </span>
+
+                                <span class="badge bg-secondary rounded-pill">@item.kode</span>
+
+                            </li>
+
+                        }
+
+                    </ul>
+
+                </div>
+
+            </div>
+
+            <!-- Petunjuk -->
+
+            <div class="card mb-4">
+
+                <div class="card-header"><i class="fas fa-question-circle me-1"></i>Petunjuk Penggunaan</div>
+
+                <div class="card-body">
+
+                    <ol class="list-group list-group-numbered list-group-flush">
+
+                        <li class="list-group-item ps-0 border-0">Unduh <strong>template</strong> Excel.</li>
+
+                        <li class="list-group-item ps-0 border-0">Isi template sesuai data roster.</li>
+
+                        <li class="list-group-item ps-0 border-0"><strong>Tarik & lepas</strong> file ke area upload atau klik area tersebut.</li>
+
+                        <li class="list-group-item ps-0 border-0">Klik <strong>"Lanjut ke Pratinjau"</strong> untuk validasi.</li>
+
+                        <li class="list-group-item ps-0 border-0">Di Pratinjau: gunakan <strong>Pencarian</strong>, <strong>klik sel</strong> (atau Ctrl/Shift+Klik) & pilih kode dari palet untuk mengedit.</li>
+
+                        <li class="list-group-item ps-0 border-0">Setelah semua benar, klik <strong>"Simpan Jadwal"</strong>.</li>
+
+                    </ol>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+</div>
+
+
+
+<!-- Roster Palette (Hidden by default) -->
+
+<div id="rosterPalette" class="animated">
+
+    <div class="palette-header">Pilih Kode Roster</div>
+
+    <!-- Search Input for Palette -->
+
+    <input type="text" id="paletteSearch" placeholder="Cari kode/keterangan..." />
+
+    <div class="palette-grid" id="paletteGrid">
+
+        <div class="palette-item" data-code="" data-keterangan="kosong">[Kosong]</div>
+
+        <!-- Palette items are added by JavaScript -->
+
+    </div>
+
+</div>
+
+
+
+@section Scripts {
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function() {
+
+
+
+            // --- THEME TOGGLE ---
+
+            const themeToggle = document.getElementById('themeToggle');
+
+            const currentTheme = localStorage.getItem('theme') ? localStorage.getItem('theme') : 'light';
+
+            const themeIcon = themeToggle.querySelector('i');
+
+
+
+            function applyTheme(theme) {
+
+                document.documentElement.setAttribute('data-theme', theme);
+
+                localStorage.setItem('theme', theme);
+
+                if (theme === 'dark') {
+
+                    themeIcon.classList.remove('fa-moon');
+
+                    themeIcon.classList.add('fa-sun');
+
+                    themeToggle.setAttribute('title', 'Ganti ke Mode Terang');
+
+                } else {
+
+                    themeIcon.classList.remove('fa-sun');
+
+                    themeIcon.classList.add('fa-moon');
+
+                    themeToggle.setAttribute('title', 'Ganti ke Mode Gelap');
+
+                }
+
+                 // Re-initialize tooltip after changing title
+
+                const tooltipInstance = bootstrap.Tooltip.getInstance(themeToggle);
+
+                if (tooltipInstance) {
+
+                    tooltipInstance.setContent({ '.tooltip-inner': themeToggle.getAttribute('title') });
+
+                }
+
+            }
+
+
+
+            applyTheme(currentTheme); // Apply initial theme
+
+
+
+            themeToggle.addEventListener('click', () => {
+
+                const newTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+
+                applyTheme(newTheme);
+
+            });
+
+
+
+
+
+            // --- BOOTSTRAP TOOLTIPS ---
+
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+
+            });
+
+
+
+            // --- FORM SPINNER ---
+
+            function setupFormSpinner(formId, buttonId, processingText) {
+
+                const form = document.getElementById(formId);
+
+                form?.addEventListener('submit', function (e) {
+
+                    const fileInput = document.getElementById('file');
+
+                    // File validation only for upload form
+
+                    if (formId === 'uploadForm') {
+
+                         // Use the file attached via drag/drop or input click
+
+                         const files = fileInput.files;
+
+                         if (!files || files.length === 0) {
+
+                             alert('Harap pilih atau tarik file Excel terlebih dahulu.');
+
+                             e.preventDefault(); return;
+
+                         }
+
+                         const file = files[0]; // Check the first file
+
+                         const allowedExtensions = /(\.xlsx|\.xls)$/i;
+
+                         if (!allowedExtensions.exec(file.name)) {
+
+                             alert('Format file tidak valid. Harap pilih file .xlsx atau .xls.');
+
+                             resetFileInput(); // Reset display and input
+
+                             e.preventDefault(); return;
+
+                         }
+
+                    }
+
+
+
+                    const btn = document.getElementById(buttonId);
+
+                    if (!btn) return;
+
+                    const icon = btn.querySelector('.icon');
+
+                    const text = btn.querySelector('.text');
+
+                    const spinner = btn.querySelector('.spinner-border');
+
+
+
+                    btn.disabled = true;
+
+                    if (icon) icon.style.display = 'none';
+
+                    if (text) text.innerText = processingText;
+
+                    if (spinner) spinner.style.display = 'inline-block';
+
+                });
+
+            }
+
+            setupFormSpinner('uploadForm', 'uploadBtn', 'Memproses...');
+
+            setupFormSpinner('confirmForm', 'confirmBtn', 'Menyimpan...');
+
+
+
+            // --- DRAG & DROP UPLOAD ---
+
+            const dropZone = document.getElementById('dropZone');
+
+            const fileInput = document.getElementById('file');
+
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+
+            const isUploadSection = @(previewData == null ? "true" : "false"); // Only activate in upload section
+
+
+
+            function resetFileInput() {
+
+                fileInput.value = ''; // Clear the actual input
+
+                fileNameDisplay.textContent = 'Belum ada file dipilih.';
+
+                fileNameDisplay.classList.remove('text-success'); // Remove success styling if any
+
+            }
+
+
+
+             function handleFiles(files) {
+
+                 if (files && files.length > 0) {
+
+                     const file = files[0];
+
+                     const allowedExtensions = /(\.xlsx|\.xls)$/i;
+
+                     if (!allowedExtensions.exec(file.name)) {
+
+                         alert('Format file tidak valid. Harap gunakan .xlsx atau .xls.');
+
+                         resetFileInput();
+
+                         return;
+
+                     }
+
+                     // Attach the file(s) to the hidden file input
+
+                     fileInput.files = files;
+
+                     fileNameDisplay.textContent = `File dipilih: ${file.name}`;
+
+                     fileNameDisplay.classList.add('text-success'); // Optional: style feedback
+
+                 } else {
+
+                    resetFileInput();
+
+                 }
+
+            }
+
+
+
+
+
+            if (isUploadSection && dropZone && fileInput) {
+
+                // Prevent default drag behaviors
+
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+
+                    dropZone.addEventListener(eventName, preventDefaults, false);
+
+                    document.body.addEventListener(eventName, preventDefaults, false); // Prevent browser opening file
+
+                });
+
+
+
+                // Highlight drop zone when item is dragged over it
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+
+                    dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
+
+                });
+
+
+
+                ['dragleave', 'drop'].forEach(eventName => {
+
+                    dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
+
+                });
+
+
+
+                // Handle dropped files
+
+                dropZone.addEventListener('drop', (e) => {
+
+                    if (dropZone.classList.contains('disabled')) return; // Check if disabled
+
+                    const dt = e.dataTransfer;
+
+                    const files = dt.files;
+
+                    handleFiles(files);
+
+                }, false);
+
+
+
+                // Allow clicking the drop zone to open file dialog
+
+                dropZone.addEventListener('click', () => {
+
+                    if (!dropZone.classList.contains('disabled')) {
+
+                       fileInput.click();
+
+                    }
+
+                });
+
+
+
+                // Handle file selection via the input itself
+
+                fileInput.addEventListener('change', (e) => {
+
+                     handleFiles(e.target.files);
+
+                });
+
+            }
+
+
+
+            function preventDefaults (e) {
+
+                e.preventDefault();
+
+                e.stopPropagation();
+
+            }
+
+
+
+
+
+            // --- LOGIKA PRATINJAU & EDIT ---
+
+            const isPreviewMode = @(previewData != null ? "true" : "false");
+
+
+
+            if (isPreviewMode) {
+
+                const previewData = @Html.Raw(Json.Serialize(previewData ?? new UploadRosterController.RosterPreviewDto()));
+
+                const rosterKeterangan = @Html.Raw(Json.Serialize(rosterKeterangan));
+
+                const colorMap = @Html.Raw(Json.Serialize(colorMap));
+
+
+
+                const tableBody = document.querySelector("#previewTable tbody");
+
+                const searchInput = document.getElementById('searchInput');
+
+                const paginationControls = document.getElementById('paginationControls');
+
+                const paginationInfo = document.getElementById('paginationInfo');
+
+                const rosterDataInput = document.getElementById('rosterDataJsonInput');
+
+                const palette = document.getElementById('rosterPalette');
+
+                const paletteGrid = document.getElementById('paletteGrid');
+
+                const paletteSearch = document.getElementById('paletteSearch');
+
+
+
+
+
+                let rosterData = JSON.parse(rosterDataInput.value || '[]');
+
+                let selectedCells = []; // Array to store selected cell elements
+
+                let lastSelectedCell = null; // For shift-click
+
+                let isMouseDown = false; // Track mouse down for drag selection (optional)
+
+
+
+                let filteredEmployees = previewData.employees || [];
+
+                let currentPage = 1;
+
+                const rowsPerPage = 15;
+
+
+
+                // --- Helper Functions ---
+
+                function getTextColorForBg(hexColor) {
+
+                    if (!hexColor || hexColor.length < 4) return '#000000';
+
+                    if (hexColor.length === 4) { hexColor = `#${hexColor[1]}${hexColor[1]}${hexColor[2]}${hexColor[2]}${hexColor[3]}${hexColor[3]}`; }
+
+                    const r = parseInt(hexColor.substr(1, 2), 16); const g = parseInt(hexColor.substr(3, 2), 16); const b = parseInt(hexColor.substr(5, 2), 16);
+
+                    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+
+                    return (yiq >= 128) ? (document.documentElement.getAttribute('data-theme') === 'dark' ? '#000000' : '#000000') // Black on light bg in both themes
+
+                                        : '#ffffff'; // White on dark bg
+
+                }
+
+
+
+                 // Function to deselect all cells
+
+                function deselectAllCells() {
+
+                    selectedCells.forEach(cell => cell.classList.remove('cell-selected'));
+
+                    selectedCells = [];
+
+                    lastSelectedCell = null;
+
+                }
+
+
+
+                // --- Render Functions ---
+
+                function renderTable() {
+
+                    // ... (renderTable logic remains mostly the same, ensure cells have correct classes/data attributes)
+
+                     tableBody.innerHTML = '';
+
+                    const start = (currentPage - 1) * rowsPerPage;
+
+                    const end = start + rowsPerPage;
+
+                    const paginatedEmployees = filteredEmployees.slice(start, end);
+
+
+
+                    if (paginatedEmployees.length === 0) {
+
+                        const colCount = (previewData.dates?.length || 0) + 1;
+
+                        tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center text-muted py-5"><i>Tidak ada karyawan yang cocok.</i></td></tr>`;
+
+                        updatePagination();
+
+                        return;
+
+                    }
+
+
+
+                    paginatedEmployees.forEach((emp, rowIndex) => { // Add rowIndex for animation delay
+
+                        const row = tableBody.insertRow();
+
+                        row.classList.add('animated', 'fadeInUp');
+
+                        row.style.animationDelay = `${rowIndex * 0.05}s`;
+
+
+
+                        const nameCell = row.insertCell();
+
+                        nameCell.innerHTML = `<strong>${emp.nik || 'N/A'}</strong><br/><small class="text-muted">${emp.nama || 'Nama Tidak Ditemukan'}</small>`;
+
+                        nameCell.style.minWidth = '250px';
+
+
+
+                        (previewData.dates || []).forEach((dateStr, colIndex) => { // Add colIndex for potential use
+
+                            const date = new Date(dateStr);
+
+                            const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+                            // Find the data point for this specific cell
+
+                            const dataPoint = rosterData.find(d => d.Nik === emp.nik && d.WorkingDate.startsWith(dateKey));
+
+                            const rosterCode = dataPoint ? dataPoint.RosterCode : ""; // Get code from current rosterData state
+
+
+
+                            const bgColor = rosterCode && colorMap[rosterCode] ? colorMap[rosterCode] : "var(--table-bg)"; // Use CSS var default
+
+                            const textColor = getTextColorForBg(bgColor === "var(--table-bg)" ? null : bgColor); // Check against default
+
+
+
+                            const cell = row.insertCell();
+
+                            cell.className = 'roster-cell';
+
+                            cell.style.backgroundColor = bgColor;
+
+                            cell.style.color = textColor;
+
+                            cell.dataset.nik = emp.nik;
+
+                            cell.dataset.date = dateKey;
+
+                            cell.textContent = rosterCode;
+
+                            // Add indices for shift-click
+
+                             cell.dataset.rowIndex = start + rowIndex; // Use overall index
+
+                             cell.dataset.colIndex = colIndex;
+
+                        });
+
+                    });
+
+                    updatePagination();
+
+                }
+
+
+
+                function updatePagination() {
+
+                   // ... (updatePagination logic remains the same)
+
+                    paginationControls.innerHTML = '';
+
+                    const pageCount = Math.ceil(filteredEmployees.length / rowsPerPage);
+
+
+
+                    const startItem = Math.min((currentPage - 1) * rowsPerPage + 1, filteredEmployees.length);
+
+                    const endItem = Math.min(startItem + rowsPerPage - 1, filteredEmployees.length);
+
+                    paginationInfo.textContent = filteredEmployees.length > 0
+
+                        ? `Menampilkan ${startItem} - ${endItem} dari ${filteredEmployees.length} karyawan.`
+
+                        : `Menampilkan 0 karyawan.`;
+
+
+
+                    if (pageCount <= 1) return;
+
+
+
+                    const prevLi = document.createElement('li');
+
+                    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+
+                    prevLi.innerHTML = `<a class="page-link" href="#" data-page="${currentPage - 1}"><i class="fas fa-angle-left"></i></a>`;
+
+                    paginationControls.appendChild(prevLi);
+
+
+
+                    const maxPagesToShow = 5;
+
+                    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+
+                    let endPage = Math.min(pageCount, startPage + maxPagesToShow - 1);
+
+                    if(endPage - startPage + 1 < maxPagesToShow) {
+
+                        startPage = Math.max(1, endPage - maxPagesToShow + 1);
+
+                    }
+
+
+
+                    if (startPage > 1) {
+
+                        const firstLi = document.createElement('li'); firstLi.className = 'page-item'; firstLi.innerHTML = `<a class="page-link" href="#" data-page="1">1</a>`; paginationControls.appendChild(firstLi);
+
+                        if (startPage > 2) { const ellipsisLi = document.createElement('li'); ellipsisLi.className = 'page-item disabled'; ellipsisLi.innerHTML = `<span class="page-link">...</span>`; paginationControls.appendChild(ellipsisLi); }
+
+                    }
+
+
+
+                    for (let i = startPage; i <= endPage; i++) {
+
+                        const pageLi = document.createElement('li');
+
+                        pageLi.className = `page-item ${i === currentPage ? 'active' : ''}`;
+
+                        pageLi.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
+
+                        paginationControls.appendChild(pageLi);
+
+                    }
+
+
+
+                    if (endPage < pageCount) {
+
+                        if (endPage < pageCount - 1) { const ellipsisLi = document.createElement('li'); ellipsisLi.className = 'page-item disabled'; ellipsisLi.innerHTML = `<span class="page-link">...</span>`; paginationControls.appendChild(ellipsisLi); }
+
+                        const lastLi = document.createElement('li'); lastLi.className = 'page-item'; lastLi.innerHTML = `<a class="page-link" href="#" data-page="${pageCount}">${pageCount}</a>`; paginationControls.appendChild(lastLi);
+
+                    }
+
+
+
+                    const nextLi = document.createElement('li');
+
+                    nextLi.className = `page-item ${currentPage === pageCount ? 'disabled' : ''}`;
+
+                    nextLi.innerHTML = `<a class="page-link" href="#" data-page="${currentPage + 1}"><i class="fas fa-angle-right"></i></a>`;
+
+                    paginationControls.appendChild(nextLi);
+
+                }
+
+
+
+                // --- Event Listeners ---
+
+                // Pencarian
+
+                searchInput.addEventListener('input', function() {
+
+                    // ... (search logic remains the same)
+
+                     const searchTerm = this.value.toLowerCase().trim();
+
+                    filteredEmployees = (previewData.employees || []).filter(emp =>
+
+                        (emp.nik && emp.nik.toLowerCase().includes(searchTerm)) ||
+
+                        (emp.nama && emp.nama.toLowerCase().includes(searchTerm))
+
+                    );
+
+                    currentPage = 1;
+
+                    deselectAllCells(); // Deselect on search
+
+                    renderTable();
+
+                });
+
+
+
+                // Paginasi
+
+                paginationControls.addEventListener('click', function(e) {
+
+                   // ... (pagination logic remains the same, add deselect)
+
+                    e.preventDefault();
+
+                    if(e.target.tagName === 'A' && !e.target.parentElement.classList.contains('disabled')) {
+
+                        currentPage = parseInt(e.target.dataset.page);
+
+                        deselectAllCells(); // Deselect on page change
+
+                        renderTable();
+
+                    }
+
+                });
+
+
+
+                // --- Cell Selection Logic ---
+
+                tableBody.addEventListener('click', function(e) {
+
+                    if (e.target.classList.contains('roster-cell')) {
+
+                        const clickedCell = e.target;
+
+
+
+                        if (e.shiftKey && lastSelectedCell) {
+
+                             // Shift-click: Select range
+
+                             const allCells = Array.from(tableBody.querySelectorAll('.roster-cell'));
+
+                             const startRow = Math.min(parseInt(lastSelectedCell.dataset.rowIndex), parseInt(clickedCell.dataset.rowIndex));
+
+                             const endRow = Math.max(parseInt(lastSelectedCell.dataset.rowIndex), parseInt(clickedCell.dataset.rowIndex));
+
+                             const startCol = Math.min(parseInt(lastSelectedCell.dataset.colIndex), parseInt(clickedCell.dataset.colIndex));
+
+                             const endCol = Math.max(parseInt(lastSelectedCell.dataset.colIndex), parseInt(clickedCell.dataset.colIndex));
+
+
+
+                             // Deselect previous selection if Ctrl/Cmd is not also held
+
+                            if (!e.ctrlKey && !e.metaKey) {
+
+                                deselectAllCells();
+
+                            }
+
+
+
+                             allCells.forEach(cell => {
+
+                                 const cellRow = parseInt(cell.dataset.rowIndex);
+
+                                 const cellCol = parseInt(cell.dataset.colIndex);
+
+                                 if (cellRow >= startRow && cellRow <= endRow && cellCol >= startCol && cellCol <= endCol) {
+
+                                     if (!selectedCells.includes(cell)) {
+
+                                         cell.classList.add('cell-selected');
+
+                                         selectedCells.push(cell);
+
+                                     }
+
+                                 }
+
+                             });
+
+
+
+                        } else if (e.ctrlKey || e.metaKey) {
+
+                            // Ctrl/Cmd-click: Toggle selection
+
+                            if (selectedCells.includes(clickedCell)) {
+
+                                clickedCell.classList.remove('cell-selected');
+
+                                selectedCells = selectedCells.filter(c => c !== clickedCell);
+
+                                if (lastSelectedCell === clickedCell) lastSelectedCell = null; // Clear last selected if deselected
+
+                            } else {
+
+                                clickedCell.classList.add('cell-selected');
+
+                                selectedCells.push(clickedCell);
+
+                                lastSelectedCell = clickedCell; // Update last selected
+
+                            }
+
+                        } else {
+
+                            // Simple click: Deselect others, select this one
+
+                            deselectAllCells();
+
+                            clickedCell.classList.add('cell-selected');
+
+                            selectedCells.push(clickedCell);
+
+                            lastSelectedCell = clickedCell; // Update last selected
+
+                        }
+
+
+
+                        // Show palette only if at least one cell is selected
+
+                        if (selectedCells.length > 0) {
+
+                             showPaletteNearCell(clickedCell); // Show near the last clicked cell
+
+                        } else {
+
+                             palette.style.display = 'none'; // Hide if nothing selected
+
+                        }
+
+                    }
+
+                     // Prevent deselecting when clicking inside the palette
+
+                     else if (!palette.contains(e.target)) {
+
+                        // If click is outside table AND outside palette, deselect
+
+                         if (!e.target.closest('.roster-table')) {
+
+                              deselectAllCells();
+
+                              palette.style.display = 'none';
+
+                         }
+
+                    }
+
+                });
+
+
+
+                 // Function to show palette positioned near a target cell
+
+                function showPaletteNearCell(targetCell) {
+
+                    const rect = targetCell.getBoundingClientRect();
+
+                    let top = window.scrollY + rect.bottom + 5;
+
+                    let left = window.scrollX + rect.left;
+
+                    const paletteHeight = palette.offsetHeight > 0 ? palette.offsetHeight : 320; // Estimate
+
+                    const paletteWidth = palette.offsetWidth > 0 ? palette.offsetWidth : 250; // Estimate
+
+
+
+                    if (top + paletteHeight > window.innerHeight + window.scrollY) {
+
+                        top = window.scrollY + rect.top - paletteHeight - 5;
+
+                    }
+
+                    if (left + paletteWidth > window.innerWidth + window.scrollX) {
+
+                        left = window.scrollX + rect.right - paletteWidth;
+
+                    }
+
+                    left = Math.max(window.scrollX + 5, left);
+
+                    top = Math.max(window.scrollY + 5, top); // Prevent going off top
+
+
+
+                    palette.style.top = `${top}px`;
+
+                    palette.style.left = `${left}px`;
+
+                    palette.style.display = 'block';
+
+                    palette.classList.add('popIn');
+
+                    setTimeout(() => palette.classList.remove('popIn'), 200);
+
+                     // Focus search input when palette opens
+
+                     paletteSearch.focus();
+
+                     paletteSearch.value = ''; // Clear previous search
+
+                     filterPaletteItems(''); // Show all items initially
+
+                }
+
+
+
+
+
+                // Update selected cells & data when palette item is clicked
+
+                palette.addEventListener('click', function(e) {
+
+                    if (e.target.classList.contains('palette-item') && selectedCells.length > 0) {
+
+                        const newCode = e.target.dataset.code;
+
+                        const newBgColor = colorMap[newCode] || 'var(--table-bg)';
+
+                        const newTextColor = getTextColorForBg(newBgColor === 'var(--table-bg)' ? null : newBgColor);
+
+
+
+                        // Apply to all selected cells
+
+                        selectedCells.forEach(cell => {
+
+                            const nik = cell.dataset.nik;
+
+                            const dateKey = cell.dataset.date; // YYYY-MM-DD
+
+
+
+                            // Update cell appearance
+
+                            cell.textContent = newCode;
+
+                            cell.style.backgroundColor = newBgColor;
+
+                            cell.style.color = newTextColor;
+
+
+
+                            // Update rosterData array
+
+                            let entryIndex = rosterData.findIndex(d => d.Nik === nik && d.WorkingDate.startsWith(dateKey));
+
+
+
+                            if (entryIndex !== -1) { // Entry exists
+
+                                if (newCode === '') { // If new code is empty, remove the entry
+
+                                    rosterData.splice(entryIndex, 1);
+
+                                } else { // Otherwise, update the code
+
+                                    rosterData[entryIndex].RosterCode = newCode;
+
+                                }
+
+                            } else if (newCode !== '') { // Entry doesn't exist, and new code isn't empty, add it
+
+                                rosterData.push({
+
+                                    Row: 0, Nik: nik, WorkingDate: `${dateKey}T00:00:00`, RosterCode: newCode
+
+                                });
+
+                            }
+
+                        });
+
+
+
+                        // Update hidden input with the modified rosterData
+
+                        rosterDataInput.value = JSON.stringify(rosterData);
+
+                        palette.style.display = 'none'; // Hide palette
+
+                        deselectAllCells(); // Deselect cells after applying
+
+                    }
+
+                });
+
+
+
+                 // Palette Search Filter
+
+                 paletteSearch.addEventListener('input', function() {
+
+                    const searchTerm = this.value.toLowerCase().trim();
+
+                    filterPaletteItems(searchTerm);
+
+                 });
+
+
+
+                function filterPaletteItems(term) {
+
+                    const items = paletteGrid.querySelectorAll('.palette-item');
+
+                    items.forEach(item => {
+
+                        const code = item.dataset.code.toLowerCase();
+
+                        const keterangan = item.dataset.keterangan ? item.dataset.keterangan.toLowerCase() : '';
+
+                        const text = item.textContent.toLowerCase(); // Include "[Kosong]"
+
+                        if (code.includes(term) || keterangan.includes(term) || text.includes(term)) {
+
+                            item.classList.remove('hidden');
+
+                        } else {
+
+                            item.classList.add('hidden');
+
+                        }
+
+                    });
+
+                }
+
+
+
+
+
+                // Hide palette if clicking outside
+
+                document.addEventListener('click', function(e) {
+
+                    // Hide palette ONLY if click is outside palette AND outside the table body cells
+
+                    if (!palette.contains(e.target) && !e.target.closest('.roster-cell')) {
+
+                         palette.style.display = 'none';
+
+                         // Optionally deselect cells if clicking completely outside the table
+
+                         if (!e.target.closest('#previewTable')) {
+
+                              deselectAllCells();
+
+                         }
+
+                    }
+
+                });
+
+
+
+                // --- Inisialisasi Palette ---
+
+                paletteGrid.innerHTML = '<div class="palette-item" data-code="" data-keterangan="kosong">[Kosong]</div>'; // Add keterangan data attribute
+
+                rosterKeterangan.forEach(item => {
+
+                    const div = document.createElement('div');
+
+                    div.className = 'palette-item';
+
+                    div.dataset.code = item.kode;
+
+                    div.dataset.keterangan = item.keterangan || ''; // Store keterangan for search
+
+                    const bgColor = item.warna || 'var(--table-bg)';
+
+                    const textColor = getTextColorForBg(item.warna);
+
+                    div.style.backgroundColor = bgColor;
+
+                    div.style.color = textColor;
+
+                    div.textContent = item.kode;
+
+                    div.title = item.keterangan;
+
+                    paletteGrid.appendChild(div);
+
+                });
+
+
+
+                // --- Render Tabel Awal ---
+
+                renderTable();
+
+            }
+
+        });
+
+    </script>
+
+}
+

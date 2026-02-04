@@ -1,0 +1,284 @@
+﻿@{
+    ViewData["Title"] = "Konfigurasi Email";
+}
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<style>
+    .card {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border: none;
+        border-radius: .75rem;
+    }
+
+    .email-badge {
+        display: inline-block;
+        padding: .35em .65em;
+        font-size: .85em;
+        font-weight: 600;
+        line-height: 1;
+        color: #fff;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: .25rem;
+        background-color: #007bff;
+        margin: 2px;
+    }
+
+    .cc-badge {
+        background-color: #6c757d;
+    }
+
+    .btn-action {
+        width: 35px;
+        height: 35px;
+    }
+</style>
+
+<div class="card">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h3 class="card-title font-weight-bold mb-0">
+            <i class="fas fa-envelope-open-text mr-2"></i>@ViewData["Title"]
+        </h3>
+        <button id="btn-add" class="btn btn-primary">
+            <i class="fas fa-plus mr-2"></i>Tambah Baru
+        </button>
+    </div>
+    <div class="card-body">
+        <table id="emailTable" class="table table-bordered table-striped" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Departemen</th>
+                    <th>Email Tujuan (To)</th>
+                    <th>Email Tembusan (CC)</th>
+                    <th class="text-center" style="width: 100px;">Aksi</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="emailModal" tabindex="-1" role="dialog" aria-labelledby="emailModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="emailModalLabel">Form Konfigurasi Email</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="emailForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="id" name="id">
+                    <div class="form-group">
+                        <label for="departemen">Departemen</label>
+                        <select class="form-control" id="departemen" name="departemen" required>
+                            <option value="">-- Memuat Departemen --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Tujuan (To)</label>
+                        <textarea class="form-control" id="email" name="email" rows="3" required></textarea>
+                        <small class="form-text text-muted">Pisahkan beberapa email dengan titik koma (;).</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="cc">Email Tembusan (CC)</label>
+                        <textarea class="form-control" id="cc" name="cc" rows="3"></textarea>
+                        <small class="form-text text-muted">Boleh kosong. Pisahkan beberapa email dengan titik koma (;).</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" id="btn-save" class="btn btn-primary">Simpan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            // URL fix tanpa backtick Razor
+            const getAllUrl = '@Url.Action("GetAll", "Email")';
+            const getByIdUrl = '@Url.Action("GetById", "Email")/';
+            const createUrl = '@Url.Action("Create", "Email")';
+            const updateUrl = '@Url.Action("Update", "Email")';
+            const deleteUrl = '@Url.Action("Delete", "Email")/';
+            const getDeptUrl = '@Url.Action("GetDepartments", "Email")';
+
+            let table = $('#emailTable').DataTable({
+                ajax: {
+                    url: getAllUrl,
+                    dataSrc: "data"
+                },
+                columns: [
+                    { data: "departemen" },
+                    { data: "email", render: renderEmailBadges },
+                    { data: "cc", render: (data) => renderEmailBadges(data, true) },
+                    {
+                        data: "id",
+                        orderable: false,
+                        className: "text-center",
+                        render: function (id) {
+                            return `
+                                <button class="btn btn-sm btn-info btn-edit btn-action" data-id="${id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger btn-delete btn-action" data-id="${id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            `;
+                        }
+                    }
+                ],
+                responsive: true,
+                autoWidth: false
+            });
+
+            function loadDepartments(selectedDept = "") {
+                const deptDropdown = $('#departemen');
+                $.get(getDeptUrl, function (data) {
+                    deptDropdown.empty().append('<option value="">-- Pilih Departemen --</option>');
+                    if (data && data.length > 0) {
+                        data.forEach(function (dept) {
+                            deptDropdown.append(new Option(dept, dept));
+                        });
+                        if (selectedDept) {
+                            deptDropdown.val(selectedDept);
+                        }
+                    } else {
+                        deptDropdown.empty().append('<option value="">-- Tidak ada data --</option>');
+                    }
+                }).fail(function () {
+                    deptDropdown.empty().append('<option value="">-- Gagal memuat --</option>');
+                });
+            }
+
+            // Load departemen saat pertama kali
+            loadDepartments();
+
+            function renderEmailBadges(data, isCc = false) {
+                if (!data) return '';
+                const badgeClass = isCc ? 'cc-badge' : '';
+                return data
+                    .split(';')
+                    .filter(email => email && email.trim())
+                    .map(email => `<span class="email-badge ${badgeClass}">${email.trim()}</span>`)
+                    .join('');
+            }
+
+            function validateEmails(emailString) {
+                if (!emailString || !emailString.trim()) return true;
+                const emailRegex = @Html.Raw("/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/");
+                const emails = emailString.split(';').filter(email => email.trim() !== '');
+                return emails.every(email => emailRegex.test(email.trim()));
+            }
+
+            $('#btn-add').on('click', function () {
+                $('#emailForm')[0].reset();
+                $('#id').val('');
+                $('#emailModalLabel').text('Tambah Konfigurasi Email');
+                loadDepartments(); // reload dropdown
+                $('#emailModal').modal('show');
+            });
+
+            $('#emailTable').on('click', '.btn-edit', function () {
+                const id = $(this).data('id');
+                $.get(getByIdUrl + id, function (data) {
+                    $('#id').val(data.id);
+                    loadDepartments(data.departemen);
+                    $('#email').val(data.email);
+                    $('#cc').val(data.cc);
+                    $('#emailModalLabel').text('Edit Konfigurasi Email');
+                    $('#emailModal').modal('show');
+                });
+            });
+
+            $('#btn-save').on('click', function () {
+                const id = $('#id').val();
+                const url = id ? updateUrl : createUrl;
+
+                if (!$('#emailForm')[0].checkValidity()) {
+                    Swal.fire('Peringatan', 'Harap isi semua kolom yang wajib diisi.', 'warning');
+                    return;
+                }
+
+                if (!validateEmails($('#email').val()) || !validateEmails($('#cc').val())) {
+                    Swal.fire('Peringatan', 'Format email tidak valid. Periksa kembali.', 'warning');
+                    return;
+                }
+
+                const data = {
+                    id: id,
+                    departemen: $('#departemen').val(),
+                    email: $('#email').val(),
+                    cc: $('#cc').val()
+                };
+
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                    data: JSON.stringify(data),
+                    success: function (response) {
+                        if (response.success) {
+                            $('#emailModal').modal('hide');
+                            Swal.fire('Berhasil!', response.message, 'success');
+                            table.ajax.reload();
+                        } else {
+                            Swal.fire('Gagal!', response.message, 'error');
+                        }
+                    },
+                    error: function () {
+                        Swal.fire('Error', 'Gagal terhubung ke server.', 'error');
+                    }
+                });
+            });
+
+            $('#emailTable').on('click', '.btn-delete', function () {
+                const id = $(this).data('id');
+                Swal.fire({
+                    title: 'Anda yakin?',
+                    text: "Data yang dihapus tidak dapat dikembalikan.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: deleteUrl + id,
+                            type: 'POST',
+                            headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                            success: function (response) {
+                                if (response.success) {
+                                    Swal.fire('Dihapus!', response.message, 'success');
+                                    table.ajax.reload();
+                                } else {
+                                    Swal.fire('Gagal!', response.message, 'error');
+                                }
+                            },
+                            error: function () {
+                                Swal.fire('Error', 'Gagal terhubung ke server.', 'error');
+                            }
+                        });
+                    }
+                });
+            });
+
+        });
+    </script>
+}

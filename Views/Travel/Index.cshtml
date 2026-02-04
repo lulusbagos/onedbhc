@@ -1,0 +1,1203 @@
+﻿@{
+    ViewData["Title"] = "Travel Authorization";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="travel-hero mb-4 p-4 rounded shadow-sm d-flex flex-wrap align-items-center justify-content-between">
+    <div>
+        <div class="badge badge-soft mb-2">Travel Module</div>
+        <h3 class="mb-1 text-white">Travel Allowance</h3>
+        <p class="mb-0 text-light small">Catat perjalanan, atur jadwal on/off site, dan monitor pengajuan dengan cepat.</p>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <div class="stat-chip">
+            <div class="label">Total Travel</div>
+            <div id="totalTravel" class="value">0</div>
+        </div>
+        <div class="stat-chip">
+            <div class="label">Sedang Berjalan</div>
+            <div id="ongoingTravel" class="value">0</div>
+        </div>
+        <a class="btn btn-light btn-sm ml-3" href="@Url.Action("Report", "Travel")">
+            <i class="fas fa-file-alt mr-1"></i> Laporan TA
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <div class="card border-0 shadow-sm h-100" id="formCard">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <h5 class="mb-0 text-primary" id="formTitle">Form Travel</h5>
+                    <span class="badge badge-soft-primary" id="formMode">Mode: Tambah</span>
+                </div>
+                <p class="text-muted small mb-3">Lengkapi data di bawah. Ketik NIK atau nama untuk mencari karyawan.</p>
+
+                <form id="travelForm">
+                    <input type="hidden" id="travelId" name="id" />
+
+                    <div class="form-group position-relative">
+                        <label class="font-weight-semibold">NIK / Nama</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-white border-right-0"><i class="fas fa-id-card text-primary"></i></span>
+                            </div>
+                            <input type="text" class="form-control border-left-0" id="nik" name="nik" placeholder="Ketik minimal 2 karakter untuk mencari" autocomplete="off" required />
+                        </div>
+                        <div id="employeeSuggest" class="suggestion-panel shadow-sm"></div>
+                        <small class="text-muted">Hasil rekomendasi akan muncul otomatis, pilih untuk autofill.</small>
+                    </div>
+
+                    <div class="employee-meta mb-3">
+                        <div class="meta-item">
+                            <span class="label">Nama</span>
+                            <span id="infoNama" class="value">-</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="label">Departemen</span>
+                            <span id="infoDept" class="value">-</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="label">Posisi</span>
+                            <span id="infoPosisi" class="value">-</span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label class="font-weight-semibold">Out Site</label>
+                            <input type="text" class="form-control" id="out_site" name="out_site" required placeholder="Out Site" />
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="font-weight-semibold d-flex align-items-center justify-content-between">
+                                <span>On Site</span>
+                                <span id="periodBadge" class="badge badge-soft badge-soft-primary">Periode: -</span>
+                            </label>
+                            <input type="text" class="form-control" id="on_site" name="on_site" required placeholder="dd/mm/yyyy" />
+                            <small class="text-muted">Pilih tanggal pulang yang sesuai.</small>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label class="font-weight-semibold">Wilayah</label>
+                            <input list="wilayahList" type="text" class="form-control" id="wilayah" name="wilayah" placeholder="Pilih atau ketik manual" />
+                            <datalist id="wilayahList">
+                                <option value="Lokal - Ring Satu" />
+                                <option value="Lokal - Ring Dua" />
+                                <option value="Lokal - Ring Tiga" />
+                                <option value="Non Lokal - Luar Kaltim" />
+                            </datalist>
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="font-weight-semibold">POH</label>
+                            <input type="text" class="form-control" id="poh" name="poh" placeholder="Point of Hire" />
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label class="font-weight-semibold d-flex align-items-center justify-content-between">
+                                <span>Nominal</span>
+                                <span class="text-muted small">Pilih cepat atau isi manual</span>
+                            </label>
+                            <div class="nominal-chips mb-2">
+                                <span class="nominal-chip" data-val="150000">150.000</span>
+                                <span class="nominal-chip" data-val="250000">250.000</span>
+                                <span class="nominal-chip" data-val="400000">400.000</span>
+                                <span class="nominal-chip" data-val="750000">750.000</span>
+                            </div>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-right-0"><i class="fas fa-coins text-warning"></i></span>
+                                </div>
+                                <input type="text" class="form-control border-left-0" id="nominal" name="nominal" placeholder="Contoh: 1.500.000" />
+                            </div>
+                        </div>
+                        <div class="form-group col-6">
+                            <label class="font-weight-semibold d-flex align-items-center justify-content-between">
+                                <span>Nomor TA</span>
+                        <span class="text-muted small">Auto per minggu (Senin–Minggu); bisa disesuaikan manual.</span>
+                    </label>
+                            <input type="text" class="form-control bg-white" id="nomor_ta" name="nomor_ta" placeholder="Auto-generate dari tanggal" />
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+                        <span class="btn-label"><i class="fas fa-save mr-1"></i> Simpan Travel</span>
+                    </button>
+                    <button type="button" class="btn btn-light btn-block mt-2" id="resetBtn">
+                        <i class="fas fa-undo mr-1"></i> Reset Form
+                    </button>
+
+                    <div class="onsite-status mt-3 p-3 rounded">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-muted small">Status Onsite Terakhir</div>
+                                <div id="onsiteDate" class="font-weight-bold">-</div>
+                            </div>
+                            <div id="onsiteBadge" class="badge badge-soft badge-soft-warning">Tidak diketahui</div>
+                        </div>
+                        <div class="mt-2">
+                            <div class="text-muted small">Jeda onsite ? Out Site baru (target 42 hari)</div>
+                            <div class="d-flex align-items-center">
+                                <div id="onsiteGap" class="font-weight-bold mr-2">- hari</div>
+                                <div id="onsiteMessage" class="text-muted small"></div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div>
+                        <h5 class="mb-0">Daftar Travel Authorization</h5>
+                        <span class="text-muted small">Pantau jadwal on/off site dan detail pengajuan.</span>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-muted small">Periode Terdekat</div>
+                        <div id="nextTravel" class="font-weight-bold text-primary">-</div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover" id="travelTable" width="100%">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Karyawan</th>
+                                <th>Periode</th>
+                                <th>Wilayah / POH</th>
+                                <th>Nominal</th>
+                                <th>Nomor TA</th>
+                                <th class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal konfirmasi pengajuan mepet -->
+<div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle mr-2"></i>Perhatian</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-1">Ada hal yang perlu dicek sebelum lanjut:</p>
+                <ul id="confirmReasons" class="mb-2 pl-3"></ul>
+                <small class="text-muted">Anda tetap bisa lanjut, pastikan approval dan logistik siap.</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-warning" id="confirmProceedBtn">Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+    <style>
+        .travel-hero {
+            background: linear-gradient(135deg, #2143d4 0%, #0f88d0 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .travel-hero::after {
+            content: "";
+            position: absolute;
+            right: -40px;
+            bottom: -40px;
+            width: 180px;
+            height: 180px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .travel-hero > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .badge-soft,
+        .badge-soft-primary {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .badge-mode-add {
+            background: linear-gradient(135deg, #d1f2eb 0%, #b2e5d9 100%);
+            color: #0f5132;
+            border: 1px solid #a8ddc4;
+        }
+
+        .badge-mode-edit {
+            background: linear-gradient(135deg, #fff4d9 0%, #ffe6b3 100%);
+            color: #b27000;
+            border: 1px solid #ffd48a;
+        }
+        .badge-mode-add {
+            background: linear-gradient(135deg, #d7f7ec 0%, #c1efdf 100%);
+            color: #0f5132;
+            border: 1px solid #b5e5d3;
+        }
+
+        .stat-chip {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #fff;
+            min-width: 120px;
+        }
+
+            .stat-chip .label {
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.6px;
+                opacity: 0.85;
+            }
+
+            .stat-chip .value {
+                font-size: 22px;
+                font-weight: 700;
+                margin-top: 2px;
+            }
+
+        .employee-meta {
+            background: #f6f8fb;
+            border: 1px solid #e7ebf3;
+            border-radius: 10px;
+            padding: 12px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .meta-item .label {
+            display: block;
+            font-size: 11px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .meta-item .value {
+            font-weight: 700;
+            color: #2b2f3c;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 0 0.1rem rgba(50, 115, 220, 0.15);
+            border-color: #5c8df5;
+        }
+
+        #travelTable td {
+            vertical-align: middle;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: #f5f8ff;
+        }
+
+        .period-chip {
+            background: #eef2ff;
+            color: #2d3ea8;
+            border-radius: 8px;
+            padding: 6px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .badge-out {
+            background: #ffe6c7;
+            color: #a35800;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-weight: 700;
+        }
+
+        .badge-on {
+            background: #e0f7e9;
+            color: #0f8c3c;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-weight: 700;
+        }
+
+        .text-muted-small {
+            font-size: 12px;
+            color: #8f9bb3;
+        }
+
+        .action-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .font-weight-semibold {
+            font-weight: 600;
+        }
+
+        .suggestion-panel {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            background: #fff;
+            border: 1px solid #e7ebf3;
+            border-radius: 10px;
+            max-height: 260px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f2f4f7;
+        }
+
+            .suggestion-item:last-child {
+                border-bottom: none;
+            }
+
+            .suggestion-item:hover {
+                background: #f6f8ff;
+            }
+
+        .suggestion-title {
+            font-weight: 700;
+            color: #2b2f3c;
+        }
+
+        .suggestion-meta {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .nominal-chips {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .nominal-chip {
+            padding: 6px 10px;
+            border: 1px solid #e1e5ef;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 12px;
+            background: #f8fafc;
+            transition: all 0.2s ease;
+        }
+
+            .nominal-chip:hover {
+                background: #eaf2ff;
+                border-color: #d3e1ff;
+            }
+
+        .nominal-chip.active {
+            background: #2143d4;
+            color: #fff;
+            border-color: #2143d4;
+        }
+
+        .onsite-status {
+            background: #f9fafc;
+            border: 1px solid #e7ebf3;
+        }
+
+        .badge-soft-warning {
+            background: #fff4d9;
+            color: #b27000;
+        }
+
+        .badge-soft-success {
+            background: #e6f6ea;
+            color: #1f7a3d;
+        }
+
+        .badge-soft-danger {
+            background: #ffe4e1;
+            color: #c0392b;
+        }
+
+        .card-mode-add {
+            background: linear-gradient(180deg, #f1fff8 0%, #f9fffb 50%, #ffffff 100%);
+        }
+
+        .card-mode-edit {
+            background: linear-gradient(180deg, #fff8ec 0%, #fffdf8 50%, #ffffff 100%);
+        }
+
+        .flatpickr-day.highlight-range {
+            background: #ffd966 !important;
+            color: #1b2e52 !important;
+            border-color: #ffc107 !important;
+        }
+
+        .flatpickr-day.highlight-onsite {
+            background: #e2f0ff !important;
+            color: #0f3f91 !important;
+            border-color: #5b7fc9 !important;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        const endpoints = {
+            list: '@Url.Action("GetAll", "Travel")',
+            get: '@Url.Action("Get", "Travel")',
+            create: '@Url.Action("Create", "Travel")',
+            update: '@Url.Action("Update", "Travel")',
+            delete: '@Url.Action("Delete", "Travel")',
+            employees: '@Url.Action("Employees", "Travel")',
+            onsiteStatus: '@Url.Action("OnsiteStatus", "Travel")',
+            nextNomorTa: '@Url.Action("NextNomorTa", "Travel")'
+        };
+
+        let travelTable;
+        let employeeCache = {};
+        let searchTimer;
+        let pendingPayload = null;
+        let pendingWarnings = [];
+        const requiredDays = 42;
+        let lastGapDays = null;
+
+        $(document).ready(function () {
+            initializeFlatpickrHighlights();
+            initTable();
+            bindForm();
+            fetchEmployees();
+            setFormMode('add');
+        });
+
+        let outSitePicker = null;
+        let onSitePicker = null;
+        let onsiteHighlightStart = null;
+
+        function initializeFlatpickrHighlights() {
+            if (typeof flatpickr !== 'function') return;
+
+            outSitePicker = flatpickr('#out_site', {
+                dateFormat: 'Y-m-d',
+                minDate: 'today',
+                allowInput: true,
+                onChange: function (selectedDates) {
+                    const outDate = selectedDates[0];
+                    updateOnsiteHighlightStart(outDate);
+                    autoFillPeriodAndNumber();
+                },
+                onDayCreate: function (_, __, dayElement) {
+                    highlightOutSiteRange(dayElement);
+                }
+            });
+
+            onSitePicker = flatpickr('#on_site', {
+                dateFormat: 'Y-m-d',
+                allowInput: true,
+                onDayCreate: function (_, __, dayElement) {
+                    highlightOnSiteRange(dayElement);
+                }
+            });
+        }
+
+        function highlightOutSiteRange(dayElement) {
+            const date = dayElement.dateObj;
+            if (!date) return;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const diffDays = Math.floor((date - today) / (1000 * 60 * 60 * 24));
+            if (diffDays >= 0 && diffDays < 14) {
+                dayElement.classList.add('highlight-range');
+            } else {
+                dayElement.classList.remove('highlight-range');
+            }
+        }
+
+        function highlightOnSiteRange(dayElement) {
+            const date = dayElement.dateObj;
+            if (!date) return;
+            if (!onsiteHighlightStart) {
+                dayElement.classList.remove('highlight-onsite');
+                return;
+            }
+            if (date >= onsiteHighlightStart) {
+                dayElement.classList.add('highlight-onsite');
+            } else {
+                dayElement.classList.remove('highlight-onsite');
+            }
+        }
+
+        function updateOnsiteHighlightStart(outDate) {
+            if (!outDate) {
+                onsiteHighlightStart = null;
+                if (onSitePicker) {
+                    onSitePicker.set('minDate', null);
+                    onSitePicker.redraw();
+                }
+                return;
+            }
+            const start = new Date(outDate);
+            start.setDate(start.getDate() + 14);
+            onsiteHighlightStart = start;
+            if (onSitePicker) {
+                onSitePicker.set('minDate', start);
+                onSitePicker.redraw();
+            }
+        }
+
+        async function fetchJson(url, options) {
+            const response = await fetch(url, options);
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch (err) {
+                throw new Error(text || 'Invalid response');
+            }
+        }
+
+        function setFormMode(mode) {
+            const badge = $('#formMode');
+            const card = $('#formCard');
+            if (mode === 'edit') {
+                badge.text('Mode: Edit');
+                badge.removeClass('badge-mode-add').addClass('badge-mode-edit');
+                card.removeClass('card-mode-add').addClass('card-mode-edit');
+            } else {
+                badge.text('Mode: Tambah');
+                badge.removeClass('badge-mode-edit').addClass('badge-mode-add');
+                card.removeClass('card-mode-edit').addClass('card-mode-add');
+            }
+        }
+
+        function initTable() {
+            travelTable = $('#travelTable').DataTable({
+                ajax: {
+                    url: endpoints.list,
+                    type: 'GET',
+                    dataSrc: 'data'
+                },
+                order: [[1, 'desc']],
+                columns: [
+                    {
+                        data: null,
+                        render: function (data) {
+                            return `
+                                <div class="font-weight-bold text-dark">${data.nama || '-'}</div>
+                                <div class="text-muted-small">NIK: ${data.nik || '-'} | DEPT: ${data.kd_depart || '-'}</div>
+                                <div class="text-muted-small">${data.departemen || '-'}</div>`;
+                        }
+                    },
+                    {
+                        data: null,
+                        render: function (data) {
+                            const out = formatDate(data.out_site);
+                            const on = formatDate(data.on_site);
+                            const diff = dayDiff(data.out_site, data.on_site);
+                            return `
+                                <div class="period-chip d-flex align-items-center">
+                                    <span class="badge badge-out mr-2">${out}</span>
+                                    <i class="fas fa-arrow-right text-muted mr-2"></i>
+                                    <span class="badge badge-on">${on}</span>
+                                </div>
+                                <div class="text-muted-small">Durasi ${diff} hari</div>`;
+                        }
+                    },
+                    {
+                        data: null,
+                        render: function (data) {
+                            return `
+                                <div class="font-weight-semibold">${data.wilayah || '-'}</div>
+                                <div class="text-muted-small">${data.poh || '-'}</div>
+                            `;
+                        }
+                    },
+                    {
+                        data: 'nominal',
+                        render: function (data) {
+                            return `<span class="font-weight-bold text-primary">${formatNominal(data)}</span>`;
+                        }
+                    },
+                    {
+                        data: 'nomor_ta',
+                        render: (data, type, row) => `
+                            <div class="font-weight-semibold">${data || '-'}</div>
+                            <div class="text-muted-small">By ${row.created_by || '-'}</div>
+                        `
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-center',
+                        render: data => `
+                            <button class="btn btn-outline-primary action-btn btn-edit" data-id="${data}" title="Ubah">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger action-btn btn-delete ml-1" data-id="${data}" title="Hapus">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        `
+                    }
+                ],
+                language: {
+                    emptyTable: "Data belum ada",
+                    zeroRecords: "Data belum ada"
+                }
+            });
+
+            $('#travelTable').on('click', '.btn-edit', function () {
+                const id = $(this).data('id');
+                editTravel(id);
+            });
+
+            $('#travelTable').on('click', '.btn-delete', function () {
+                const id = $(this).data('id');
+                deleteTravel(id);
+            });
+
+            travelTable.on('xhr', function () {
+                const json = travelTable.ajax.json() || {};
+                const rows = json.data || [];
+                updateCounters(rows);
+            });
+        }
+
+        function bindForm() {
+            $('#travelForm').on('submit', function (e) {
+                e.preventDefault();
+                submitForm();
+            });
+
+            $('#resetBtn').on('click', function () {
+                resetForm();
+            });
+
+            $('#nik').on('input', function () {
+                const term = $(this).val();
+                if (searchTimer) clearTimeout(searchTimer);
+                searchTimer = setTimeout(function () {
+                    if (term.length >= 2) {
+                        fetchEmployees(term);
+                    }
+                    renderSuggestions(term);
+                }, 300);
+            });
+
+            $('#nik').on('change', function () {
+                fillEmployeeInfo($(this).val());
+                updateOnsiteStatus();
+            });
+
+            $('#out_site').on('change', function () {
+                autoFillPeriodAndNumber();
+                updateOnsiteStatus();
+            });
+
+            $('#on_site').on('change', function () {
+                autoFillPeriodAndNumber();
+            });
+
+            $('.nominal-chip').on('click', function () {
+                const val = $(this).data('val');
+                setNominalValue(val);
+            });
+
+            $('#nominal').on('input blur', function () {
+                const raw = $(this).val();
+                const numeric = Number(String(raw || '').replace(/[^\d]/g, ''));
+                if (!isNaN(numeric) && numeric > 0) {
+                    $(this).val(numeric.toLocaleString('id-ID'));
+                } else {
+                    $(this).val('');
+                }
+            });
+
+            $('#confirmProceedBtn').on('click', function () {
+                $('#confirmModal').modal('hide');
+                if (pendingPayload) {
+                    submitPayload(pendingPayload);
+                }
+            });
+
+            $(document).on('click', function (e) {
+                if (!$(e.target).closest('#employeeSuggest, #nik').length) {
+                    $('#employeeSuggest').hide();
+                }
+            });
+        }
+
+        function fetchEmployees(keyword = '') {
+            fetchJson(`${endpoints.employees}?keyword=${encodeURIComponent(keyword)}`)
+                .then(result => {
+                    const data = result.data || [];
+                    employeeCache = {};
+
+                    data.forEach(item => {
+                        employeeCache[item.no_nik] = item;
+                    });
+
+                    const nik = $('#nik').val();
+                    if (nik) {
+                        fillEmployeeInfo(nik);
+                    }
+                })
+                .catch(() => {
+                    alertify.error('Gagal memuat data karyawan.');
+                });
+        }
+
+        function fillEmployeeInfo(nik) {
+            const data = employeeCache[nik];
+            $('#infoNama').text(data ? data.nama_lengkap || '-' : '-');
+            $('#infoDept').text(data ? data.depart || '-' : '-');
+            $('#infoPosisi').text(data ? data.posisi || '-' : '-');
+            if (data) {
+                if ($('#wilayah').val().trim() === '' && data.lokterima) {
+                    $('#wilayah').val(data.lokterima);
+                }
+                if ($('#poh').val().trim() === '' && data.poh) {
+                    $('#poh').val(data.poh);
+                }
+                if (($('#nominal').val() || '').trim() === '' && data.nominal) {
+                    setNominalValue(data.nominal);
+                }
+            }
+            autoFillPeriodAndNumber();
+        }
+
+        function renderSuggestions(term) {
+            const panel = $('#employeeSuggest');
+            if (!term || term.length < 2) {
+                panel.hide();
+                return;
+            }
+
+            const items = Object.values(employeeCache)
+                .filter(x =>
+                    (x.no_nik && x.no_nik.toLowerCase().includes(term.toLowerCase())) ||
+                    (x.nama_lengkap && x.nama_lengkap.toLowerCase().includes(term.toLowerCase()))
+                )
+                .slice(0, 10);
+
+            if (!items.length) {
+                panel.hide();
+                return;
+            }
+
+            const html = items.map(x => `
+                <div class="suggestion-item" data-nik="${x.no_nik}">
+                    <div class="suggestion-title">${x.nama_lengkap || '-'} <span class="text-muted">(${x.no_nik || '-'})</span></div>
+                    <div class="suggestion-meta">${x.depart || '-'} - ${x.posisi || '-'} - POH: ${x.poh || '-'}</div>
+                    <div class="suggestion-meta">Rekom nominal: ${formatNominal(x.nominal) || '-'}</div>
+                </div>
+            `).join('');
+
+            panel.html(html).show();
+
+            panel.find('.suggestion-item').on('click', function () {
+                const nik = $(this).data('nik');
+                $('#nik').val(nik);
+                fillEmployeeInfo(nik);
+                updateOnsiteStatus();
+                panel.hide();
+            });
+        }
+
+        function submitForm() {
+            const payload = {
+                id: $('#travelId').val() || null,
+                nik: ($('#nik').val() || '').trim(),
+                out_site: $('#out_site').val(),
+                on_site: $('#on_site').val(),
+                wilayah: $('#wilayah').val(),
+                poh: $('#poh').val(),
+                nominal: $('#nominal').val(),
+                nomor_ta: $('#nomor_ta').val()
+            };
+
+            if (!payload.nik || !payload.out_site || !payload.on_site) {
+                alertify.error('NIK, Out Site, dan On Site wajib diisi.');
+                return;
+            }
+
+            const validation = validateOutDate(payload.nik, payload.out_site, payload.on_site);
+            if (validation.onSiteShortMsg) {
+                alertify.warning(validation.onSiteShortMsg);
+            }
+            if (!validation.ok || validation.reasons.length) {
+                pendingPayload = payload;
+                pendingWarnings = validation.reasons;
+                renderConfirmModal(validation.reasons);
+                return;
+            }
+
+            submitPayload(payload);
+        }
+
+        function submitPayload(payload) {
+            toggleSubmit(true);
+            const url = payload.id ? endpoints.update : endpoints.create;
+
+            fetchJson(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(result => {
+                    if (result.success) {
+                        alertify.success(result.message || 'Data tersimpan.');
+                        if (result.warning) {
+                            alertify.warning(result.warning);
+                        }
+                        resetForm();
+                        travelTable.ajax.reload(null, false);
+                    } else {
+                        alertify.error(result.message || 'Gagal menyimpan data.');
+                    }
+                })
+                .catch(() => alertify.error('Terjadi kesalahan saat menyimpan data.'))
+                .finally(() => {
+                    pendingPayload = null;
+                    pendingWarnings = [];
+                    toggleSubmit(false);
+                });
+        }
+
+        function editTravel(id) {
+            fetchJson(`${endpoints.get}?id=${id}`)
+                .then(result => {
+                    if (!result.success) {
+                        alertify.error(result.message || 'Data tidak ditemukan.');
+                        return;
+                    }
+
+                    const data = result.data;
+                    $('#travelId').val(data.id);
+                    $('#nik').val(data.nik);
+                    $('#out_site').val(toInputDate(data.out_site));
+                    $('#on_site').val(toInputDate(data.on_site));
+                    $('#wilayah').val(data.wilayah);
+                    $('#poh').val(data.poh);
+                    $('#nominal').val(data.nominal);
+                    $('#nomor_ta').val(data.nomor_ta);
+                    fillEmployeeInfo(data.nik);
+                    autoFillPeriodAndNumber();
+                    updateOnsiteHighlightStart(data.out_site ? new Date(data.out_site) : null);
+                    $('#submitBtn .btn-label').html('<i class="fas fa-save mr-1"></i> Update Travel');
+                    setFormMode('edit');
+                    $('html, body').animate({ scrollTop: 0 }, 300);
+                })
+                .catch(() => alertify.error('Terjadi kesalahan saat mengambil data.'));
+        }
+
+        function deleteTravel(id) {
+            alertify.confirm('Hapus data', 'Anda yakin ingin menghapus travel ini?', function () {
+                fetchJson(`${endpoints.delete}?id=${id}`, { method: 'POST' })
+                    .then(result => {
+                        if (result.success) {
+                            alertify.success(result.message || 'Data dihapus.');
+                            travelTable.ajax.reload(null, false);
+                        } else {
+                            alertify.error(result.message || 'Gagal menghapus data.');
+                        }
+                    })
+                    .catch(() => alertify.error('Terjadi kesalahan saat menghapus data.'));
+            }, function () { });
+        }
+
+        function resetForm() {
+            $('#travelId').val('');
+            $('#travelForm')[0].reset();
+            $('#submitBtn .btn-label').html('<i class="fas fa-save mr-1"></i> Simpan Travel');
+            setFormMode('add');
+            fillEmployeeInfo('');
+            $('#periodBadge').text('Periode: -');
+            $('#nomor_ta').val('');
+            $('.nominal-chip').removeClass('active');
+            $('#onsiteDate').text('-');
+            $('#onsiteGap').text('- hari');
+            $('#onsiteMessage').text('');
+            setOnsiteBadge('badge-soft-warning', 'Tidak diketahui');
+            updateOnsiteHighlightStart(null);
+        }
+
+        function toggleSubmit(isLoading) {
+            const btn = $('#submitBtn');
+            btn.prop('disabled', isLoading);
+            if (isLoading) {
+                btn.find('.btn-label').html('<span class="spinner-border spinner-border-sm mr-2"></span>Memproses...');
+            } else {
+                const mode = $('#travelId').val() ? 'Update Travel' : 'Simpan Travel';
+                btn.find('.btn-label').html(`<i class="fas fa-save mr-1"></i> ${mode}`);
+            }
+        }
+
+        function formatDate(value) {
+            if (!value) return '-';
+            const date = new Date(value);
+            if (isNaN(date)) return '-';
+            return date.toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function toInputDate(value) {
+            if (!value) return '';
+            const date = new Date(value);
+            if (isNaN(date)) return '';
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${date.getFullYear()}-${month}-${day}`;
+        }
+
+        function formatNominal(value) {
+            const numeric = Number(String(value || '').replace(/[.,]/g, ''));
+            if (!isNaN(numeric) && numeric > 0) {
+                return numeric.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+            }
+            return value || '-';
+        }
+
+        function setNominalValue(value) {
+            const numeric = Number(String(value || '').replace(/[.,]/g, ''));
+            const chips = $('.nominal-chip');
+            chips.removeClass('active');
+
+            if (!isNaN(numeric) && numeric > 0) {
+                const matched = chips.filter((i, el) => Number($(el).data('val')) === numeric);
+                if (matched.length) {
+                    matched.addClass('active');
+                }
+                $('#nominal').val(numeric.toLocaleString('id-ID'));
+            } else {
+                $('#nominal').val('');
+                $('#nominal').focus();
+            }
+        }
+
+        function dayDiff(start, end) {
+            const startDate = new Date(start);
+            const endDate = new Date(end);
+            if (isNaN(startDate) || isNaN(endDate)) return '-';
+            const diff = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            return diff > 0 ? diff : '-';
+        }
+
+        function updateCounters(rows) {
+            $('#totalTravel').text(rows.length);
+            const now = new Date();
+            let ongoing = 0;
+            let next = null;
+
+            rows.forEach(item => {
+                const start = new Date(item.out_site);
+                const end = new Date(item.on_site);
+                if (!isNaN(start) && !isNaN(end)) {
+                    if (start <= now && end >= now) {
+                        ongoing = 1;
+                    }
+                    if (start > now && (!next || start < next)) {
+                        next = start;
+                    }
+                }
+            });
+
+            $('#ongoingTravel').text(ongoing);
+            $('#nextTravel').text(next ? formatDate(next) : '-');
+        }
+
+        function autoFillPeriodAndNumber() {
+            const outVal = $('#out_site').val();
+            const onVal = $('#on_site').val();
+
+            if (!outVal) {
+                $('#periodBadge').text('Periode: -');
+                $('#nomor_ta').val('');
+                return;
+            }
+
+            const outDate = new Date(outVal);
+            if (isNaN(outDate)) return;
+
+            if (!$('#travelId').val()) {
+                fetchNextNomorTa(outVal, outDate);
+            }
+
+            if (onVal) {
+                const onDate = new Date(onVal);
+                if (!isNaN(onDate)) {
+                    $('#periodBadge').text(`Periode: ${formatDate(outDate)} - ${formatDate(onDate)}`);
+                } else {
+                    $('#periodBadge').text('Periode: -');
+                }
+            } else {
+                $('#periodBadge').text('Periode: -');
+            }
+        }
+
+        function generateNomorTA(date) {
+            if (!(date instanceof Date) || isNaN(date)) {
+                return '';
+            }
+
+            const roman = monthToRoman(date.getMonth() + 1);
+            return `001/HC/TA/${roman}/${date.getFullYear()}`;
+        }
+        function fetchNextNomorTa(outVal, outDate) {
+            const params = new URLSearchParams();
+            params.append('outDate', outVal);
+            const excludeId = $('#travelId').val();
+            if (excludeId) {
+                params.append('excludeId', excludeId);
+            }
+
+            $('#nomor_ta').val('Memuat nomor...');
+            fetchJson(`${endpoints.nextNomorTa}?${params.toString()}`)
+                .then(result => {
+                    if (result && result.success && result.nomorTa) {
+                        $('#nomor_ta').val(result.nomorTa);
+                    } else {
+                        $('#nomor_ta').val(generateNomorTA(outDate));
+                    }
+                })
+                .catch(() => {
+                    $('#nomor_ta').val(generateNomorTA(outDate));
+                });
+        }
+        function updateOnsiteStatus() {
+            const nik = ($('#nik').val() || '').trim();
+            const outVal = $('#out_site').val();
+            if (!nik || !outVal) return;
+
+            fetchJson(`${endpoints.onsiteStatus}?nik=${encodeURIComponent(nik)}&outDate=${encodeURIComponent(outVal)}`)
+                .then(res => {
+                    if (!res.success) {
+                        $('#onsiteDate').text('-');
+                        $('#onsiteGap').text('- hari');
+                        $('#onsiteMessage').text(res.message || '');
+                        setOnsiteBadge('badge-soft-warning', 'Tidak diketahui');
+                        return;
+                    }
+
+                    const last = res.last_on_site ? formatDate(res.last_on_site) : '-';
+                    const gap = res.gap_days != null ? res.gap_days : null;
+                    $('#onsiteDate').text(last);
+                    $('#onsiteGap').text(gap != null ? `${gap} hari` : '- hari');
+                    lastGapDays = gap;
+
+                    if (gap == null) {
+                        $('#onsiteMessage').text('Belum ada riwayat TA.');
+                        setOnsiteBadge('badge-soft-warning', 'Baru');
+                    } else if (gap >= requiredDays) {
+                        $('#onsiteMessage').text(`Memenuhi target ${requiredDays} hari.`);
+                        setOnsiteBadge('badge-soft-success', 'Sesuai');
+                    } else {
+                        $('#onsiteMessage').text(`Baru ${gap} hari, target ${requiredDays} hari.`);
+                        setOnsiteBadge('badge-soft-danger', 'Belum cukup');
+                    }
+                })
+                .catch((err) => {
+                    $('#onsiteMessage').text('Gagal cek status onsite.');
+                    setOnsiteBadge('badge-soft-warning', 'Error');
+                    console.error('OnsiteStatus error:', err);
+                });
+        }
+
+        function setOnsiteBadge(cls, text) {
+            const el = $('#onsiteBadge');
+            el.removeClass('badge-soft-warning badge-soft-success badge-soft-danger').addClass(cls).text(text);
+        }
+
+        function validateOutDate(nik, outSite, onSite) {
+            const reasons = [];
+            const date = new Date(outSite);
+            if (isNaN(date)) return { ok: false, reasons: ['Tanggal Out Site tidak valid'] };
+
+            const day = date.getDay(); // 0 Sunday
+            const isSpecial = isSpecialNik(nik);
+            const isAllowedDay = (day === 1 || day === 4 || day === 6); // Mon/Thu/Sat
+            const isEvenDate = date.getDate() % 2 === 0;
+
+            if (!isAllowedDay && !isSpecial) {
+                reasons.push('Out Site di luar jadwal Sen/Kam/Sab.');
+            }
+
+            if (isSpecial && !isEvenDate) {
+                reasons.push('Out Site untuk NIK ini sebaiknya di tanggal genap.');
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const leadDaysOut = Math.round((date - today) / 86400000);
+            if (leadDaysOut < 14) {
+                reasons.push('Pengajuan Out Site kurang dari 14 hari.');
+            }
+
+            let onSiteShortMsg = '';
+            if (onSite) {
+                const onDate = new Date(onSite);
+                if (!isNaN(onDate)) {
+                    const leadDaysOn = Math.round((onDate - today) / 86400000);
+                    if (leadDaysOn < 14) {
+                        onSiteShortMsg = 'Tanggal On Site kurang dari 14 hari, tetap bisa lanjut.';
+                    }
+                }
+            }
+
+            if (lastGapDays != null && lastGapDays < requiredDays) {
+                reasons.push(`Jeda onsite baru ${lastGapDays} hari, target ${requiredDays} hari.`);
+            }
+
+            return { ok: true, reasons, onSiteShortMsg };
+        }
+
+        function isSpecialNik(nik) {
+            return (nik || '').trim() === '230516707856';
+        }
+
+        function renderConfirmModal(reasons) {
+            const list = $('#confirmReasons');
+            list.empty();
+            reasons.forEach(r => list.append(`<li>${r}</li>`));
+            $('#confirmModal').modal('show');
+        }
+
+        function monthToRoman(month) {
+            const map = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+            return map[month - 1] || "";
+        }
+    </script>
+}

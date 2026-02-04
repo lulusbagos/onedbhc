@@ -1,0 +1,42 @@
+﻿body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: bold;
+    background: url('../buss.png') no-repeat center center fixed;
+    background-size: cover;
+    color: black;
+    height: 100vh;
+    overflow: hidden; /* agar tidak muncul scrollbar */
+}
+
+.scroll-container {
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+.scroll-content {
+    position: absolute;
+    width: 100%;
+    animation: scrollUpDown 30s linear infinite alternate;
+}
+
+@keyframes scrollUpDown {
+    0% {
+        top: 0;
+    }
+
+    100% {
+        top: -100%;
+    }
+}
+
+.item {
+    padding: 30px;
+    font-size: 24px;
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    margin: 10px 0;
+    border-radius: 10px;
+    text-align: center;
+}

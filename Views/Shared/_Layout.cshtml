@@ -1,0 +1,655 @@
+﻿@using Microsoft.AspNetCore.Http
+@{
+    var namaUser = ViewContext.HttpContext.Session.GetString("nama") ?? "No Name";
+    var kategoriUser = ViewContext.HttpContext.Session.GetString("kategori_user_id") ?? "No Kategori";
+
+    // --- MODIFIKASI: Ambil path foto dari session ---
+    var fotoUser = ViewContext.HttpContext.Session.GetString("profile_picture_path");
+    if (string.IsNullOrEmpty(fotoUser))
+    {
+        fotoUser = "~/user.png"; // Default jika tidak ada di session atau DB
+    }
+
+    var menuList = ViewBag.Menu as IEnumerable<dynamic>;
+    string pageTitle = string.IsNullOrWhiteSpace(ViewData["Title"]?.ToString())
+        ? "ONEDB EVOLUTION"
+        : $"{ViewData["Title"]} | ONEDB EVOLUTION";
+
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="ONEDB Evolution Dashboard">
+    <meta name="author" content="">
+
+    <title>@pageTitle</title>
+
+    <!-- Fonts & Icons -->
+    <!-- Hapus Roboto, ganti ke Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
+    <!-- Styles -->
+    <link href="~/css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/css/alertify.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/themes/default.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" />
+
+    <!-- BARU: CSS untuk Cropper.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
+
+    @RenderSection("styles", required: false)
+
+    <!-- MODIFIKASI: Style Modern -->
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif; /* Gunakan Poppins */
+            background-color: #f4f7fc; /* Latar belakang abu-abu lembut */
+            color: #333;
+            font-size: 0.9rem; /* Sedikit lebih kecil agar rapi */
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: relative;
+            background: url('/img/walpaper.jpg') no-repeat center center;
+            background-size: cover;
+            z-index: 1;
+        }
+
+            .sidebar::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.65);
+                z-index: -1;
+            }
+
+            .sidebar .nav-item .nav-link {
+                font-weight: 500; /* Sedikit lebih tipis dari bold */
+                font-size: 0.95rem; /* Sesuaikan */
+                color: white !important;
+                text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5); /* Shadow lebih halus */
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 12px 15px;
+                transition: all 0.3s ease-in-out;
+            }
+
+                .sidebar .nav-item .nav-link i {
+                    font-size: 1rem; /* Sesuaikan */
+                    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+                }
+
+                .sidebar .nav-item .nav-link:hover {
+                    background: rgba(255, 255, 255, 0.15); /* Hover lebih soft */
+                    border-radius: 5px;
+                    box-shadow: none; /* Hilangkan shadow aneh */
+                    transform: translateY(-2px);
+                }
+
+            .sidebar .collapse-item {
+                font-weight: 500;
+                font-size: 0.9rem;
+                color: #555; /* Kontras lebih baik di bg putih */
+                padding: 8px 15px;
+                display: block;
+                text-decoration: none;
+                transition: all 0.3s ease-in-out;
+            }
+
+                .sidebar .collapse-item:hover {
+                    color: #000;
+                    background-color: #f0f0f0; /* Hover abu-abu */
+                    border-radius: 4px;
+                    text-shadow: none;
+                }
+
+        .topbar {
+            background-color: #ffffff;
+            /* Hapus shadow kustom, akan pakai class 'shadow-sm' */
+        }
+
+        .led-clock {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+        }
+
+        /* BARU: Modernisasi Card (untuk @RenderBody ) */
+        .card {
+            border: none;
+            border-radius: 0.5rem; /* Sudut lebih bulat */
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.05);
+            margin-bottom: 1.5rem;
+        }
+
+        /* BARU: Modernisasi Modal */
+        .modal-content {
+            border: none;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+        }
+
+        /* BARU: Container untuk Cropper */
+        #cropperImageContainer {
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+            background-color: #f7f7f7;
+            border-radius: 0.5rem;
+        }
+
+            #cropperImageContainer img {
+                max-width: 100%;
+            }
+
+    </style>
+</head>
+
+<body id="page-top">
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <ul class="navbar-nav sidebar sidebar-dark accordion" id="accordionSidebar">
+            <!-- ... (Kode Sidebar Anda tetap sama) ... -->
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="@Url.Action("Index", "Home")">
+                <div class="sidebar-brand-icon"></div>
+                @(ViewBag.Setting?.nama ?? "ONEDB EVOLUTIONS")
+            </a>
+
+            <hr class="sidebar-divider my-0">
+
+            @if (menuList != null)
+            {
+                <!-- 🟢 General Menu -->
+                foreach (var menu in menuList.Where(m => (string)m.type == "General" && (m.hidden?.ToString()?.ToLower() == "false")))
+                {
+                    <li class="nav-item">
+                        <a class="nav-link text-uppercase"
+                           href="@Url.Action((string)menu.link_function, (string)menu.link_controller)"
+                           target="@(menu.new_tab == "true" ? "_blank" : "_self")">
+                            <i class="fa fa-desktop"></i>
+                            <span>@menu.title</span>
+                        </a>
+                    </li>
+                }
+                var MaOwnerMenus = menuList
+                .Where(m => (string)m.type == "MaOwner" && (m.hidden?.ToString()?.ToLower() == "false"))
+                .ToList();
+                if (MaOwnerMenus.Any())
+                {
+                    <hr class="sidebar-divider">
+                    <li class="nav-item">
+                        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMaOwner">
+                            <i class="fas fa-user-secret fa-fw"></i>
+                            <span>Manager HCGS</span>
+                        </a>
+                        <div id="collapseMaOwner" class="collapse" data-parent="#accordionSidebar">
+                            <div class="bg-white py-2 collapse-inner rounded">
+                                @foreach (var menu in MaOwnerMenus)
+                                {
+                                    <a class="collapse-item" href="@Url.Action((string)menu.link_function, (string)menu.link_controller)">
+                                        @menu.title
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+                var SafetyOwnerMenus = menuList
+                .Where(m => (string)m.type == "SafetyOwner" && (m.hidden?.ToString()?.ToLower() == "false"))
+                .ToList();
+                if (SafetyOwnerMenus.Any())
+                {
+                    <hr class="sidebar-divider">
+                    <li class="nav-item">
+                        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseSafetyOwner">
+                            <i class="fas fa-hard-hat fa-fw"></i>
+                            <span>Safety Owner</span>
+                        </a>
+                        <div id="collapseSafetyOwner" class="collapse" data-parent="#accordionSidebar">
+                            <div class="bg-white py-2 collapse-inner rounded">
+                                @foreach (var menu in SafetyOwnerMenus)
+                                {
+                                    <a class="collapse-item" href="@Url.Action((string)menu.link_function, (string)menu.link_controller)">
+                                        @menu.title
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+                <!-- 🟠 HR Owner -->
+                var hrOwnerMenus = menuList
+                .Where(m => (string)m.type == "HROwner" && (m.hidden?.ToString()?.ToLower() == "false"))
+                .ToList();
+                if (hrOwnerMenus.Any())
+                {
+                    <hr class="sidebar-divider">
+                    <li class="nav-item">
+                        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseHROwner">
+                            <i class="fas fa-money-check-alt fa-fw"></i>
+                            <span>HR Owner</span>
+                        </a>
+                        <div id="collapseHROwner" class="collapse" data-parent="#accordionSidebar">
+                            <div class="bg-white py-2 collapse-inner rounded">
+                                @foreach (var menu in hrOwnerMenus)
+                                {
+                                    <a class="collapse-item" href="@Url.Action((string)menu.link_function, (string)menu.link_controller)">
+                                        @menu.title
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+
+
+                <!-- 🔵 Admin Owner -->
+                var adminMenus = menuList
+                .Where(m => (string)m.type == "AdminOwner" && (m.hidden?.ToString()?.ToLower() == "false"))
+                .ToList();
+                if (adminMenus.Any())
+                {
+                    <hr class="sidebar-divider">
+                    <li class="nav-item">
+                        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseAdminOwner">
+                            <i class="fas fa-user fa-fw"></i>
+                            <span>Admin Departemen</span>
+                        </a>
+                        <div id="collapseAdminOwner" class="collapse" data-parent="#accordionSidebar">
+                            <div class="bg-white py-2 collapse-inner rounded">
+                                @foreach (var menu in adminMenus)
+                                {
+                                    <a class="collapse-item" href="@Url.Action((string)menu.link_function, (string)menu.link_controller)">
+                                        @menu.title
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+                <!-- 🟠 Admin Kontraktor -->
+                var adminKonMenus = menuList
+                .Where(m => (string)m.type == "AdminKon" && (m.hidden?.ToString()?.ToLower() == "false"))
+                .ToList();
+                if (adminKonMenus.Any())
+                {
+                    <hr class="sidebar-divider">
+                    <li class="nav-item">
+                        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseAdminKon">
+                            <i class="fas fa-money-check-alt fa-fw"></i>
+                            <span>System Integrations</span>
+                        </a>
+                        <div id="collapseAdminKon" class="collapse" data-parent="#accordionSidebar">
+                            <div class="bg-white py-2 collapse-inner rounded">
+                                @foreach (var menu in adminKonMenus)
+                                {
+                                    <a class="collapse-item" href="@Url.Action((string)menu.link_function, (string)menu.link_controller)">
+                                        @menu.title
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+
+                <!-- ⚙️ Master Menu -->
+                var masterMenus = menuList
+                .Where(m => (string)m.type == "Master" && (m.hidden?.ToString()?.ToLower() == "false"))
+                .ToList();
+                if (masterMenus.Any())
+                {
+                    <hr class="sidebar-divider">
+                    <li class="nav-item">
+                        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMaster">
+                            <i class="fas fa-cogs"></i>
+                            <span class="sidebar-text">Master</span>
+                        </a>
+                        <div id="collapseMaster" class="collapse" data-parent="#accordionSidebar">
+                            <div class="bg-white py-2 collapse-inner rounded">
+                                @foreach (var menu in masterMenus)
+                                {
+                                    <a class="collapse-item" href="@Url.Action((string)menu.link_function, (string)menu.link_controller)">
+                                        @menu.title
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+            }
+        </ul>
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+            <div id="content">
+                <!-- Topbar -->
+                <!-- MODIFIKASI: Tambah 'shadow-sm' -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow-sm">
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item mr-4 align-self-center">
+                            <span id="clock" class="led-clock font-weight-bold"></span>
+                        </li>
+
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">@namaUser - @kategoriUser</span>
+
+                                <!-- MODIFIKASI: Foto profil dinamis -->
+                                <img class="img-profile rounded-circle" src="@Url.Content(fotoUser)" id="topbarUserImage">
+                            </a>
+
+                            <!-- MODIFIKASI: Dropdown menu baru -->
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#editProfileModal">
+                                    <i class="fas fa-user-edit fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Edit Foto Profil
+                                </a>
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#changePasswordModal">
+                                    <i class="fas fa-key fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Ganti Password
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i> Logout
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+
+                <!-- Page Content -->
+                <div class="container-fluid">
+                    @RenderBody()
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; @ViewBag.Setting?.description</span>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Scroll to Top -->
+    <a class="scroll-to-top rounded" href="#page-top"><i class="fas fa-angle-up"></i></a>
+
+    <!-- Logout Modal (Tetap) -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ready to Leave?</h5>
+                    <button class="close" type="button" data-dismiss="modal"><span>×</span></button>
+                </div>
+                <div class="modal-body">Apakah anda yakin logout dari sistem?</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                    <a class="btn btn-primary" href="@Url.Action("Logout", "Login")">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARU: Modal Ganti Password -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" role="dialog" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form id="changePasswordForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="changePasswordModalLabel">Ganti Password</h5>
+                        <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span>×</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="oldPassword" class="font-weight-bold">Password Lama</label>
+                            <input type="password" class="form-control" id="oldPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword" class="font-weight-bold">Password Baru</label>
+                            <input type="password" class="form-control" id="newPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword" class="font-weight-bold">Konfirmasi Password Baru</label>
+                            <input type="password" class="form-control" id="confirmPassword" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-light" type="button" data-dismiss="modal">Batal</button>
+                        <button class="btn btn-primary" type="submit">Simpan Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARU: Modal Edit Foto Profil -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1" role="dialog" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editProfileModalLabel">Edit Foto Profil</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span>×</span></button>
+                </div>
+                <div class="modal-body">
+                    <p>Pilih gambar baru:</p>
+                    <input type="file" id="profileImageInput" class="form-control-file" accept="image/*">
+                    <hr>
+                    <p class="font-weight-bold">Crop gambar (1:1):</p>
+                    <div id="cropperImageContainer">
+                        <img id="imageToCrop" style="display: none;">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-light" type="button" data-dismiss="modal">Batal</button>
+                    <button class="btn btn-primary" id="saveProfileImageBtn">Simpan Foto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Scripts -->
+    <script src="~/vendor/jquery/jquery.min.js"></script>
+    <script src="~/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="~/vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="~/js/sb-admin-2.min.js"></script>
+
+    <!-- BARU: Alertify JS -->
+    <script src="https://cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/alertify.min.js"></script>
+
+    <!-- BARU: Cropper.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
+    <!-- BARU: Logika Kustom untuk Modal -->
+    <script>
+        $(document).ready(function () {
+
+            // Atur default Alertify
+            alertify.defaults.transition = "slide";
+            alertify.defaults.theme.ok = "btn btn-primary";
+            alertify.defaults.theme.cancel = "btn btn-light";
+            alertify.defaults.theme.input = "form-control";
+
+            // --- Logika Ganti Password ---
+            $('#changePasswordForm').on('submit', function (e) {
+                e.preventDefault();
+
+                var oldPass = $('#oldPassword').val();
+                var newPass = $('#newPassword').val();
+                var confirmPass = $('#confirmPassword').val();
+
+                if (newPass !== confirmPass) {
+                    alertify.error('Password baru dan konfirmasi tidak cocok.');
+                    return;
+                }
+
+                if (!oldPass || !newPass) {
+                    alertify.error('Semua field harus diisi.');
+                    return;
+                }
+
+                var data = {
+                    OldPassword: oldPass,
+                    NewPassword: newPass,
+                    ConfirmPassword: confirmPass
+                };
+
+                // Tampilkan loading
+                var saveBtn = $(this).find('button[type="submit"]');
+                saveBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...');
+
+                fetch('@Url.Action("ChangePassword", "UserLogin")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alertify.success(result.message);
+                        $('#changePasswordModal').modal('hide');
+                        $('#changePasswordForm')[0].reset();
+                    } else {
+                        alertify.error(result.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alertify.error('Terjadi kesalahan koneksi.');
+                })
+                .finally(() => {
+                    // Kembalikan tombol
+                    saveBtn.prop('disabled', false).html('Simpan Password');
+                });
+            });
+
+            // --- Logika Edit Foto Profil ---
+            var cropper;
+            var image = document.getElementById('imageToCrop');
+            var saveProfileBtn = $('#saveProfileImageBtn');
+
+            $('#profileImageInput').on('change', function (e) {
+                var files = e.target.files;
+                if (files && files.length > 0) {
+                    var reader = new FileReader();
+                    reader.onload = function (event) {
+                        image.src = event.target.result;
+                        $(image).show();
+
+                        if (cropper) {
+                            cropper.destroy(); // Hancurkan instance lama
+                        }
+
+                        // Inisialisasi Cropper
+                        cropper = new Cropper(image, {
+                            aspectRatio: 1 / 1, // 1:1 untuk foto profil
+                            viewMode: 1,
+                            autoCropArea: 0.9,
+                            responsive: true,
+                            background: false,
+                            zoomable: true,
+                            movable: true
+                        });
+
+                        saveProfileBtn.prop('disabled', false);
+                    };
+                    reader.readAsDataURL(files[0]);
+                }
+            });
+
+            // Reset cropper saat modal dibuka/ditutup
+            $('#editProfileModal').on('show.bs.modal', function () {
+                 saveProfileBtn.prop('disabled', true);
+            });
+
+            $('#editProfileModal').on('hidden.bs.modal', function () {
+                if (cropper) {
+                    cropper.destroy();
+                }
+                image.src = '';
+                $(image).hide();
+                $('#profileImageInput').val('');
+                saveProfileBtn.prop('disabled', true);
+            });
+
+            // Tombol Simpan Foto
+            saveProfileBtn.on('click', function () {
+                if (!cropper) {
+                    alertify.error('Silahkan pilih gambar terlebih dahulu.');
+                    return;
+                }
+
+                $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...');
+
+                // Dapatkan hasil crop sebagai base64
+                var canvas = cropper.getCroppedCanvas({
+                    width: 250, // Ukuran ideal foto profil
+                    height: 250,
+                    imageSmoothingQuality: 'high'
+                });
+
+                var base64ImageData = canvas.toDataURL('image/png');
+
+                var data = {
+                    ImageData: base64ImageData
+                };
+
+                fetch('@Url.Action("UpdateProfilePicture", "UserLogin")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alertify.success(result.message);
+
+                        // Update gambar di topbar secara dinamis
+                        // Tambah timestamp unik (?) untuk paksa browser refresh cache
+                        $('#topbarUserImage').attr('src', result.newImagePath + '?t=' + new Date().getTime());
+
+                        $('#editProfileModal').modal('hide');
+                    } else {
+                        alertify.error(result.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alertify.error('Terjadi kesalahan saat menyimpan foto.');
+                })
+                .finally(() => {
+                    $(this).prop('disabled', false).html('Simpan Foto');
+                });
+            });
+
+        });
+    </script>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

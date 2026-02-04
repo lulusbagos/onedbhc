@@ -1,0 +1,656 @@
+@{
+    ViewData["Title"] = "Laporan TA";
+    Layout = null;
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+<style>
+    :root {
+        --blue: #2f66a7;
+        --blue2: #3a73b5;
+        --line: #b9c6d8;
+        --soft: #eaf1fb;
+        --soft2: #dbe8f8;
+        --text: #111;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        background: #fff;
+        font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+        color: var(--text);
+    }
+
+    .page {
+        width: 1600px;
+        margin: 18px auto;
+        border: 1px solid #9fb4d6;
+        padding: 10px 12px 16px;
+    }
+
+    .filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 220px;
+    }
+
+    .filter-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filter-group select {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #dbe8f8;
+        border-radius: 6px;
+        font-size: 14px;
+        background: #fff;
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .filter-actions .btn {
+        border-radius: 6px;
+        padding: 6px 18px;
+        font-size: 13px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 6px;
+    }
+
+    .brand {
+        font-weight: 700;
+        font-size: 14px;
+        line-height: 1.1;
+    }
+
+    .meta {
+        margin-top: 6px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .meta .label {
+        font-weight: 600;
+    }
+
+    .meta .box {
+        background: var(--soft2);
+        padding: 4px 10px;
+        min-width: 200px;
+        display: inline-block;
+        font-weight: 600;
+    }
+
+    .period {
+        font-size: 13px;
+        font-weight: 600;
+        margin-top: 6px;
+        padding-right: 2px;
+    }
+
+    .print-meta {
+        font-size: 12px;
+        margin-bottom: 12px;
+    }
+
+    .table-wrapper {
+        margin-top: 8px;
+    }
+
+    .summary-row {
+        margin-top: 12px;
+        display: flex;
+        justify-content: space-between;
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
+    }
+
+    .summary-label {
+        font-size: 11px;
+        color: #657082;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+
+    .summary-value {
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .signatures {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
+    }
+
+    .signature-block {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .signature-qr {
+        width: 90px;
+        height: 90px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: #657082;
+        text-align: center;
+    }
+
+    .signature-label {
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .signature-name {
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .signature-role {
+        font-size: 11px;
+        color: #657082;
+        margin-top: 4px;
+    }
+
+    .signature-footnote {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4f5b6b;
+        margin-top: 6px;
+    }
+
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        font-size: 12px;
+    }
+
+    thead th {
+        background: linear-gradient(135deg, #1c3c8a, #2f66a7);
+        color: #fff;
+        border: 1px solid #1b2e52;
+        padding: 10px 6px;
+        text-align: center;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+    }
+
+    .flatpickr-day.highlight-range {
+        background: #ffd966 !important;
+        color: #1b2e52 !important;
+        border-color: #ffc107 !important;
+    }
+
+    tbody td {
+        border: 1px solid var(--line);
+        padding: 6px 8px;
+        vertical-align: middle;
+        background: #fff;
+    }
+
+    col.wilayah {
+        width: 150px;
+    }
+
+    col.outsite,
+    col.onsite {
+        width: 90px;
+    }
+
+    col.nik {
+        width: 120px;
+    }
+
+    col.nama {
+        width: 250px;
+    }
+
+    col.dept {
+        width: 220px;
+    }
+
+    col.kode {
+        width: 60px;
+    }
+
+    col.poh {
+        width: 110px;
+    }
+
+    col.nominal {
+        width: 130px;
+    }
+
+    col.jumlah {
+        width: 110px;
+    }
+
+    .center {
+        text-align: center;
+    }
+
+    .bold {
+        font-weight: 700;
+    }
+
+    .money {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .money .rp {
+        min-width: 22px;
+        text-align: left;
+    }
+
+    .money .amt {
+        text-align: right;
+        flex: 1;
+    }
+
+    .centered {
+        text-align: center;
+    }
+
+    .text-muted {
+        color: #657082;
+        font-size: 11px;
+    }
+
+    @@media print {
+        body {
+            background: #fff;
+        }
+
+        .page {
+            width: auto;
+            border: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .filter-row,
+        .filter-actions,
+        .filter-group label,
+        #btnPrint {
+            display: none !important;
+        }
+
+        table, thead th, tbody td, .summary-row, .signatures {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        thead th {
+            background: linear-gradient(135deg, #1c3c8a, #2f66a7) !important;
+            color: #fff !important;
+        }
+
+        @@page {
+            size: A4 landscape;
+            margin: 10mm;
+        }
+    }
+
+    @@media (max-width: 1700px) {
+        .page {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="page">
+    <div class="filter-row">
+        <div class="filter-group">
+            <label for="nomorTaFilter">Nomor TA</label>
+            <select id="nomorTaFilter">
+                <option value="">Semua Nomor TA</option>
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button id="btnFilter" class="btn btn-primary" type="button">Terapkan</button>
+            <button id="btnReset" class="btn btn-light" type="button">Reset</button>
+            <button id="btnPrint" class="btn btn-light" type="button">Print</button>
+        </div>
+    </div>
+
+    <div class="topbar">
+        <div>
+            <div class="brand">PT INDEXIM COALINDO</div>
+            <div class="meta">
+                <span class="label">Nomor TA</span>
+                <span class="box" id="selectedTaLabel">Semua Nomor TA</span>
+            </div>
+        </div>
+        <div class="period" id="selectedPeriod">Periode TA&nbsp;&nbsp; - </div>
+    </div>
+
+    <div class="print-meta">
+        Kaliorang, <span id="printDate">-</span>
+    </div>
+
+    <div class="table-wrapper">
+        <table id="taTable">
+            <colgroup>
+                <col class="wilayah" />
+                <col class="outsite" />
+                <col class="onsite" />
+                <col class="nik" />
+                <col class="nama" />
+                <col class="dept" />
+                <col class="kode" />
+                <col class="poh" />
+                <col class="nominal" />
+                <col class="jumlah" />
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Wilayah Penerimaan</th>
+                    <th>Out Site</th>
+                    <th>On Site</th>
+                    <th>NIK</th>
+                    <th>NAMA</th>
+                    <th>Departemen</th>
+                    <th>Kode</th>
+                    <th>POH</th>
+                    <th>Nominal TA</th>
+                    <th>Jumlah Karyawan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="10" class="center">Memuat data...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="summary-row">
+        <div>
+            <div class="summary-label">Total Nominal</div>
+            <div class="summary-value" id="totalNominal">-</div>
+        </div>
+        <div>
+            <div class="summary-label">Jumlah Karyawan</div>
+            <div class="summary-value" id="totalEmployees">-</div>
+        </div>
+    </div>
+
+    <div class="signatures" id="signatureSection">
+    <div class="signature-block">
+        <div class="signature-qr" id="qrPembuat">QR Code</div>
+        <div class="signature-label">Dibuat Oleh,</div>
+        <div class="signature-name">ROMMEL FRANSISKUS GULTOM</div>
+        <div class="signature-role">SUPERVISIOR HRIS</div>
+        <div class="signature-footnote">Dibuat</div>
+    </div>
+        <div class="signature-block">
+            <div class="signature-qr">QR Code</div>
+            <div class="signature-label">Diperiksa Oleh,</div>
+            <div class="signature-name">TINUS TIMANG</div>
+            <div class="signature-role">CB&IR - SUPERINTENDENT</div>
+            <div class="signature-footnote">Diperiksa</div>
+        </div>
+        <div class="signature-block">
+            <div class="signature-qr">QR Code</div>
+            <div class="signature-label">Disetujui Oleh,</div>
+            <div class="signature-name">DIMAS HARYO SETO WASKITO</div>
+            <div class="signature-role">HCGS - MANAGER</div>
+            <div class="signature-footnote">Disetujui</div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    const endpoints = {
+        report: '@Url.Action("GetReportData", "Travel")',
+        taList: '@Url.Action("GetNomorTaOptions", "Travel")'
+    };
+
+    let currentNomorTa = '';
+    let printDateText = '';
+    let latestTotalNominal = 0;
+    let latestEmployeeCount = 0;
+    const pageElement = document.querySelector('.page');
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('btnFilter').addEventListener('click', () => {
+            currentNomorTa = document.getElementById('nomorTaFilter').value || '';
+            loadReportData();
+        });
+
+        document.getElementById('btnReset').addEventListener('click', () => {
+            currentNomorTa = '';
+            document.getElementById('nomorTaFilter').value = '';
+            loadReportData();
+        });
+
+        document.getElementById('btnPrint').addEventListener('click', () => window.print());
+
+        printDateText = formatPrintDate(new Date());
+        document.getElementById('printDate').textContent = printDateText;
+        loadNomorTaOptions();
+        loadReportData();
+    });
+
+    async function loadNomorTaOptions() {
+        try {
+            const response = await fetch(endpoints.taList);
+            const result = await response.json();
+            if (!result.success) {
+                alertify.error(result.message || 'Gagal memuat daftar Nomor TA.');
+                return;
+            }
+
+            const select = document.getElementById('nomorTaFilter');
+            select.innerHTML = '<option value="">Semua Nomor TA</option>';
+            (result.data || []).forEach(item => {
+                const period = `${formatDate(item.start_out)} - ${formatDate(item.end_on)}`;
+                const option = document.createElement('option');
+                option.value = item.nomor_ta;
+                option.textContent = `${item.nomor_ta} (${period})`;
+                select.appendChild(option);
+            });
+        } catch (err) {
+            console.error('NomorTaOptions error', err);
+            alertify.error('Gagal memuat daftar Nomor TA.');
+        }
+    }
+
+    async function loadReportData() {
+        const params = new URLSearchParams();
+        if (currentNomorTa) {
+            params.set('nomorTa', currentNomorTa);
+        }
+
+        try {
+            const response = await fetch(`${endpoints.report}?${params.toString()}`);
+            const result = await response.json();
+            if (!result.success) {
+                alertify.error(result.message || 'Gagal memuat data TA.');
+                renderRows([]);
+                return;
+            }
+
+            renderRows(result.data || []);
+        } catch (err) {
+            console.error('GetReportData error', err);
+            alertify.error('Gagal memuat data TA.');
+            renderRows([]);
+        }
+    }
+
+    function renderRows(data) {
+        const tbody = document.querySelector('#taTable tbody');
+        if (!data.length) {
+            tbody.innerHTML = '<tr><td colspan="10" class="center">Tidak ada data untuk filter ini.</td></tr>';
+            updateSummary([]);
+            updateTotals([]);
+            renderSignatureQr();
+            return;
+        }
+
+        const rows = data.map(item => `
+            <tr>
+                <td class="bold">${item.wilayah || '-'}</td>
+                <td class="center">${formatDate(item.out_site)}</td>
+                <td class="center">${formatDate(item.on_site)}</td>
+                <td class="center">${item.nik || '-'}</td>
+                <td class="center">${item.nama || '-'}</td>
+                <td class="center">${item.depart || '-'}</td>
+                <td class="center">${item.kd_depart || '-'}</td>
+                <td class="center">${item.poh || '-'}</td>
+                <td>
+                    <div class="money">
+                        <span class="rp">Rp</span>
+                        <span class="amt bold">${formatMoney(item.nominal)}</span>
+                    </div>
+                </td>
+                <td class="center">1</td>
+            </tr>`).join('');
+
+        tbody.innerHTML = rows;
+        updateSummary(data);
+        updateTotals(data);
+        renderSignatureQr();
+    }
+
+    function updateSummary(data) {
+        const label = document.getElementById('selectedTaLabel');
+        label.textContent = currentNomorTa || 'Semua Nomor TA';
+
+        const periodEl = document.getElementById('selectedPeriod');
+        if (!data.length) {
+            periodEl.innerHTML = 'Periode TA&nbsp;&nbsp; -';
+            return;
+        }
+
+        let minOut = null;
+        let maxOn = null;
+        data.forEach(item => {
+            const out = safeDate(item.out_site);
+            const on = safeDate(item.on_site);
+            if (out && (!minOut || out < minOut)) {
+                minOut = out;
+            }
+            if (on && (!maxOn || on > maxOn)) {
+                maxOn = on;
+            }
+        });
+
+        const periodText = `${formatDate(minOut)} - ${formatDate(maxOn)}`;
+        periodEl.innerHTML = `Periode TA&nbsp;&nbsp; ${periodText}`;
+    }
+
+    function formatDate(value) {
+        const date = safeDate(value);
+        if (!date) return '-';
+        return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' });
+    }
+
+    function safeDate(value) {
+        if (!value) return null;
+        const date = new Date(value);
+        return isNaN(date) ? null : date;
+    }
+
+    function formatMoney(value) {
+        const str = String(value || '');
+        const cleaned = str.replace(/\./g, '').replace(/,/g, '.').replace(/[^\d.-]/g, '');
+        const numeric = Number(cleaned);
+        if (isNaN(numeric)) return '-';
+        return numeric.toLocaleString('id-ID');
+    }
+
+    function updateTotals(data) {
+        const totalElement = document.getElementById('totalNominal');
+        const countElement = document.getElementById('totalEmployees');
+        const totalNominal = data.reduce((sum, item) => sum + safeNumber(item.nominal), 0);
+        totalElement.textContent = totalNominal > 0 ? `Rp ${formatMoney(totalNominal)}` : '-';
+        countElement.textContent = data.length.toString();
+        if (pageElement) {
+        pageElement.classList.toggle('small-total', totalNominal <= 25000000 && totalNominal > 0);
+        latestTotalNominal = totalNominal;
+        latestEmployeeCount = data.length;
+        }
+    }
+
+    function renderSignatureQr() {
+        const container = document.getElementById('qrPembuat');
+        if (!container || typeof QRCode === 'undefined') return;
+        const nomorTaLabel = currentNomorTa || 'Semua Nomor TA';
+        const tanggal = printDateText || formatPrintDate(new Date());
+        const totalNominalText = latestTotalNominal > 0 ? `Rp ${formatMoney(latestTotalNominal)}` : 'Rp 0';
+        const employeeText = `${latestEmployeeCount}`;
+        const payload = `dokumen ini sudah di tandatangani ROMMEL FRANSISKUS GULTOM SUPERVISIOR HRIS dengan Nomor TA ${nomorTaLabel} pada tanggal ${tanggal} total nominal ${totalNominalText} dan jumlah karyawan ${employeeText}`;
+        container.innerHTML = '';
+        new QRCode(container, {
+            text: payload,
+            width: 90,
+            height: 90,
+            colorDark: '#111',
+            colorLight: '#fff'
+        });
+    }
+
+    function formatPrintDate(date) {
+        return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function safeNumber(value) {
+        const str = String(value || '');
+        const cleaned = str.replace(/\./g, '').replace(/,/g, '.').replace(/[^\d.-]/g, '');
+        const numeric = Number(cleaned);
+        return isNaN(numeric) ? 0 : numeric;
+    }
+</script>

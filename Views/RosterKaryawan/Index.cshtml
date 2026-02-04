@@ -1,0 +1,1040 @@
+﻿@using one_db.Models
+@{
+    ViewData["Title"] = "Jadwal Kerja";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // --- PERBAIKAN LOGIKA: Ambil semua variabel yang diperlukan ---
+    var isAdmin = ViewBag.IsAdmin ?? false;
+    var isEditingAllowed = ViewBag.IsEditingAllowed ?? false;
+    var rosterSetting = ViewBag.RosterSetting as tbl_m_setting_menu;
+}
+
+
+
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/css/alertify.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/css/themes/default.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+
+
+<div class="roster-karyawan-container">
+    <aside class="roster-sidebar">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title"><i class="fas fa-users-cog"></i> Kontrol Jadwal Kerja</h2>
+        </div>
+
+        <div class="sidebar-section">
+            <!-- --- MULAI PERBAIKAN LOGIKA UI --- -->
+            @if (rosterSetting != null)
+            {
+                <!-- 1. JIKA SETTING DITEMUKAN (NORMAL) -->
+                <div class="info-box @(isEditingAllowed ? "status-open" : "status-closed")">
+                    <div class="info-box-icon">
+                        <i class="fas @(isEditingAllowed ? "fa-check-circle" : "fa-lock")"></i>
+                    </div>
+                    <div class="info-box-content">
+                        <span class="info-box-title">Periode Rencana Jadwal: <strong>@(isEditingAllowed ? "Terbuka" : "Ditutup")</strong></span>
+                        <span class="info-box-text">
+                            @rosterSetting.awal?.ToString("dd MMMM yyyy") - @rosterSetting.akhir?.ToString("dd MMMM yyyy")
+                        </span>
+                        @if (!isEditingAllowed && !isAdmin) // Jangan tampilkan pesan ini jika Admin
+                        {
+                            <span class="info-box-text-small">Anda hanya dapat melihat jadwal.</span>
+                        }
+                    </div>
+                </div>
+            }
+            else if (isAdmin)
+            {
+                <!-- 2. JIKA SETTING KOSONG, TAPI PENGGUNA ADALAH ADMIN -->
+                <div class="info-box status-open">
+                    <div class="info-box-icon"><i class="fas fa-user-shield"></i></div>
+                    <div class="info-box-content">
+                        <span class="info-box-title"><strong>Mode Admin</strong></span>
+                        <span class="info-box-text">Edit selalu diizinkan (bypass periode).</span>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- 3. JIKA SETTING KOSONG DAN PENGGUNA BUKAN ADMIN -->
+                <div class="info-box status-closed">
+                    <div class="info-box-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="info-box-content">
+                        <span class="info-box-title"><strong>Peringatan</strong></span>
+                        <span class="info-box-text">Periode edit roster belum diatur.</span>
+                    </div>
+                </div>
+            }
+            <!-- --- SELESAI PERBAIKAN LOGIKA UI --- -->
+        </div>
+
+            <div class="sidebar-section">
+            <h3 class="section-title">Pengaturan Jadwal</h3>
+            <div class="form-group-light mb-3">
+                <label for="rosterPeriod">Periode Jadwal</label>
+                <select id="rosterPeriod" class="form-control-light">
+                    <option value="10_2">10 minggu : 2 minggu</option>
+                    <option value="6_2">6 minggu : 2 minggu</option>
+                    <option value="3_1">3 minggu : 1 minggu</option>
+                    <option value="20_10">20 hari : 10 hari</option>
+                </select>
+            </div>
+
+            <h3 class="section-title">Pilih Karyawan</h3>
+            @if (isAdmin)
+            {
+                <div class="form-group-light mb-3">
+                    <label for="filterDepartemen">Filter Departemen</label>
+                    <select id="filterDepartemen" class="form-control-light">
+                        <option value="ALL">Semua Departemen</option>
+                        @foreach (var dept in ViewBag.Departments) // (Ini dari Controller)
+                        {
+                            <option value="@dept">@dept</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div class="form-group-light">
+                <label for="karyawanSearch">Cari NIK atau Nama</label>
+                <div class="search-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="karyawanSearch" class="form-control-light" placeholder="Ketik untuk mencari...">
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-section" id="employeeDetailsSection" style="display:none; opacity: 0; transition: opacity 0.5s ease;">
+            <h3 class="section-title">Detail Karyawan</h3>
+            <div class="employee-card">
+                <div class="employee-name-header">
+                    <h4 id="employeeName" class="employee-name"></h4>
+                    <span id="rosterStatusIndicator" class="status-indicator"></span>
+                </div>
+                <div class="employee-info-grid">
+                    <div><i class="fas fa-id-card"></i> <span id="employeeNik"></span></div>
+                    <div><i class="fas fa-building"></i> <span id="employeeDept"></span></div>
+                    <div><i class="fas fa-user-tie"></i> <span id="employeePosisi"></span></div>
+                    <div><i class="fas fa-puzzle-piece"></i> <span id="employeeSection"></span></div>
+                    <div><i class="fas fa-layer-group"></i> <span id="employeeLevel"></span></div>
+                </div>
+                <button id="btnCopySchedule" class="btn-copy-schedule"><i class="fas fa-copy"></i> Salin Jadwal</button>
+            </div>
+        </div>
+
+        <div class="sidebar-section" id="quickStatsSection" style="display:none; opacity: 0; transition: opacity 0.5s ease;">
+            <h3 class="section-title">Statistik Bulan Ini</h3>
+            <div id="statsContainer" class="stats-container">
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3 class="section-title"><i class="fas fa-clipboard-list"></i> Legenda Jadwal</h3>
+            <div id="rosterLegend" class="roster-legend-container">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="roster-main">
+        <div id='calendar'></div>
+    </main>
+
+</div>
+
+<div id="contextMenu" class="context-menu">
+    <ul>
+        <li id="deleteEvent"><i class="fas fa-trash-alt"></i> Hapus Jadwal</li>
+    </ul>
+</div>
+
+<div class="modal fade" id="copyScheduleModal" tabindex="-1" aria-labelledby="copyScheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="copyScheduleModalLabel">Salin Jadwal Karyawan</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <p>Salin jadwal dari <strong id="sourceEmployeeName"></strong> untuk bulan <strong id="copyMonthName"></strong> ke karyawan berikut:</p>
+                <div class="form-group">
+                    <label for="targetEmployees">Pilih satu atau lebih karyawan tujuan:</label>
+                    <select id="targetEmployees" class="form-control" multiple="multiple" style="width: 100%;"></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" id="confirmCopy">Salin Sekarang</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section styles {
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --accent-color: #0ea5e9;
+            --accent-color-hover: #0284c7;
+            --status-complete: #22c55e;
+            --status-incomplete: #ef4444;
+            --status-open-bg: #e0f2fe;
+            --status-open-border: #7dd3fc;
+            --status-open-text: #0c4a6e;
+            --status-closed-bg: #fee2e2;
+            --status-closed-border: #fca5a5;
+            --status-closed-text: #991b1b;
+            --font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            overflow: hidden;
+        }
+
+        .roster-karyawan-container {
+            display: flex;
+            height: calc(100vh - 80px); /* Sesuaikan jika layout Anda berbeda */
+            gap: 1.5rem;
+            padding: 1.5rem;
+        }
+
+        .roster-sidebar {
+            width: 380px;
+            flex-shrink: 0;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        .sidebar-header .sidebar-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0;
+            color: var(--text-primary);
+        }
+
+        .sidebar-section .section-title {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* --- STYLE BARU UNTUK INFO BOX --- */
+        .info-box {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid;
+        }
+
+            .info-box.status-open {
+                background-color: var(--status-open-bg);
+                border-color: var(--status-open-border);
+                color: var(--status-open-text);
+            }
+
+            .info-box.status-closed {
+                background-color: var(--status-closed-bg);
+                border-color: var(--status-closed-border);
+                color: var(--status-closed-text);
+            }
+
+        .info-box-icon {
+            font-size: 1.5rem;
+            margin-right: 1rem;
+        }
+
+        .info-box-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-box-title {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .info-box-text {
+            font-size: 0.9rem;
+        }
+
+        .info-box-text-small {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+        /* --- AKHIR STYLE BARU --- */
+
+        .form-group-light label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .form-control-light, .search-wrapper {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+
+        .form-control-light {
+            width: 100%;
+            padding: 10px 15px;
+        }
+
+        .search-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+            .search-wrapper i {
+                position: absolute;
+                left: 15px;
+                color: var(--text-secondary);
+            }
+
+            .search-wrapper input {
+                padding-left: 40px !important;
+                background: transparent;
+                border: none;
+                width: 100%;
+                height: 42px;
+            }
+
+            .form-control-light:focus, .search-wrapper:focus-within {
+                border-color: var(--accent-color);
+                box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+            }
+
+        .employee-card {
+            background: linear-gradient(145deg, #e6f7ff, #ffffff);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--accent-color);
+        }
+
+        .employee-name-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .employee-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .employee-info-grid {
+            display: grid;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+            .employee-info-grid div {
+                display: flex;
+                align-items: center;
+                font-size: 0.9rem;
+                color: var(--text-secondary);
+            }
+
+            .employee-info-grid i {
+                color: var(--accent-color);
+                width: 20px;
+                text-align: center;
+                margin-right: 0.5rem;
+            }
+
+        .roster-legend-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .roster-item {
+            padding: 0.75rem;
+            border-radius: 8px;
+            cursor: grab;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        }
+
+            .roster-item:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            }
+
+            .roster-item:active {
+                cursor: grabbing;
+            }
+
+        .roster-item-code {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .roster-item-desc {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--accent-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: auto;
+        }
+
+
+        .roster-main {
+            flex-grow: 1;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        #calendar {
+            height: 100%;
+        }
+
+        .fc {
+            font-family: var(--font-family);
+        }
+
+            .fc .fc-toolbar-title {
+                font-size: 1.75rem;
+                font-weight: 700;
+                color: var(--text-primary);
+            }
+
+            .fc .fc-button-primary {
+                background-color: var(--accent-color) !important;
+                border-color: var(--accent-color) !important;
+                text-transform: capitalize;
+            }
+
+                .fc .fc-button-primary:hover {
+                    background-color: var(--accent-color-hover) !important;
+                }
+
+            .fc .fc-daygrid-day-number {
+                color: var(--text-secondary);
+                font-weight: 500;
+            }
+
+            .fc .fc-day-today {
+                background-color: #e0f2fe !important;
+                border: 2px solid var(--accent-color);
+            }
+
+        .fc-event {
+            padding: 5px 8px;
+            font-weight: 500;
+            cursor: move;
+            border: none !important;
+        }
+
+        .fc-event-resizable {
+            cursor: ew-resize;
+        }
+
+        .ui-autocomplete {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            max-height: 250px;
+            overflow-y: auto;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        .ui-menu-item .ui-menu-item-wrapper {
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .ui-menu-item .ui-menu-item-wrapper.ui-state-active {
+                background: var(--accent-color);
+                color: white;
+                border: none;
+            }
+
+        .status-indicator-list {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+            .status-indicator-list.complete {
+                background-color: var(--status-complete);
+            }
+
+            .status-indicator-list.incomplete {
+                background-color: var(--status-incomplete);
+            }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+            .status-indicator.incomplete {
+                background-color: var(--status-incomplete);
+                box-shadow: 0 0 5px var(--status-incomplete);
+            }
+
+            .status-indicator.complete {
+                background-color: var(--status-complete);
+                animation: blink-animation 1.5s infinite;
+            }
+
+        .btn-copy-schedule {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 15px;
+            width: 100%;
+            margin-top: 1rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+            .btn-copy-schedule:hover {
+                background: var(--accent-color-hover);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3);
+            }
+            /* Style untuk tombol disable */
+            .btn-copy-schedule:disabled {
+                background: #9ca3af; /* gray-400 */
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
+            }
+
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: var(--bg-primary);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .context-menu {
+            position: absolute;
+            z-index: 1000;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            display: none;
+            padding: 0.5rem 0;
+        }
+
+            .context-menu ul {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+            }
+
+            .context-menu li {
+                padding: 0.75rem 1.25rem;
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+            }
+
+                .context-menu li:hover {
+                    background-color: var(--bg-primary);
+                }
+
+                .context-menu li i {
+                    margin-right: 0.75rem;
+                    color: var(--text-secondary);
+                }
+
+        @@keyframes spin {
+            0%
+
+        {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+
+        }
+
+        @@keyframes blink-animation {
+            0%
+
+        {
+            box-shadow: 0 0 5px var(--status-complete);
+        }
+
+        50% {
+            box-shadow: 0 0 10px var(--status-complete);
+        }
+
+        100% {
+            box-shadow: 0 0 5px var(--status-complete);
+        }
+
+        }
+    </style>
+}
+
+@section scripts {
+    <!-- Roster Period Handling -->
+    <script>
+        function calculateRosterDates(period) {
+            const [total, work] = period.split('_').map(Number);
+            const startDate = new Date();
+            
+            let endDate;
+            if (total === 20) {  // Special case for 20:10 days
+                endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + total);
+            } else {  // Week-based periods
+                endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + (total * 7));
+            }
+            
+            return {
+                startDate,
+                endDate,
+                workPeriod: work,
+                totalPeriod: total
+            };
+        }
+
+        $('#rosterPeriod').change(function() {
+            const selectedPeriod = $(this).val();
+            const dates = calculateRosterDates(selectedPeriod);
+            
+            // Here you can update your roster calendar or date fields
+            // For example:
+            if (calendar) {
+                calendar.gotoDate(dates.startDate);
+                // You might want to add custom rendering for work/off periods
+            }
+        });
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/id.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/alertify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- PERUBAHAN DIMULAI ---
+            // Mengambil data dari ViewBag (yang sudah disiapkan Controller)
+            const isEditingAllowed = @isEditingAllowed.ToString().ToLower();
+            // --- PERUBAHAN SELESAI ---
+
+            // --- CONFIGURATION ---
+            const baseLink = '@Url.Action("Action", "Controller")';
+            const controllerName = 'RosterKaryawan';
+            const isAdmin = @(ViewBag.IsAdmin.ToString().ToLower());
+            let selectedNik = null;
+            let selectedDept = $('#filterDepartemen').val() || '@ViewBag.UserDept';
+            let currentRightClickedEvent = null;
+
+            // --- CALENDAR INITIALIZATION ---
+            const calendarEl = document.getElementById('calendar');
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'id',
+                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth' },
+                // --- PERUBAHAN DIMULAI ---
+                // Menggunakan flag isEditingAllowed untuk mengontrol fungsionalitas kalender
+                droppable: isEditingAllowed,
+                editable: isEditingAllowed,
+                // --- PERUBAHAN SELESAI ---
+                eventResizableFromStart: true,
+                events: [],
+                eventDrop: handleEventChange,
+                eventReceive: handleEventChange,
+                eventResize: handleEventResize,
+                eventDidMount: function(info) {
+                    $(info.el).tooltip({ title: info.event.extendedProps.keterangan || info.event.title, placement: 'top', trigger: 'hover', container: 'body' });
+                },
+                eventClick: function(info) {
+                    info.jsEvent.preventDefault();
+                },
+                eventMouseEnter: function(info) {
+                    if (isEditingAllowed) {
+                        $(info.el).css('cursor', 'pointer');
+                    }
+                },
+                eventMouseLeave: function(info) {
+                    $(info.el).css('cursor', '');
+                },
+                eventContextMenu: function(info) {
+                    // --- PERUBAHAN DIMULAI ---
+                    // Hanya tampilkan context menu jika edit diizinkan
+                    if (!isEditingAllowed) return;
+                    // --- PERUBAHAN SELESAI ---
+
+                    info.jsEvent.preventDefault();
+                    currentRightClickedEvent = info.event;
+                    $('#contextMenu').css({
+                        display: 'block',
+                        left: info.jsEvent.pageX,
+                        top: info.jsEvent.pageY
+                    });
+                }
+            });
+            calendar.render();
+
+            // --- FUNCTIONS ---
+            function loadRosterLegend() {
+                const legendContainer = $('#rosterLegend');
+                const url = baseLink.replace('Controller', controllerName).replace('Action', 'GetRosterKeterangan');
+                $.get(url).done(res => {
+                    legendContainer.empty();
+                    if (res.success) {
+                        res.data.forEach(item => {
+                            const legendHtml = `<div class="roster-item fc-event" data-event='${JSON.stringify({ title: item.kode, backgroundColor: item.warna, borderColor: item.warna, extendedProps: { keterangan: item.keterangan } })}' style="background-color: ${item.warna}; color: ${getContrastYIQ(item.warna)};"><span class="roster-item-code">${item.kode}</span><span class="roster-item-desc">${item.keterangan}</span></div>`;
+                            legendContainer.append(legendHtml);
+                        });
+
+                        // --- PERUBAHAN DIMULAI ---
+                        // Hanya buat item legenda bisa di-drag jika edit diizinkan
+                        if (isEditingAllowed) {
+                            $('.roster-legend-container .roster-item').each(function() {
+                                new FullCalendar.Draggable(this, { eventData: JSON.parse($(this).attr('data-event')) });
+                            });
+                        } else {
+                            // Jika tidak, ubah cursor menjadi 'not-allowed'
+                            $('.roster-legend-container .roster-item').css('cursor', 'not-allowed');
+                        }
+                        // --- PERUBAHAN SELESAI ---
+                    }
+                }).fail(() => legendContainer.html('<p>Gagal memuat legenda.</p>'));
+            }
+
+            function loadEmployeeSchedule() {
+                if (!selectedNik) return;
+                calendar.removeAllEvents();
+                calendar.addEventSource({
+                    url: baseLink.replace('Controller', controllerName).replace('Action', 'GetJadwal'),
+                    extraParams: { nik: selectedNik },
+                    success: function() {
+                        updateQuickStats();
+                    }
+                });
+            }
+
+            function handleEventChange(changeInfo) {
+                const event = changeInfo.event;
+                const rosterData = { nik: selectedNik, status: event.title, working_date: event.startStr.split('T')[0] };
+                const url = baseLink.replace('Controller', controllerName).replace('Action', 'UpdateJadwal');
+
+                $.ajax({
+                    url: url, type: 'POST', contentType: 'application/json', data: JSON.stringify(rosterData),
+                    success: function(res) {
+                        if (res.success) {
+                            alertify.success('Jadwal disimpan!');
+                            loadEmployeeSchedule(); // Muat ulang untuk sinkronisasi
+                        } else {
+                            alertify.error(res.message);
+                            changeInfo.revert();
+                        }
+                    },
+                    error: function() {
+                        alertify.error('Gagal terhubung ke server.');
+                        changeInfo.revert();
+                    }
+                });
+            }
+
+            function handleEventResize(resizeInfo) {
+                const { event, oldEvent } = resizeInfo;
+                let url, payload, successMsg, errorMsg;
+                const formatDate = (date) => date.toISOString().split('T')[0];
+                const oldEffectiveEnd = oldEvent.end ? oldEvent.end : new Date(oldEvent.start.getTime() + 86400000);
+                const newEffectiveEnd = event.end ? event.end : new Date(event.start.getTime() + 86400000);
+
+                if (event.start < oldEvent.start) { // Extending backwards
+                    url = baseLink.replace('Controller', controllerName).replace('Action', 'UpdateJadwalBulk');
+                    payload = { nik: selectedNik, status: event.title, startDate: formatDate(event.start), endDate: formatDate(oldEvent.start) };
+                    successMsg = 'Jadwal diperpanjang!'; errorMsg = 'Gagal memperpanjang jadwal.';
+                } else if (event.start > oldEvent.start) { // Shrinking from start
+                    url = baseLink.replace('Controller', controllerName).replace('Action', 'RemoveJadwalRange');
+                    payload = { nik: selectedNik, startDate: formatDate(oldEvent.start), endDate: formatDate(event.start) };
+                    successMsg = 'Jadwal diperpendek!'; errorMsg = 'Gagal memperpendek jadwal.';
+                } else if (newEffectiveEnd > oldEffectiveEnd) { // Extending forwards
+                    url = baseLink.replace('Controller', controllerName).replace('Action', 'UpdateJadwalBulk');
+                    payload = { nik: selectedNik, status: event.title, startDate: formatDate(oldEffectiveEnd), endDate: formatDate(newEffectiveEnd) };
+                    successMsg = 'Jadwal diperpanjang!'; errorMsg = 'Gagal memperpanjang jadwal.';
+                } else if (newEffectiveEnd < oldEffectiveEnd) { // Shrinking from end
+                    url = baseLink.replace('Controller', controllerName).replace('Action', 'RemoveJadwalRange');
+                    payload = { nik: selectedNik, startDate: formatDate(newEffectiveEnd), endDate: formatDate(oldEffectiveEnd) };
+                    successMsg = 'Jadwal diperpendek!'; errorMsg = 'Gagal memperpendek jadwal.';
+                }
+
+                if (url && payload) {
+                    $.ajax({ url: url, type: 'POST', contentType: 'application/json', data: JSON.stringify(payload) })
+                    .done(res => {
+                        if (res.success) {
+                            alertify.success(successMsg);
+                            loadEmployeeSchedule();
+                        } else {
+                            alertify.error(res.message);
+                            resizeInfo.revert();
+                        }
+                    }).fail(() => {
+                        alertify.error(errorMsg);
+                        resizeInfo.revert();
+                    });
+                }
+            }
+
+            function updateQuickStats() {
+                const viewDate = calendar.getDate();
+                const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+                const monthEnd = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
+                const rosterLibur = ['L', 'OFF', 'LIBUR']; // Sesuaikan jika perlu
+                const stats = {};
+                let totalKerja = 0;
+                let totalLibur = 0;
+
+                const addDayToStats = (code) => {
+                    stats[code] = (stats[code] || 0) + 1;
+                    if (rosterLibur.includes(code.toUpperCase())) {
+                        totalLibur++;
+                    } else {
+                        totalKerja++;
+                    }
+                };
+
+                calendar.getEvents().forEach(event => {
+                    // Normalisasi tanggal tanpa zona waktu
+                    const start = new Date(event.start.toISOString().split('T')[0]);
+                    // FullCalendar all-day events biasanya memiliki end hari berikutnya; buat akhir inklusif
+                    const end = event.end ? new Date(new Date(event.end).toISOString().split('T')[0]) : new Date(start);
+                    if (event.end && event.allDay) {
+                        end.setDate(end.getDate() - 1);
+                    }
+
+                    for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
+                        if (dt >= monthStart && dt <= monthEnd) {
+                            addDayToStats(event.title);
+                        }
+                    }
+                });
+
+                const statsContainer = $('#statsContainer');
+                statsContainer.empty();
+                statsContainer.append(`<div class="stat-card"><div class="stat-value">${totalKerja}</div><div class="stat-label">Total Hari Kerja</div></div>`);
+                statsContainer.append(`<div class="stat-card"><div class="stat-value">${totalLibur}</div><div class="stat-label">Total Hari Libur</div></div>`);
+
+                Object.entries(stats).forEach(([key, value]) => {
+                    statsContainer.append(`<div class="stat-card"><div class="stat-value">${value}</div><div class="stat-label">Jadwal "${key}"</div></div>`);
+                });
+            }
+
+            function getContrastYIQ(hexcolor){
+                hexcolor = hexcolor.replace("#", "");
+                var r = parseInt(hexcolor.substr(0,2),16); var g = parseInt(hexcolor.substr(2,2),16); var b = parseInt(hexcolor.substr(4,2),16);
+                var yiq = ((r*299)+(g*587)+(b*114))/1000;
+                return (yiq >= 128) ? '#1e293b' : 'white';
+            }
+
+            // --- PERUBAHAN DIMULAI ---
+            // Nonaktifkan tombol salin jadwal jika edit tidak diizinkan
+            function setCopyButtonState() {
+                $('#btnCopySchedule').prop('disabled', !isEditingAllowed);
+            }
+            // --- PERUBAHAN SELESAI ---
+
+            // --- EVENT BINDING ---
+            $.ajaxSetup({ contentType: "application/json; charset=utf-8" });
+
+            $("#karyawanSearch").autocomplete({
+                source: function(request, response) {
+                    $.ajax({ url: baseLink.replace('Controller', controllerName).replace('Action', 'GetKaryawan'), data: { term: request.term, departemen: selectedDept }, dataType: "json", success: function(data) { response(data); } });
+                },
+                minLength: 2,
+                select: function(event, ui) {
+                    if (!ui.item || !ui.item.nik) {
+                        console.error("Data karyawan yang dipilih tidak valid:", ui.item);
+                        alertify.error('Gagal memuat detail: data karyawan tidak lengkap.');
+                        return false;
+                    }
+
+                    selectedNik = ui.item.nik;
+                    $('#employeeName').text(ui.item.nama || 'Nama Tidak Ditemukan');
+                    $('#employeeNik').text(ui.item.nik || '-');
+                    $('#employeeDept').text(ui.item.dept || '-');
+                    $('#employeePosisi').text(ui.item.posisi || '-');
+                    $('#employeeSection').text(ui.item.section || '-');
+                    $('#employeeLevel').text(ui.item.level || '-');
+                    const indicator = $('#rosterStatusIndicator');
+                    indicator.removeClass('complete incomplete').addClass(ui.item.rosterStatus);
+                    $('#employeeDetailsSection, #quickStatsSection').css('display', 'block').css('opacity', 1);
+                    loadEmployeeSchedule();
+                    $(this).val('');
+                    return false;
+                }
+            }).autocomplete("instance")._renderItem = function(ul, item) {
+                const itemHtml = `<div><span class="status-indicator-list ${item.rosterStatus}"></span><span>${item.label}</span></div>`;
+                return $("<li>").append(itemHtml).appendTo(ul);
+            };
+
+            if (isAdmin) {
+                $('#filterDepartemen').on('change', function() {
+                    selectedDept = $(this).val();
+                    $('#karyawanSearch').val('').focus();
+                    $('#employeeDetailsSection, #quickStatsSection').hide().css('opacity', 0);
+                    selectedNik = null;
+                    calendar.removeAllEvents();
+                });
+            }
+
+            $(document).on('click', function() { $('#contextMenu').hide(); });
+
+            $('#deleteEvent').on('click', function() {
+                if (currentRightClickedEvent) {
+                    const url = baseLink.replace('Controller', controllerName).replace('Action', 'RemoveJadwal');
+                    const payload = { id: currentRightClickedEvent.id };
+                    $.ajax({ url: url, type: 'POST', contentType: 'application/json', data: JSON.stringify(payload) })
+                     .done(res => {
+                        if (res.success) {
+                            alertify.success('Jadwal dihapus!');
+                            currentRightClickedEvent.remove();
+                            updateQuickStats();
+                        } else { alertify.error(res.message); }
+                    }).fail(() => alertify.error('Gagal menghapus jadwal.'));
+                }
+            });
+
+            $('#btnCopySchedule').on('click', function() {
+                const currentMonth = calendar.getDate();
+                $('#sourceEmployeeName').text($('#employeeName').text());
+                $('#copyMonthName').text(currentMonth.toLocaleString('id-ID', { month: 'long', year: 'numeric' }));
+
+                $('#targetEmployees').select2({
+                    theme: "bootstrap-5",
+                    dropdownParent: $('#copyScheduleModal'),
+                    placeholder: 'Pilih karyawan...',
+                    ajax: {
+                        url: baseLink.replace('Controller', controllerName).replace('Action', 'GetKaryawan'),
+                        dataType: 'json',
+                        delay: 250,
+                        data: function (params) {
+                            return { term: params.term, departemen: selectedDept };
+                        },
+                        processResults: function (data) {
+                            const results = data
+                                .filter(k => k.nik !== selectedNik)
+                                .map(item => ({
+                                    id: item.nik,
+                                    text: item.label
+                                }));
+                            return { results: results };
+                        }
+                    }
+                }).val(null).trigger('change');
+
+                $('#copyScheduleModal').modal('show');
+            });
+
+            $('#confirmCopy').on('click', function() {
+                const targetNiks = $('#targetEmployees').val();
+                if (!targetNiks || targetNiks.length === 0) {
+                    alertify.warning('Pilih minimal satu karyawan tujuan.');
+                    return;
+                }
+
+                const currentMonth = calendar.getDate();
+                const payload = {
+                    sourceNik: selectedNik,
+                    targetNiks: targetNiks,
+                    month: currentMonth.getMonth() + 1, // JS month is 0-indexed
+                    year: currentMonth.getFullYear()
+                };
+
+                const url = baseLink.replace('Controller', controllerName).replace('Action', 'CopyJadwal');
+                $.ajax({ url: url, type: 'POST', contentType: 'application/json', data: JSON.stringify(payload) })
+                 .done(res => {
+                    if (res.success) {
+                        alertify.success(res.message);
+                        $('#copyScheduleModal').modal('hide');
+                    } else { alertify.error(res.message); }
+                }).fail(() => alertify.error('Gagal menyalin jadwal.'));
+            });
+
+            // --- INITIAL LOAD ---
+            loadRosterLegend();
+            setCopyButtonState(); // Panggil fungsi untuk set state tombol saat awal load
+        });
+    </script>
+}
+

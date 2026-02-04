@@ -1,0 +1,25 @@
+# Build outputs
+bin/
+obj/
+
+# VS/IDE folders
+.vs/
+.config/
+
+# Local settings with secrets
+appsettings*.json
+appsettings.*.json
+
+# User-specific files
+*.csproj.user
+
+# Large media files
+*.mp4
+*.avi
+*.mov
+*.flv
+wwwroot/video/
+
+# OS files
+.DS_Store
+Thumbs.db

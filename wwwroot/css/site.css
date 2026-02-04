@@ -1,0 +1,172 @@
+﻿body {
+    margin: 0;
+    padding: 0;
+    background-image: url('../bg-pertambangan.png');
+    background-size: cover;
+    background-position: center;
+    font-family: 'Segoe UI', sans-serif;
+    color: #ffffff;
+}
+
+.overlay {
+    background-color: rgba(0, 0, 0, 0.8);
+    min-height: 100vh;
+    padding: 2rem;
+}
+.clock-container {
+    text-align: right;
+    margin-bottom: 1rem;
+    color: #00e5ff;
+    text-shadow: 0 0 10px #00e5ff;
+    font-weight: bold;
+}
+
+.clock-time {
+    font-size: 2.5rem;
+}
+
+.clock-date, .clock-shift {
+    font-size: 1.2rem;
+}
+
+.clock {
+    font-size: 2.5rem;
+    font-weight: bold;
+    text-align: right;
+    color: #00e5ff;
+    margin-bottom: 1rem;
+    text-shadow: 0 0 10px #00e5ff;
+}
+
+h1 {
+    text-align: center;
+    color: #00bcd4;
+    font-size: 2.8rem;
+    margin-bottom: 2rem;
+    text-shadow: 0 0 10px #00bcd4;
+}
+
+/* Table Styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1.2rem;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 25px rgba(0, 255, 255, 0.2);
+}
+
+th, td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+th {
+    background-color: rgba(0, 188, 212, 0.85);
+    color: black;
+}
+
+tr:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.badge {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.absen {
+    background-color: #00e676;
+    color: #000;
+}
+
+.belum {
+    background-color: #ff5252;
+    color: #fff;
+}
+
+/* Highlighted Columns */
+.utama {
+    color: #ffeb3b;
+    font-weight: bold;
+}
+
+.pengganti {
+    color: #4dd0e1;
+    font-weight: bold;
+}
+
+/* Row Backgrounds */
+.row-pengganti {
+    background-color: rgba(0, 255, 255, 0.05);
+}
+
+.row-belum {
+    background-color: rgba(255, 82, 82, 0.05);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.02);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.animate-fade {
+    animation: fadeIn 1.5s ease-in-out;
+}
+
+.animate-slide {
+    animation: slideIn 1.2s ease-out;
+}
+
+.animate-pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    table, thead, tbody, th, td, tr {
+        font-size: 0.9rem;
+    }
+
+    .clock, h1 {
+        text-align: center;
+    }
+}

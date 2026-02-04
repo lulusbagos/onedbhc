@@ -1,0 +1,137 @@
+﻿/* Global styles */
+body {
+    padding: 20px;
+    background-color: #f8f9fa;
+    font-family: 'Poppins', sans-serif;
+    font-size: 11px;
+}
+
+.a4-page {
+    background-color: #fff;
+    margin: auto;
+    padding: 2cm 1.5cm; /* Padding standar dokumen */
+    max-width: 21cm; /* A4 width */
+    min-height: 29.7cm; /* A4 height */
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    border-radius: 5px;
+}
+
+/* Typography */
+h4 {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+h5, h6 {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+p {
+    margin-bottom: 0.5rem;
+}
+
+/* Table styling */
+.table {
+    border-collapse: collapse !important;
+    font-size: 10pt;
+}
+
+.table th, .table td {
+    vertical-align: middle;
+    border: 1px solid #dee2e6 !important;
+    padding: 8px;
+}
+
+.table thead th {
+    background-color: #0d6efd;
+    color: #fff;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 10pt;
+    letter-spacing: 0.5px;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: #f8f9fa;
+}
+
+.table-bordered {
+    border: 1px solid #dee2e6 !important;
+}
+
+/* Keterangan Section (4 Kolom) */
+.notes ul {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* Membuat 4 kolom */
+    gap: 5px 15px; /* Jarak antar item (baris dan kolom) */
+    padding-left: 0; /* Menghilangkan padding default */
+}
+
+.notes li {
+    list-style-type: none; /* Menghilangkan bullet default */
+    margin-bottom: 5px;
+}
+
+
+/* Summary Totals Section */
+.summary-totals {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: #f2f6fc;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #dbe5f5;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.summary-totals span {
+    color: #0d6efd;
+    margin: 0 1rem;
+}
+
+.summary-totals .separator {
+    color: #ced4da;
+    font-weight: 400;
+}
+
+
+/* Button hover effect */
+.btn {
+    transition: all 0.3s ease-in-out;
+    font-weight: 500;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Tanda tangan */
+.signature-block {
+    margin-top: 5rem;
+}
+.signature-block img {
+    max-height: 80px;
+}
+
+/* Print styles */
+@media print {
+    body {
+        padding: 0;
+        background-color: #fff;
+    }
+    .no-print {
+        display: none !important;
+    }
+    .a4-page {
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        border-radius: 0;
+    }
+}
+

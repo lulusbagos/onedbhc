@@ -1,0 +1,211 @@
+﻿@{
+    ViewData["Title"] = "Pengaturan Menu";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/css/alertify.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/css/themes/bootstrap.min.css" />
+
+<style>
+    .card {
+        border-radius: 1rem;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+
+    .card-header {
+        background: linear-gradient(90deg, #4e73df, #224abe);
+        color: white;
+        font-weight: 600;
+        border-top-left-radius: 1rem;
+        border-top-right-radius: 1rem;
+    }
+
+    .modal-header {
+        background: #4e73df;
+        color: white;
+        border-top-left-radius: .5rem;
+        border-top-right-radius: .5rem;
+    }
+
+    .btn i {
+        margin-right: 4px;
+    }
+
+    #settingMenuTable thead th {
+        background-color: #f8f9fa;
+        text-transform: uppercase;
+        font-size: .85rem;
+        letter-spacing: .03em;
+    }
+</style>
+
+<div class="card shadow mb-4">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <h6 class="m-0"><i class="fas fa-cogs me-2"></i>Data @ViewData["Title"]</h6>
+        <button type="button" class="btn btn-light text-primary border-primary" onclick="showAddModal()">
+            <i class="fas fa-plus"></i> Tambah Data
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" id="settingMenuTable" width="100%">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tgl Awal</th>
+                        <th>Tgl Akhir</th>
+                        <th>Dibuat Oleh</th>
+                        <th>Dibuat Tgl</th>
+                        <th>Diubah Tgl</th>
+                        <th style="width: 110px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="settingModal" tabindex="-1" aria-labelledby="settingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-header">
+                <h5 class="modal-title" id="settingModalLabel">Form Pengaturan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4 py-3">
+                <form id="settingForm">
+                    <input type="hidden" id="id" />
+                    <div class="form-group mb-3">
+                        <label for="awal" class="form-label fw-semibold">Tanggal Awal</label>
+                        <input type="date" class="form-control" id="awal" required>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="akhir" class="form-label fw-semibold">Tanggal Akhir</label>
+                        <input type="date" class="form-control" id="akhir" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer px-4">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i> Batal</button>
+                <button type="button" class="btn btn-primary" onclick="saveData()"><i class="fas fa-save"></i> Simpan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/alertify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+    <script>
+        let table;
+
+        $(document).ready(function () {
+            // ✅ FIX ALERTIFY CONFIG
+            alertify.defaults.transition = "fade";
+            alertify.defaults.theme.ok = "btn btn-primary";
+            alertify.defaults.theme.cancel = "btn btn-danger";
+            alertify.defaults.notifier.position = "top-right";
+
+            table = $('#settingMenuTable').DataTable({
+                ajax: { url: '@Url.Action("GetAll", "SettingMenu")', type: 'GET', datatype: 'json' },
+                columns: [
+                    { data: "id", visible: false },
+                    { data: "awal", render: d => d ? moment(d).format('DD MMM YYYY') : '' },
+                    { data: "akhir", render: d => d ? moment(d).format('DD MMM YYYY') : '' },
+                    { data: "insert_by" },
+                    { data: "created_at", render: d => d ? moment(d, "YYYY-MM-DD HH:mm:ss").format('DD/MM/YYYY HH:mm') : '' },
+                    { data: "updated_at", render: d => d ? moment(d, "YYYY-MM-DD HH:mm:ss").format('DD/MM/YYYY HH:mm') : '<span class="text-muted">-</span>' },
+                    {
+                        data: "id", orderable: false, searchable: false,
+                        render: id => `
+                            <div class="d-flex gap-2 justify-content-center">
+                                <button class="btn btn-sm btn-warning" title="Edit" onclick="showEditModal('${id}')"><i class="fas fa-pen"></i></button>
+                                <button class="btn btn-sm btn-danger" title="Hapus" onclick="deleteData('${id}')"><i class="fas fa-trash"></i></button>
+                            </div>`
+                    }
+                ],
+                order: [[4, 'desc']],
+                language: {
+                    search: "Cari:",
+                    lengthMenu: "Tampilkan _MENU_ data",
+                    zeroRecords: "Tidak ada data ditemukan",
+                    info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+                    infoEmpty: "Tidak ada data tersedia",
+                    paginate: { previous: "Sebelum", next: "Berikut" }
+                }
+            });
+        });
+
+        function clearForm() { $('#settingForm')[0].reset(); $('#id').val(''); }
+
+        function showAddModal() {
+            clearForm();
+            $('#settingModalLabel').text("Tambah Pengaturan Baru");
+            $('#settingModal').modal('show');
+        }
+
+        function showEditModal(id) {
+            clearForm();
+            $.get(`@Url.Action("Get", "SettingMenu")?id=${id}`, res => {
+                if (res.success) {
+                    $('#id').val(res.data.id);
+                    $('#awal').val(moment(res.data.awal).format('YYYY-MM-DD'));
+                    $('#akhir').val(moment(res.data.akhir).format('YYYY-MM-DD'));
+                    $('#settingModalLabel').text("Edit Pengaturan");
+                    $('#settingModal').modal('show');
+                } else alertify.error(res.message);
+            }).fail(() => alertify.error("Gagal memuat data."));
+        }
+
+        function saveData() {
+            if (!$('#settingForm')[0].checkValidity()) {
+                $('#settingForm')[0].reportValidity();
+                return;
+            }
+
+            const data = { id: $('#id').val(), awal: $('#awal').val(), akhir: $('#akhir').val() };
+            const isUpdate = data.id && data.id.trim() !== "";
+            const url = isUpdate ? '@Url.Action("Update", "SettingMenu")' : '@Url.Action("Insert", "SettingMenu")';
+
+            $.ajax({
+                url, type: 'POST', contentType: 'application/json', data: JSON.stringify(data),
+                success: res => {
+                    if (res.success) {
+                        alertify.success(res.message);
+                        $('#settingModal').modal('hide');
+                        table.ajax.reload(null, false);
+                    } else alertify.error(res.message);
+                },
+                error: () => alertify.error("Terjadi kesalahan saat menyimpan data.")
+            });
+        }
+
+        function deleteData(id) {
+            alertify.confirm('Konfirmasi Hapus', 'Apakah Anda yakin ingin menghapus data ini?',
+                function () {
+                    $.ajax({
+                        url: '@Url.Action("Delete", "SettingMenu")',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ id }),
+                        success: res => {
+                            if (res.success) {
+                                alertify.success(res.message);
+                                table.ajax.reload(null, false);
+                            } else alertify.error(res.message);
+                        },
+                        error: () => alertify.error('Gagal menghapus data.')
+                    });
+                },
+                function () { alertify.message('Aksi dibatalkan'); }
+            );
+        }
+    </script>
+}

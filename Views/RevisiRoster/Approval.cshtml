@@ -1,0 +1,662 @@
+﻿@{
+    ViewData["Title"] = "Persetujuan Revisi Jadwal";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- Libraries -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css" />
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap4.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --primary: #4361ee;
+        --primary-light: #eef2ff;
+        --secondary: #3f37c9;
+        --success: #10b981;
+        --success-light: #d1fae5;
+        --danger: #ef4444;
+        --danger-light: #fee2e2;
+        --warning: #f59e0b;
+        --warning-light: #fef3c7;
+        --info: #3b82f6;
+        --info-light: #dbeafe;
+        --bg-body: #f8f9fa;
+        --card-bg: #ffffff;
+        --text-main: #1f2937;
+        --text-muted: #6b7280;
+        --border-color: #e5e7eb;
+        --border-radius: 12px;
+        --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f3f4f6;
+        color: var(--text-main);
+    }
+
+    /* Premium Card */
+    .card-premium {
+        background: var(--card-bg);
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-soft);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .card-header-clean {
+        background: white;
+        border-bottom: 1px solid var(--border-color);
+        padding: 1.5rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .card-title {
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: #111827;
+        margin: 0;
+        letter-spacing: -0.025em;
+    }
+
+    /* Filter Tabs (Segmented Control style) */
+    .filter-container {
+        background-color: #f3f4f6;
+        padding: 0.25rem;
+        border-radius: 10px;
+        display: inline-flex;
+    }
+
+    .filter-btn {
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        padding: 0.5rem 1.25rem;
+        font-weight: 500;
+        font-size: 0.9rem;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+        color: var(--text-main);
+    }
+
+    .filter-btn.active {
+        background-color: white;
+        color: var(--primary);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        font-weight: 600;
+    }
+
+    /* Table Styling */
+    .table-premium thead th {
+        background-color: #f9fafb;
+        color: #6b7280;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid var(--border-color);
+        border-top: none;
+        padding: 1rem;
+    }
+
+    .table-premium tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-top: 1px solid #f3f4f6;
+        font-size: 0.9rem;
+    }
+
+    /* Badges & Actions */
+    .badge-premium {
+        padding: 0.35em 0.8em;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 20px;
+        letter-spacing: 0.025em;
+    }
+    .badge-soft-warning { background-color: var(--warning-light); color: #d97706; }
+    .badge-soft-success { background-color: var(--success-light); color: #059669; }
+    .badge-soft-danger { background-color: var(--danger-light); color: #dc2626; }
+    .badge-soft-secondary { background-color: #e5e7eb; color: #4b5563; }
+    .badge-soft-info { background-color: var(--info-light); color: var(--info); }
+
+    .btn-action-circle {
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+        margin: 0 2px;
+        color: var(--text-muted);
+        background: white;
+        border-color: #e5e7eb;
+    }
+
+    .btn-action-circle:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .btn-action-approve:hover { background-color: var(--success-light); color: var(--success); border-color: var(--success-light); }
+    .btn-action-reject:hover { background-color: var(--danger-light); color: var(--danger); border-color: var(--danger-light); }
+    .btn-action-view:hover { background-color: var(--info-light); color: var(--info); border-color: var(--info-light); }
+    .btn-action-detail:hover { background-color: var(--primary-light); color: var(--primary); border-color: var(--primary-light); }
+
+    /* Modal Styling */
+    .modal-content {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid #f3f4f6;
+        padding: 1.5rem;
+        background: #fcfcfc;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .modal-title { font-weight: 700; color: #111827; }
+
+    /* Timeline Styling */
+    .karyawan-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .karyawan-avatar {
+        width: 60px;
+        height: 60px;
+        background: var(--primary-light);
+        color: var(--primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        margin: 0 auto 1rem;
+    }
+
+    .change-card {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .timeline-wrapper {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding: 10px 5px;
+        padding-bottom: 20px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .timeline-card {
+        flex: 0 0 70px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 10px 5px;
+        text-align: center;
+        transition: all 0.2s;
+    }
+
+    .timeline-card.highlight {
+        border-color: var(--primary);
+        background-color: var(--primary-light);
+        box-shadow: 0 4px 6px -1px rgba(67, 97, 238, 0.2);
+        transform: translateY(-5px);
+    }
+
+    .timeline-day { font-size: 0.75rem; color: #6b7280; font-weight: 600; text-transform: uppercase; }
+    .timeline-date { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 2px 0; }
+    
+    /* Scrollbar for timeline */
+    .timeline-wrapper::-webkit-scrollbar { height: 6px; }
+    .timeline-wrapper::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+    .timeline-wrapper::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+    .timeline-wrapper::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+    .segment-detail {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.25rem;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    .segment-detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #f1f5f9;
+        padding: 0.75rem 0;
+    }
+
+    .segment-detail-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .segment-detail-date {
+        min-width: 180px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .segment-detail-date small {
+        display: block;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: #6b7280;
+    }
+
+    .segment-detail-status {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .segment-detail-status > div {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 100px;
+    }
+
+    .segment-detail-status small {
+        font-size: 0.65rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.15rem;
+    }
+
+</style>
+
+<div class="container-fluid py-4 fade-in-up">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="font-weight-bold text-dark mb-1">Persetujuan Revisi Jadwal</h2>
+            <p class="text-muted mb-0">Kelola permintaan perubahan jadwal kerja tim Anda.</p>
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card card-premium">
+        <div class="card-header-clean">
+            <div class="filter-container">
+                <button type="button" class="filter-btn active" data-status="">Semua</button>
+                <button type="button" class="filter-btn" data-status="DIAJUKAN">Menunggu</button>
+                <button type="button" class="filter-btn" data-status="DISETUJUI">Disetujui</button>
+                <button type="button" class="filter-btn" data-status="DITOLAK">Ditolak</button>
+            </div>
+            <div class="card-tools">
+                <!-- DataTables buttons will appear here -->
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="approvalTable" class="table table-premium table-hover mb-0" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Tgl Pengajuan</th>
+                            <th>Karyawan</th>
+                            <th>Periode Jadwal</th>
+                            <th class="text-center">Detail Perubahan</th>
+                            <th>Alasan</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center" style="min-width: 140px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <!-- Tbody kosong, diisi oleh DataTables -->
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detail -->
+<div class="modal fade" id="detailModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-calendar-alt text-primary mr-2"></i> Detail Revisi</h5>
+                <button type="button" class="close text-muted" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="modal-content-area">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            
+            var table;
+            var rosterKeteranganMap = {};
+            const token = $('input[name="__RequestVerificationToken"]').val();
+
+            // --- Utilities ---
+            function isColorDark(hexColor) {
+                if (!hexColor) return false;
+                var color = (hexColor.charAt(0) === '#') ? hexColor.substring(1, 7) : hexColor;
+                if (color.length !== 6) return false;
+                try {
+                    var r = parseInt(color.substring(0, 2), 16), g = parseInt(color.substring(2, 4), 16), b = parseInt(color.substring(4, 6), 16);
+                    return (r * 0.299 + g * 0.587 + b * 0.114) < 186;
+                } catch (e) { return false; }
+            }
+
+            function formatRosterDateRange(row) {
+                const startDate = row.tanggal_awal ? new Date(row.tanggal_awal) : (row.tanggal_roster ? new Date(row.tanggal_roster) : null);
+                const endDate = row.tanggal_akhir ? new Date(row.tanggal_akhir) : startDate;
+                if (!startDate) return '';
+                const startStr = startDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                if (!endDate || startDate.toDateString() === endDate.toDateString()) { return startStr; }
+                const endStr = endDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                return `${startStr} <i class="fas fa-arrow-right text-muted mx-1" style="font-size: 0.7em;"></i> ${endStr}`;
+            }
+
+            function formatDetailDate(value) {
+                if (!value) return '-';
+                const parsed = new Date(`${value}T00:00:00`);
+                if (isNaN(parsed)) return value;
+                return parsed.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+            }
+
+            // --- Render Badges Premium ---
+            function renderBadge(data, type='status') {
+                if(type === 'status'){
+                    if (!data) return '';
+                    let badgeClass = 'badge-soft-secondary';
+                    let icon = '';
+                    if (data === 'DIAJUKAN') { badgeClass = 'badge-soft-warning'; icon = '<i class="far fa-clock mr-1"></i>'; }
+                    else if (data === 'DISETUJUI') { badgeClass = 'badge-soft-success'; icon = '<i class="fas fa-check mr-1"></i>'; }
+                    else if (data === 'DITOLAK') { badgeClass = 'badge-soft-danger'; icon = '<i class="fas fa-times mr-1"></i>'; }
+                    return `<span class="badge-premium ${badgeClass}">${icon}${data}</span>`;
+                } else { // roster code badge
+                    if (!data) return '<span class="text-muted small">-</span>';
+                    var rosterInfo = rosterKeteranganMap[data] || {};
+                    var color = rosterInfo.warna || '#e5e7eb';
+                    var textColor = isColorDark(color) ? 'white' : '#374151';
+                    // Jika warna default/terlalu terang, kasih border tipis
+                    var border = isColorDark(color) ? '' : 'border: 1px solid #d1d5db;';
+                    return `<span class="badge badge-pill shadow-sm" style="background-color: ${color}; color: ${textColor}; padding: 0.35em 0.8em; font-size: 0.8em; ${border}">${data}</span>`;
+                }
+            };
+
+            function renderStatusSummary(summaryArray) {
+                if (!Array.isArray(summaryArray) || summaryArray.length === 0) return '<span class="text-muted small">-</span>';
+                return summaryArray.map(segment => {
+                    if (!segment || !segment.status) return '';
+                    var badge = renderBadge(segment.status, 'roster');
+                    return `<div class="mb-1">${badge}</div>`;
+                }).join('');
+            }
+
+            // --- Init DataTable ---
+            function initDataTable() {
+                table = $('#approvalTable').DataTable({
+                    "ajax": {
+                    "url": "@Url.Action("GetAll", "RevisiRoster")?includeAllDepartments=true",
+                        "dataSrc": function(json){
+                            if (!json) { Swal.fire('Error', 'Empty response.', 'error'); return []; }
+                            return json.data || [];
+                        }
+                    },
+                    "columns": [
+                        { "data": "tanggal", "render": data => data ? `<span class="font-weight-bold text-dark">${new Date(data).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</span><br><small class="text-muted">${new Date(data).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</small>` : '' },
+                        { 
+                            "data": null, 
+                            "render": (data, type, row) => `
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center text-primary font-weight-bold mr-3" style="width:35px; height:35px;">
+                                        ${row.nama_lengkap.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <div class="font-weight-bold text-dark">${row.nama_lengkap}</div>
+                                        <small class="text-muted">${row.nik}</small>
+                                    </div>
+                                </div>`
+                        },
+                        { "data": "tanggal_awal", "render": (data, type, row) => formatRosterDateRange(row) },
+                        {
+                            "data": null, "className": "text-center",
+                            "render": (data, type, row) => `
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <div class="text-center mr-2">
+                                        <div class="small text-muted mb-1">Dari</div>
+                                        ${renderStatusSummary(row.status_awal_summary)}
+                                    </div>
+                                    <i class="fas fa-arrow-right text-muted mx-2"></i>
+                                    <div class="text-center ml-2">
+                                        <div class="small text-muted mb-1">Menjadi</div>
+                                        ${renderStatusSummary(row.status_baru_summary)}
+                                    </div>
+                                </div>
+                            `
+                        },
+                        { "data": "remarks", "render": data => data ? `<span class="text-muted font-italic">"${data}"</span>` : '-' },
+                        { "data": "status", "className": "text-center", "render": data => renderBadge(data, 'status') },
+                        {
+                            "data": null, "className": "text-center", "orderable": false,
+                            "render": function(data, type, row) {
+                                let fileUrl = row.file_path ? (row.file_path.startsWith('/') ? row.file_path : '/' + row.file_path) : '';
+                                let docBtn = fileUrl ? `<a href="${fileUrl}" target="_blank" class="btn-action-circle btn-action-view" title="Lihat PDF"><i class="fas fa-file-pdf"></i></a>` : '';
+                                
+                                let actionBtns = '';
+                                if(row.status === 'DIAJUKAN'){
+                                    actionBtns = `
+                                        <button class="btn-action-circle btn-action-approve btn-approve" data-id="${row.id}" title="Setujui"><i class="fas fa-check"></i></button>
+                                        <button class="btn-action-circle btn-action-reject btn-reject" data-id="${row.id}" title="Tolak"><i class="fas fa-times"></i></button>
+                                    `;
+                                }
+                                return `
+                                    <button class="btn-action-circle btn-action-detail btn-detail" data-nik="${row.nik}" data-date="${row.tanggal_awal}" title="Detail"><i class="fas fa-eye"></i></button>
+                                    ${docBtn}
+                                    ${actionBtns}
+                                `;
+                            }
+                        }
+                    ],
+                    "order": [[0, "desc"]],
+                    "responsive": true,
+                    "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/id.json" },
+                    "dom": "<'row mb-3'<'col-md-6'l><'col-md-6 text-right'f>>" +
+                           "<'row'<'col-12'tr>>" +
+                           "<'row mt-3'<'col-md-5'i><'col-md-7'p>>",
+                    "drawCallback": function() { $('[title]').tooltip(); } // Re-init tooltip
+                });
+                
+                // Pindahkan tombol Excel ke dalam header card jika perlu, atau biarkan default
+            }
+
+            // --- Auto Reload ---
+            let autoReloadTimer = setInterval(() => table.ajax.reload(null, false), 15000);
+
+            // --- Modal Detail Logic ---
+            $('#approvalTable').on('click', '.btn-detail', function() {
+                const nik = $(this).data('nik');
+                const date = $(this).data('date');
+                const modalContent = $('#modal-content-area');
+                
+                modalContent.html('<div class="text-center p-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-3 text-muted">Memuat timeline...</p></div>');
+                $('#detailModal').modal('show');
+
+                $.get("@Url.Action("GetRosterTimeline", "RevisiRoster")", { nik: nik, tanggal: date })
+                    .done(function(response) {
+                        if(response.success){ renderTimeline(response); } 
+                        else { modalContent.html(`<div class="alert alert-danger">${response.message || 'Gagal memuat data.'}</div>`); }
+                    })
+                    .fail(() => modalContent.html('<div class="alert alert-danger">Error server.</div>'));
+            });
+
+            function renderTimeline(data) {
+                // Header Karyawan
+                const header = `
+                    <div class="karyawan-header">
+                        <div class="karyawan-avatar"><i class="fas fa-user"></i></div>
+                        <h4 class="font-weight-bold text-dark mb-1">${data.karyawan.nama_lengkap}</h4>
+                        <div class="text-muted small">${data.karyawan.no_nik} • ${data.karyawan.depart}</div>
+                    </div>
+                `;
+
+                // Card Perubahan
+                const perubahan = `
+                    <div class="change-card">
+                        <h6 class="font-weight-bold text-dark border-bottom pb-2 mb-3">Rincian Perubahan</h6>
+                        <div class="row align-items-center text-center">
+                            <div class="col-5">
+                                <small class="text-uppercase text-muted font-weight-bold">Awal</small>
+                                <div class="mt-2">${renderStatusSummary(data.perubahan.awal_summary)}</div>
+                            </div>
+                            <div class="col-2"><i class="fas fa-chevron-right text-muted"></i></div>
+                            <div class="col-5">
+                                <small class="text-uppercase text-primary font-weight-bold">Baru</small>
+                                <div class="mt-2">${renderStatusSummary(data.perubahan.baru_summary)}</div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3 pt-2 border-top">
+                            <small class="text-muted"><i class="far fa-calendar-alt mr-1"></i> Periode: ${data.perubahan.periode_awal} - ${data.perubahan.periode_akhir}</small>
+                        </div>
+                    </div>
+                `;
+
+                // Timeline Horizontal
+                const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+                let timelineItems = '';
+                data.timeline.forEach(item => {
+                    const d = new Date(item.date + "T00:00:00");
+                    const isHighlight = item.date === data.perubahan.tanggal; // Highlight tanggal revisi
+                    timelineItems += `
+                        <div class="timeline-card ${isHighlight ? 'highlight' : ''}">
+                            <div class="timeline-day">${days[d.getDay()]}</div>
+                            <div class="timeline-date">${d.getDate()}</div>
+                            <div class="mt-1">${renderBadge(item.status, 'roster')}</div>
+                        </div>
+                    `;
+                });
+
+                const timelineSection = `<h6 class="font-weight-bold mb-3">Timeline 15 Hari</h6><div class="timeline-wrapper">${timelineItems}</div>`;
+                const detailEntries = Array.isArray(data.perubahan?.detail) ? data.perubahan.detail : [];
+                const detailRowsMarkup = detailEntries.map(detail => {
+                    const formattedDate = formatDetailDate(detail.tanggal);
+                    return `
+                        <div class="segment-detail-row">
+                            <div>
+                                <small>Tanggal</small>
+                                <div class="segment-detail-date">${formattedDate}</div>
+                            </div>
+                            <div class="segment-detail-status">
+                                <div>
+                                    <small>Awal</small>
+                                    ${renderBadge(detail.status_awal, 'roster')}
+                                </div>
+                                <div>
+                                    <small class="text-primary">Baru</small>
+                                    ${renderBadge(detail.status_baru, 'roster')}
+                                </div>
+                            </div>
+                        </div>`;
+                }).join('');
+                const detailSection = `
+                    <div class="segment-detail mt-4">
+                        <h6 class="font-weight-bold mb-3">Detail Revisi Per Tanggal</h6>
+                        ${detailRowsMarkup || '<div class="text-muted small text-center py-3">Detail perubahan belum tersedia.</div>'}
+                    </div>
+                `;
+
+                $('#modal-content-area').html(`${header}${perubahan}${timelineSection}${detailSection}`);
+            }
+
+            // --- Load Data Master ---
+            $.get('@Url.Action("GetRosterKeterangan", "RevisiRoster")', function(data) {
+                data.forEach(item => rosterKeteranganMap[item.kode] = item);
+                initDataTable();
+            });
+
+            // --- Action Handlers (Approve/Reject) ---
+            $('#approvalTable').on('click', '.btn-approve', function() {
+                const id = $(this).data('id');
+                Swal.fire({
+                    title: 'Setujui Pengajuan?',
+                    text: "Pastikan data sudah benar.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Ya, Setujui',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.post("@Url.Action("ApproveRequest", "RevisiRoster")", { id: id, "__RequestVerificationToken": token })
+                            .done(res => {
+                                if(res.success) { Swal.fire('Berhasil', res.message, 'success'); table.ajax.reload(); }
+                                else { Swal.fire('Gagal', res.message, 'error'); }
+                            });
+                    }
+                });
+            });
+
+            $('#approvalTable').on('click', '.btn-reject', function() {
+                const id = $(this).data('id');
+                Swal.fire({
+                    title: 'Tolak Pengajuan',
+                    input: 'textarea',
+                    inputLabel: 'Alasan Penolakan',
+                    inputPlaceholder: 'Tulis alasan...',
+                    inputAttributes: { 'aria-label': 'Tulis alasan' },
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: 'Tolak',
+                    inputValidator: (value) => { if (!value) return 'Alasan wajib diisi!' }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.post("@Url.Action("RejectRequest", "RevisiRoster")", { id: id, alasan: result.value, "__RequestVerificationToken": token })
+                            .done(res => {
+                                if(res.success) { Swal.fire('Ditolak', res.message, 'success'); table.ajax.reload(); }
+                                else { Swal.fire('Gagal', res.message, 'error'); }
+                            });
+                    }
+                });
+            });
+
+            // --- Filters ---
+            $('.filter-btn').on('click', function() {
+                $('.filter-btn').removeClass('active');
+                $(this).addClass('active');
+                const status = $(this).data('status');
+                // Asumsi kolom status ada di index 5
+                table.column(5).search(status).draw();
+            });
+
+        });
+    </script>
+}

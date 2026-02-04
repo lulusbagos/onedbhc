@@ -1,0 +1,136 @@
+﻿:root {
+    --primary-glow: #00d2ff;
+    --secondary-glow: #007bff;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    /* Path gambar disesuaikan untuk file CSS eksternal */
+    background: url('../img/image_4a2f1b.jpg') no-repeat center center fixed;
+    background-size: cover;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.login-container {
+    position: absolute;
+    top: 50%;
+    left: 25%; /* Diposisikan di sisi kiri */
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.25); /* Efek kaca lebih gelap */
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    padding: 40px 30px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    width: 380px;
+    animation: fadeIn 1s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -45%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #fff;
+}
+
+    .login-header h1 {
+        font-size: 1.2rem;
+        margin: 0;
+        font-weight: 300;
+        letter-spacing: 1px;
+    }
+
+    .login-header h2 {
+        font-size: 1.8rem;
+        margin: 5px 0 0 0;
+        font-weight: 700;
+    }
+
+.input-group {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+    .input-group i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #ccc;
+        transition: color 0.3s ease;
+    }
+
+.form-control {
+    width: 100%;
+    padding: 12px 12px 12px 45px; /* Padding untuk ikon */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+    .form-control::placeholder {
+        color: #ccc;
+    }
+
+    .form-control:focus {
+        background: rgba(255, 255, 255, 0.2);
+        outline: none;
+        box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+        border-color: var(--primary-glow);
+    }
+
+        .form-control:focus + i {
+            color: var(--primary-glow);
+        }
+
+.btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(45deg, var(--secondary-glow), var(--primary-glow));
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+    .btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 210, 255, 0.4);
+    }
+
+    .btn:disabled {
+        background: #555;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+.login-footer {
+    margin-top: 20px;
+    text-align: center;
+    color: #ddd;
+    font-size: 0.8rem;
+}

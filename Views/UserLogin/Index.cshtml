@@ -1,0 +1,458 @@
+﻿@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<div style="margin-bottom: 20px;">
+    <button onclick="btnAdd()" class="btn btn-primary btn-icon-split">
+        <span class="icon text-white-50">
+            <i class="fas fa-plus"></i>
+        </span>
+        <span class="text">Add Data</span>
+    </button>
+</div>
+
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">MASTER - @ViewBag.Title</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" width="100%" id="tableBS" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>FOTO</th> <!-- BARU -->
+                        <th>USER</th>
+                        <th>NAMA</th>
+                        <th>KATEGORI</th>
+                        <th>COMPANY</th> <!-- PERUBAHAN DI SINI -->
+                        <th>DEPT</th>
+                        <th>PASS</th>
+                        <th>AKSI</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal Add/Update -->
+<div class="modal fade modalBS" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">FORM @ViewBag.Title</h4>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formBS" class="forms-sample" enctype="multipart/form-data">
+                    <!-- BARU: enctype -->
+                    <input type="hidden" id="id" name="id" />
+
+                    <!-- BARU: Bagian Upload Foto Profil -->
+                    <div class="form-group row" id="uploadSection" style="display: none;">
+                        <label for="fileUpload" class="col-sm-3 col-form-label">Foto Profil</label>
+                        <div class="col-sm-9">
+                            <img id="imgPreview" src="" alt="Preview" class="rounded-circle mb-2" style="width: 80px; height: 80px; object-fit: cover; border: 2px solid #ddd;" />
+                            <input type="file" class="form-control-file" id="fileUpload" name="profilePictureFile" accept="image/png, image/jpeg">
+                            <small class="form-text text-muted">Hanya .png atau .jpg. Biarkan kosong jika tidak ingin mengubah.</small>
+                        </div>
+                    </div>
+                    <!-- SELESAI BARU -->
+
+                    <div class="form-group row">
+                        <label for="nik" class="col-sm-3 col-form-label">NIK</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" id="nrp" name="nrp" placeholder="Masukkan NIK" required>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="nrp" class="col-sm-3 col-form-label">Nama</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" id="nama" name="nama" placeholder="Masukkan nama" required>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="nrp" class="col-sm-3 col-form-label">Password</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" id="password" name="password" placeholder="Masukkan password" required>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="kategori" class="col-sm-3 col-form-label">Kategori User</label>
+                        <div class="col-sm-9">
+                            <select class="form-control form-control-md" id="kategori_user_id" name="kategori_user_id" required>
+                                <option value="">- Pilih kategori -</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- PERUBAHAN DI SINI: MENAMBAHKAN COMP_CODE -->
+                    <div class="form-group row">
+                        <label for="comp_code" class="col-sm-3 col-form-label">Company</label>
+                        <div class="col-sm-9">
+                            <select class="form-control form-control-md" id="comp_code" name="comp_code" required>
+                                <option value="">- Pilih company -</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- SELESAI PERUBAHAN -->
+
+                    <div class="form-group row">
+                        <label for="dept_code" class="col-sm-3 col-form-label">Departemen</label>
+                        <div class="col-sm-9">
+                            <select class="form-control form-control-md" id="dept_code" name="dept_code" required>
+                                <option value="">- Pilih dept -</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="button" id="btnSave" onclick="insertData()" class="btn btn-success mr-2">Save</button>
+                    <button type="button" id="btnUpdate" onclick="updateData()" class="btn btn-success mr-2">Update</button>
+                    <button type="button" data-dismiss="modal" class="btn btn-light">Cancel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@* End Modal *@
+<style>
+    .badge-admin {
+        background-color: #007bff; /* biru */
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+</style>
+
+@section styles {
+    <link href="~/Assets/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet" />
+}
+
+@section scripts {
+    <script src="~/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="~/vendor/datatables/dataTables.bootstrap4.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/alertifyjs@1.14.0/build/alertify.min.js"></script>
+    <script>
+        var link = '@Url.Action("Function", "Controller")';
+        var controller_name = "@ViewBag.Controller";
+        var dataTable;
+        var baseUrl = '@Url.Content("~/")'; // <-- BARU: Untuk resolve path
+        var defaultUserImg = baseUrl + 'user.png'; // <-- BARU: Path default image
+
+        $(document).ready(function () {
+            getCredentials();
+            getAll();
+            getKategoriUser();
+            getCompany(); // <-- PERUBAHAN: Panggil getCompany
+            getDept();
+        });
+
+        function btnAdd() {
+            $('#btnSave').show();
+            $('#btnUpdate').hide();
+            $('#uploadSection').hide(); // <-- BARU: Sembunyikan upload saat add
+            $('#imgPreview').attr('src', defaultUserImg); // <-- BARU: Reset preview
+            $('.modalBS').modal('show');
+            $('#formBS').trigger("reset");
+            $('#id').val(''); // clear hidden id input
+        }
+
+        function btnEdit(id) {
+            $('#btnSave').hide();
+            $('#btnUpdate').show();
+            $('#uploadSection').show(); // <-- BARU: Tampilkan upload saat edit
+            $('#formBS').trigger("reset");
+            getData(id);
+            $('.modalBS').modal('show');
+        }
+
+        function getCredentials() {
+            $('#insert_by').val("@Html.Raw(ViewBag.insert_by)");
+        }
+
+        function getAll() {
+            let tempLink = link.replace("Controller", controller_name).replace("Function", "GetAll");
+
+            dataTable = $("#tableBS").DataTable({
+                "ajax": {
+                    "url": tempLink,
+                    "type": "GET",
+                    "datatype": "json",
+                    "dataSrc": "data"
+                },
+                "columns": [
+                    // --- BARU: Kolom Foto ---
+                    {
+                        "data": "profile_picture_path",
+                        "render": function (data) {
+                            var imgPath = defaultUserImg; // Default
+                            if (data && data != '~/user.png') {
+                                // Resolve path: Hapus '~/' dan tambahkan baseUrl
+                                imgPath = baseUrl + data.substring(2);
+                            }
+                            return `<img src="${imgPath}" alt="Foto" class="rounded-circle"
+                                         style="width: 40px; height: 40px; object-fit: cover;"
+                                         onerror="this.src='${defaultUserImg}'" />`;
+                        },
+                        "orderable": false,
+                        "searchable": false,
+                        "width": "50px"
+                    },
+                    // --- SELESAI BARU ---
+                    { "data": "nrp" },
+                    { "data": "nama" },
+                    {
+                        "data": "kategori_user_id",
+                        "render": function (data) {
+                            if (data === "ADMINISTRATOR") {
+                                return '<span class="badge-admin">ADMINISTRATOR</span>';
+                            }
+                            return data;
+                        }
+                    },
+                    { "data": "comp_code" }, // <-- PERUBAHAN: Tambah comp_code
+                    { "data": "dept_code" },
+                    {
+                        "data": "password",
+                        "render": function (data, type, row) {
+                            if (row.kategori_user_id === "ADMINISTRATOR") {
+                                return btoa(data); // encode base64
+                            } else {
+                                return data;
+                            }
+                        }
+                    },
+                    {
+                        "data": "id",
+                        "render": function (data) {
+                            return `
+                                <button onclick="btnEdit(${data})" class="btn btn-info btn-circle btn-sm">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteData(${data})" class="btn btn-danger btn-circle btn-sm" style="margin-left: 5px;">
+                                    <i class="fa fa-trash"></i>
+                                </button>`;
+                        },
+                        "orderable": false,
+                        "width": "180px",
+                        "searchable": false
+                    }
+                ],
+
+                "language": {
+                    "emptyTable": "Tidak ada data"
+                }
+            });
+        }
+
+        function getData(id) {
+            let tempLink = link.replace("Controller", controller_name).replace("Function", "Get");
+
+            $.ajax({
+                type: "GET",
+                url: tempLink + '/' + id,
+                success: function (response) {
+                    if (response.success) {
+                        var data = response.data;
+                        $('#id').val(data.id);
+                        $('#nrp').val(data.nrp);
+                        $('#password').val(data.password);
+                        $('#nama').val(data.nama);
+                        $('#kategori_user_id').val(data.kategori_user_id);
+                        $('#comp_code').val(data.comp_code); // <-- PERUBAHAN: set value comp_code
+                        $('#dept_code').val(data.dept_code);
+
+                        // --- BARU: Set Preview Image ---
+                        var imgPath = (data.profile_picture_path && data.profile_picture_path != '~/user.png') ? (baseUrl + data.profile_picture_path.substring(2)) : defaultUserImg;
+                        $('#imgPreview').attr('src', imgPath);
+                        // --- SELESAI BARU ---
+                    } else {
+                        alert(response.message ?? "Terjadi kesalahan.");
+                    }
+                },
+                error: function () {
+                    alert("Terjadi kesalahan saat mengambil data.");
+                }
+            });
+        }
+
+        function insertData() {
+            let tempLink = link.replace("Controller", controller_name).replace("Function", "Insert");
+
+            // --- PERUBAHAN: Gunakan FormData untuk handle file ---
+            var formData = new FormData($('#formBS')[0]);
+
+            $.ajax({
+                type: "POST",
+                url: tempLink,
+                data: formData, // <-- Kirim FormData
+                processData: false,  // <-- Wajib
+                contentType: false,  // <-- Wajib
+                success: function (data) {
+                    if (data.success) {
+                        $('.modalBS').modal('hide');
+                        dataTable.ajax.reload();
+                        alertify.notify('Data berhasil disimpan', 'success', 5);
+                    } else {
+                        alert(data.message ?? "Terjadi kesalahan saat menyimpan.");
+                    }
+                },
+                error: function () {
+                    alert("Terjadi kesalahan saat menyimpan data.");
+                }
+            });
+        }
+
+        function updateData() {
+            let tempLink = link.replace("Controller", controller_name).replace("Function", "Update");
+
+             // --- PERUBAHAN: Gunakan FormData untuk handle file ---
+            var formData = new FormData($('#formBS')[0]);
+
+            // Note: file 'profilePictureFile' sudah otomatis ada di formData jika user memilih file.
+            // Jika tidak, FormData akan tetap mengirim data form lainnya.
+
+            $.ajax({
+                type: "POST",
+                url: tempLink,
+                data: formData, // <-- Kirim FormData
+                processData: false,  // <-- Wajib
+                contentType: false,  // <-- Wajib
+                success: function (data) {
+                    if (data.success) {
+                        $('.modalBS').modal('hide');
+                        dataTable.ajax.reload();
+                        alertify.notify('Data berhasil diubah', 'success', 5);
+                    } else {
+                        alert(data.message ?? "Terjadi kesalahan saat update.");
+                    }
+                },
+                error: function () {
+                    alert("Terjadi kesalahan saat update data.");
+                }
+            });
+        }
+
+        function deleteData(id) {
+            let tempLink = link.replace("Controller", controller_name).replace("Function", "Delete");
+
+            if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
+                $.ajax({
+                    type: 'POST',
+                    url: tempLink + '/' + id,
+                    success: function (data) {
+                        if (data.success) {
+                            dataTable.ajax.reload();
+                            alertify.notify('Data berhasil dihapus', 'success', 5);
+                        } else {
+                            alert(data.message ?? "Terjadi kesalahan saat menghapus.");
+                        }
+                    },
+                    error: function () {
+                        alert("Terjadi kesalahan saat menghapus data.");
+                    }
+                });
+            }
+        }
+
+        function getKategoriUser() {
+            var options = $("#kategori_user_id");
+            $.ajax({
+                type: 'GET',
+                url: '@Url.Action("GetAll", "KategoriUser")',
+                success: function (data) {
+                    if (data.success) {
+                        for (let i = 0; i < data.data.length; i++) {
+                            options.append($("<option />").val(data.data[i].kategori).text(data.data[i].kategori));
+                        }
+                    } else {
+                        alert(data.message ?? "Gagal mengambil data kategori.");
+                    }
+                },
+                error: function () {
+                    alert("Terjadi kesalahan saat mengambil data kategori.");
+                }
+            });
+        }
+
+        // --- FUNGSI GET COMPANY (PERBAIKAN) ---
+        function getCompany() {
+            var options = $("#comp_code");
+            options.empty().append($("<option />").val("").text("- Pilih company -"));
+
+            $.ajax({
+                type: 'GET',
+                url: '@Url.Action("GetAll", "Company")', // Sesuai nama Controller Anda: CompanyController
+                success: function (data) {
+                    // Berdasarkan JSON Anda: {"data":[{"id":1,"comp_code":"OWN","company":"PT. Owner Utama",...}]}
+                    // Serializer C# mungkin mengirim properti model: `departemen`
+                    // Kita cek keduanya untuk keamanan
+
+                    var dataList = data.data ?? (data.success ? data.data : (Array.isArray(data) ? data : null));
+
+                    if (dataList && Array.isArray(dataList)) {
+                        for (let i = 0; i < dataList.length; i++) {
+                            // Coba ambil 'company' (dari JSON asli) atau 'departemen' (dari properti model C# tbl_r_comp)
+                            var companyName = dataList[i].company || dataList[i].departemen;
+                            if(companyName) {
+                                options.append(
+                                    $("<option />")
+                                        .val(companyName) // <- Simpan NAMA sebagai value
+                                        .text(companyName) // <- Tampilkan NAMA
+                                );
+                            }
+                        }
+                    } else {
+                        alert(data.message ?? "Gagal mengambil data company.");
+                    }
+                },
+                error: function () {
+                    alert("Terjadi kesalahan saat mengambil data company.");
+                }
+            });
+        }
+
+
+        // --- FUNGSI GET DEPT (PERBAIKAN) ---
+        function getDept() {
+            var options = $("#dept_code");
+            options.empty().append($("<option />").val("").text("- Pilih dept -"));
+
+            $.ajax({
+                type: 'GET',
+                url: '@Url.Action("GetAll", "Dept")', // Sesuai nama Controller Anda: DeptController
+                success: function (data) {
+                    // Berdasarkan JSON Anda: {"data":[{"id":2,"dept_code":"BLM","departemen":"BUILDING \u0026 LV MAINTENANCE",...}]}
+                    // Properti 'departemen' sudah benar.
+
+                    var dataList = data.data ?? (data.success ? data.data : (Array.isArray(data) ? data : null));
+
+                    if (dataList && Array.isArray(dataList)) {
+                        for (let i = 0; i < dataList.length; i++) {
+                             var deptName = dataList[i].departemen;
+                             if(deptName) {
+                                options.append(
+                                    $("<option />")
+                                        .val(deptName) // <- Simpan NAMA sebagai value
+                                        .text(deptName) // <- Tampilkan NAMA
+                                );
+                             }
+                        }
+                    } else {
+                        alert(data.message ?? "Gagal mengambil data departemen.");
+                    }
+                },
+                error: function () {
+                    alert("Terjadi kesalahan saat mengambil data departemen.");
+                }
+            });
+        }
+
+    </script>
+}

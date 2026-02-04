@@ -1,0 +1,237 @@
+﻿@{
+    ViewData["Title"] = ViewBag.Title ?? "Approval Kepatuhan Mitra"; // Mengambil judul dari ViewBag
+    Layout = "~/Views/Shared/_Layout.cshtml"; // Pastikan path layout benar
+}
+
+@section Styles {
+    <!-- CSS untuk DataTables & SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        body {
+            background: linear-gradient(120deg, #0a7cff, #6a5cff, #1cc88a);
+            background-size: 180% 180%;
+            animation: bgFlow 18s ease infinite;
+        }
+        @@keyframes bgFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .card {
+            border: none;
+            border-radius: 0.85rem;
+            box-shadow: 0 16px 38px rgba(10,124,255,0.18);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, rgba(10,124,255,0.12), rgba(108,99,255,0.12));
+            border-bottom: none;
+        }
+
+        /* Optional: Tambahkan sedikit padding pada sel tabel */
+        #tableApprovalMitra td, #tableApprovalMitra th {
+            vertical-align: middle;
+            padding: 0.75rem;
+        }
+        /* Style untuk tombol review agar lebih menarik */
+        .btn-review, .btn-review-docs { /* [DIEDIT] Tambahkan class baru */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-right: 5px; /* Beri jarak antar tombol */
+            margin-bottom: 5px; /* Jarak jika tombol wrap di layar kecil */
+        }
+
+            .btn-review:hover, .btn-review-docs:hover { /* [DIEDIT] Tambahkan class baru */
+                box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+                transform: translateY(-1px);
+            }
+        /* Atur lebar kolom aksi agar cukup */
+        #tableApprovalMitra th:last-child,
+        #tableApprovalMitra td:last-child {
+            width: 180px; /* Sesuaikan lebar jika perlu */
+            text-align: center;
+        }
+    </style>
+}
+
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <h1 class="h3 mb-4 text-gray-800">@ViewData["Title"]</h1>
+
+    <!-- Tampilkan Pesan Sukses/Error dari TempData (jika ada setelah submit review) -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+
+    <!-- Tabel Daftar Pengajuan Mitra -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-clipboard-list mr-2"></i>Daftar Pengajuan Kepatuhan Mitra</h6>
+            <button class="btn btn-sm btn-primary" id="refreshTableBtn" title="Muat Ulang Data">
+                <i class="fas fa-sync-alt"></i> Muat Ulang
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped" id="tableApprovalMitra" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nama PT</th>
+                            <th>Diajukan Oleh</th>
+                            <th>Tgl Pengajuan</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data akan dimuat oleh DataTables via AJAX -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <!-- Library JS (jQuery & Bootstrap Bundle sudah ada di _Layout) -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/id.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            moment.locale('id'); // Set locale moment ke Indonesia
+
+            // ======================================
+            // Inisialisasi DataTable Approval Mitra
+            // ======================================
+            var table = $('#tableApprovalMitra').DataTable({
+                processing: true,
+                serverSide: false, // Ambil semua data sekali
+                ajax: {
+                    url: '@Url.Action("GetAdminDashboard", "MitraKepatuhan")', // Action di Controller
+                    type: "GET",
+                    dataType: "json",
+                    dataSrc: function(json) {
+                        if (!json || !json.success) {
+                             console.error("Error fetching admin dashboard data:", json?.message);
+                             $('#tableApprovalMitra tbody').empty().append(
+                                '<tr><td colspan="6" class="text-center text-danger">Gagal memuat data pengajuan.</td></tr>'
+                             );
+                            return [];
+                        }
+                        return json.data;
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                         console.error("DataTable AJAX Error:", textStatus, errorThrown);
+                         $('#tableApprovalMitra tbody').empty().append(
+                             '<tr><td colspan="6" class="text-center text-danger">Gagal memuat data. Periksa koneksi atau hubungi administrator.</td></tr>'
+                         );
+                    }
+                },
+                columns: [
+                    { data: 'id', width: '5%' },
+                    { data: 'nama_pt' },
+                    {
+                        data: 'insert_by', // Menampilkan NRP pengaju
+                        render: function (data, type, row) {
+                            // Anda mungkin ingin menampilkan nama lengkap jika ada di data
+                            return data || '-';
+                        }
+                    },
+                    {
+                        data: 'created_at',
+                        render: function (data, type, row) {
+                            return data ? moment(data).format('D MMMM YYYY, HH:mm') : '-';
+                        }
+                    },
+                    {
+                        data: 'status_pengajuan',
+                        render: function (data, type, row) {
+                            let badgeClass = 'badge-secondary';
+                            if (data === 'Menunggu Review') badgeClass = 'badge-warning';
+                            else if (data === 'Menunggu Upload Dokumen') badgeClass = 'badge-info';
+                            else if (data === 'Menunggu Review Dokumen') badgeClass = 'badge-primary';
+                            else if (data === 'Perlu Perbaikan Upload') badgeClass = 'badge-danger';
+                            else if (data === 'Disetujui') badgeClass = 'badge-success';
+                            else if (data === 'Ditolak') badgeClass = 'badge-danger';
+                            return `<span class="badge ${badgeClass}">${data || 'Tidak Diketahui'}</span>`;
+                        }
+                    },
+                    {
+                        data: null, // Kolom Aksi
+                        orderable: false,
+                        searchable: false,
+                        // width: '180px', // [DIHAPUS] Biarkan otomatis atau atur di CSS
+                        render: function (data, type, row) {
+                             let buttons = '';
+                             if (row.id) {
+                                 // Tombol 1: Review Pengajuan PT (selalu ada)
+                                 const reviewUrl = '@Url.Action("Review", "MitraKepatuhan")/' + row.id;
+                                 buttons += `<a href="${reviewUrl}" class="btn btn-sm btn-primary btn-review" title="Review Pengajuan PT & Dokumen Wajib"><i class="fas fa-search-plus"></i> Review PT</a>`;
+
+                                 // Tombol 2: Review Dokumen (jika sudah masuk tahap upload/review)
+                                 if (row.status_pengajuan === 'Menunggu Review Dokumen' || row.status_pengajuan === 'Perlu Perbaikan Upload' || row.status_pengajuan === 'Disetujui') {
+                                    const reviewDocsUrl = '@Url.Action("ReviewDocuments", "MitraKepatuhan")/' + row.id;
+                                    buttons += `<a href="${reviewDocsUrl}" class="btn btn-sm btn-info btn-review-docs" title="Review Dokumen yang Diunggah"><i class="fas fa-file-alt"></i> Review Dokumen</a>`;
+                                 }
+                            } else {
+                                console.warn("ID Pengajuan tidak ditemukan untuk baris:", row);
+                                 return '-';
+                             }
+                             return buttons || '-';
+                        }
+                    }
+                ],
+                 order: [[3, 'desc']], // Urutkan berdasarkan Tgl Pengajuan terbaru
+                 language: { // Opsi bahasa Indonesia
+                     search: "Cari:",
+                     lengthMenu: "Tampilkan _MENU_ data",
+                     zeroRecords: "Tidak ada pengajuan ditemukan",
+                     info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ pengajuan",
+                     infoEmpty: "Tidak ada data tersedia",
+                     infoFiltered: "(difilter dari _MAX_ total pengajuan)",
+                     paginate: { first: "Awal", last: "Akhir", next: "Berikutnya", previous: "Sebelumnya" },
+                     processing: '<div class="text-center"><i class="fa fa-spinner fa-spin fa-2x fa-fw"></i><span class="sr-only">Memuat...</span></div>',
+                 }
+            });
+
+            // Tombol Refresh Tabel
+            $('#refreshTableBtn').on('click', function() {
+                table.ajax.reload(null, false); // Muat ulang data AJAX tanpa reset paging
+                 Swal.fire({ // Beri feedback singkat
+                    toast: true,
+                    icon: 'info',
+                    title: 'Memuat ulang data...',
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 1500,
+                    timerProgressBar: true
+                 });
+            });
+
+        }); // End $(document).ready
+    </script>
+}
+

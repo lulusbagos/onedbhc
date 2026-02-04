@@ -1,0 +1,304 @@
+﻿/*
+================================================================
+|   HOLOGRAPHIC INTERFACE THEME - KARYAWAN DETAIL PAGE         |
+================================================================
+*/
+
+/* --- Keyframes for Animations --- */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 0 15px var(--primary-glow-color), 0 0 5px var(--text-highlight);
+    }
+
+    50% {
+        box-shadow: 0 0 30px var(--primary-glow-color), 0 0 10px var(--text-highlight);
+    }
+}
+
+@keyframes flicker {
+    0%, 18%, 22%, 25%, 53%, 57%, 100% {
+        text-shadow: 0 0 4px var(--primary-glow-color), 0 0 11px var(--primary-glow-color), 0 0 19px var(--primary-glow-color);
+    }
+
+    20%, 24%, 55% {
+        text-shadow: none;
+    }
+}
+
+
+/* --- Profile Card --- */
+.profile-card {
+    background: linear-gradient(160deg, rgba(0, 246, 255, 0.05), rgba(0, 246, 255, 0));
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: var(--text-color);
+    position: relative;
+    padding: 2.5rem 1.5rem;
+    animation: fadeIn 0.5s ease-out forwards;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+    .profile-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: linear-gradient(var(--glass-border) 1px, transparent 1px), linear-gradient(90deg, var(--glass-border) 1px, transparent 1px);
+        background-size: 20px 20px;
+        opacity: 0.3;
+        pointer-events: none;
+    }
+
+
+.profile-avatar-hexagon {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 1.5rem auto;
+    position: relative;
+}
+
+    .profile-avatar-hexagon img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 3px solid var(--primary-glow-color);
+        animation: pulseGlow 4s infinite ease-in-out;
+    }
+
+.profile-name {
+    color: var(--text-highlight);
+    font-weight: 700;
+    font-size: 1.5rem;
+    animation: flicker 5s infinite;
+}
+
+.profile-position {
+    color: var(--primary-glow-color);
+    font-family: var(--font-mono);
+    font-weight: 400;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+}
+
+.profile-department {
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+}
+
+.nik-badge {
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    font-family: var(--font-mono);
+    margin-bottom: 0.5rem;
+}
+
+.status-badge {
+    display: inline-block;
+    width: 120px;
+    padding: 0.5rem 0;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+
+.status-aktif {
+    background: var(--primary-glow-color);
+    color: var(--bg-color);
+}
+
+.status-nonaktif {
+    background-color: var(--secondary-glow-color);
+    color: var(--bg-color);
+}
+
+
+/* --- Details Card --- */
+.details-card {
+    background-color: transparent;
+    border: none;
+}
+
+    .details-card .card-body {
+        padding: 0;
+        animation: fadeIn 0.7s ease-out forwards;
+    }
+
+/* Holographic Tabs */
+.nav-tabs-cyber {
+    border-bottom: 1px solid var(--glass-border);
+    margin-bottom: 0;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+    .nav-tabs-cyber .nav-item {
+        margin-right: 2px;
+    }
+
+    .nav-tabs-cyber .nav-link {
+        border: none;
+        background: var(--glass-bg);
+        color: var(--text-color);
+        padding: 0.75rem 1.25rem;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        position: relative;
+        transition: all 0.3s ease;
+        clip-path: polygon(10px 0%, 100% 0, 100% 100%, 0 100%, 0% 10px);
+    }
+
+        .nav-tabs-cyber .nav-link:hover {
+            color: var(--text-highlight);
+            background: rgba(0, 246, 255, 0.2);
+        }
+
+        .nav-tabs-cyber .nav-link.active {
+            color: var(--bg-color);
+            background: var(--primary-glow-color);
+            font-weight: 700;
+            box-shadow: 0 0 15px var(--primary-glow-color);
+        }
+
+        .nav-tabs-cyber .nav-link::after {
+            display: none;
+        }
+
+
+/* Info Rows with glowing separators */
+.tab-content {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-top: none;
+    padding: 1.5rem;
+}
+
+.info-row {
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+    .info-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .info-row:first-child {
+        padding-top: 0;
+    }
+
+.info-label {
+    font-family: var(--font-mono);
+    color: var(--text-color);
+    opacity: 0.8;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.info-value {
+    color: var(--text-highlight);
+    font-weight: 500;
+}
+
+/* --- Print Styles --- */
+@media print {
+    body, #page-top, #wrapper, #content-wrapper, #content {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        color: #000 !important;
+    }
+
+    #accordionSidebar, nav.navbar, footer, .btn-cyber, .btn-cyber-secondary, .page-title-container .d-sm-flex {
+        display: none !important;
+    }
+
+    .print-header {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+        .print-header h1, .print-header h2 {
+            color: #000 !important;
+        }
+
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #ddd;
+    }
+
+    .profile-card, .details-card {
+        color: #000;
+    }
+
+    .profile-avatar-hexagon {
+        background: #ccc;
+    }
+
+    .nav-tabs-cyber {
+        display: none;
+    }
+
+    .tab-content .tab-pane {
+        display: block !important;
+        opacity: 1 !important;
+    }
+
+    .tab-pane::before {
+        font-weight: bold;
+        display: block;
+        margin: 1.5rem 0 1rem 0;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.5rem;
+    }
+
+    #pribadi::before {
+        content: 'Data Pribadi';
+    }
+
+    #kepegawaian::before {
+        content: 'Data Kepegawaian';
+    }
+
+    #kontak::before {
+        content: 'Kontak & Keluarga';
+    }
+
+    #pelanggaran::before {
+        content: 'Riwayat Pelanggaran';
+    }
+
+    #lainnya::before {
+        content: 'Info Lainnya';
+    }
+
+    .info-label, .info-value {
+        color: #000 !important;
+    }
+}
+
+.print-header {
+    display: none;
+}

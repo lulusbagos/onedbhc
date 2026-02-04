@@ -1,0 +1,569 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Kepatuhan Mitra - PT Indexim Coalindo</title>
+
+    <!-- [ASUMSI] Bootstrap 4 CSS sudah dimuat oleh _Layout.cshtml (SB Admin 2) -->
+    <!-- Muat Font Awesome untuk Ikon (Digunakan oleh SB Admin 2) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Font akan mengikuti default SB Admin 2 (Nunito) -->
+
+    <style>
+        /* Style minimal untuk accordion chevron */
+        .section-header .btn-link {
+            text-decoration: none;
+            color: #3a3b45; /* Warna teks SB Admin 2 */
+            font-weight: 700;
+        }
+
+            .section-header .btn-link .chevron-icon {
+                transition: transform 0.3s ease;
+            }
+
+            .section-header .btn-link[aria-expanded="true"] .chevron-icon {
+                transform: rotate(180deg);
+            }
+
+        /* [BARU] Style untuk Status Badge */
+        .status-badge {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.35em 0.7em;
+            border-radius: 0.25rem;
+        }
+
+        .status-wajib {
+            color: #721c24; /* Bootstrap Danger */
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-diunggah {
+            color: #155724; /* Bootstrap Success */
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body class="antialiased" style="background-color: #f8f9fc;">
+    <!-- Latar belakang SB Admin 2 -->
+
+    <div class="container-fluid p-4">
+
+        <div class="card shadow rounded-lg overflow-hidden">
+
+            <!-- 1. Header Portal -->
+            <div class="card-header bg-primary text-white p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="h3 font-weight-bold mb-0">Portal Kepatuhan Mitra</h1>
+                        <p class="lead mb-0" style="font-size: 1.1rem; color: #e3e6f0;">PT Indexim Coalindo</p>
+                    </div>
+                    <div class="h1 mb-0 opacity-50">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Area Konten (dengan padding) -->
+            <div class="card-body p-4 p-md-5">
+
+                <!-- [BARU] Bagian Informasi Mitra -->
+
+
+                <!-- 2a. Penjelasan "Mengapa?" -->
+                <div class="alert alert-info border-left-info p-4 rounded-lg mb-4" role="alert">
+                    <h4 class="alert-heading h5 font-weight-bold"><i class="fa-solid fa-circle-info mr-2"></i> Mengapa Dokumen Ini Diperlukan?</h4>
+                    <p class="mb-2">
+                        Selamat datang di Portal Kepatuhan Mitra Kerja PT Indexim Coalindo.
+                        Kami memiliki komitmen penuh terhadap standar tertinggi dalam <strong>Keselamatan dan Kesehatan Kerja (K3), serta Perlindungan Lingkungan Hidup (KPLH)</strong>.
+                        Untuk memastikan semua mitra kerja mematuhi regulasi (termasuk <strong>SMKP</strong>), kami mewajibkan kelengkapan dokumen di bawah ini.
+                    </p>
+                    <hr>
+                    <!-- [BARU] Teks OHS Departemen -->
+                    <p class="mb-0 font-weight-bold">
+                        <i class="fa-solid fa-triangle-exclamation mr-1 text-warning"></i>
+                        Semua dokumen yang diunggah di menu ini akan ditinjau (review) oleh OHS Departemen. Kelengkapan dokumen ini menjadi syarat untuk dapat melakukan pengisian data karyawan di aplikasi ONEDB.INDEXIM.ID.
+                    </p>
+                </div>                <div class="card shadow-sm mb-4 border-left-primary">
+                    <div class="card-body">
+                        <h5 class="h6 font-weight-bold text-primary mb-3"><i class="fa-solid fa-building mr-2"></i>Informasi Mitra Kerja</h5>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="mitraNamaPT" class="font-weight-bold">NAMA PERUSAHAAN (PT)</label>
+                                    <input type="text" id="mitraNamaPT" class="form-control" placeholder="Masukkan Nama PT " style="text-transform: uppercase;">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 col-lg-3">
+                                <div class="form-group">
+                                    <label for="mitraProvinsi">Provinsi</label>
+                                    <select id="mitraProvinsi" class="form-control custom-select">
+                                        <option value="" selected disabled>-- Pilih Provinsi --</option>
+                                        <!-- Opsi bisa ditambahkan di sini, misal: -->
+                                        <!-- <option value="KALTIM">KALIMANTAN TIMUR</option> -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <div class="form-group">
+                                    <label for="mitraKabupaten">Kabupaten / Kota</label>
+                                    <select id="mitraKabupaten" class="form-control custom-select" disabled>
+                                        <option value="" selected disabled>-- Pilih Provinsi Dulu --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <div class="form-group">
+                                    <label for="mitraKecamatan">Kecamatan</label>
+                                    <select id="mitraKecamatan" class="form-control custom-select" disabled>
+                                        <option value="" selected disabled>-- Pilih Kabupaten Dulu --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <div class="form-group">
+                                    <label for="mitraKelurahan">Kelurahan</label>
+                                    <select id="mitraKelurahan" class="form-control custom-select" disabled>
+                                        <option value="" selected disabled>-- Pilih Kecamatan Dulu --</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- [BARU] 2b. Progress Bar Keseluruhan -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h5 class="h6 mb-0 text-dark">Progres Kelengkapan Dokumen</h5>
+                        <span id="progress-text" class="font-weight-bold text-primary">0%</span>
+                    </div>
+                    <div class="progress rounded-pill" style="height: 10px;">
+                        <div id="overall-progress" class="progress-bar bg-primary" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+
+                <!-- 2c. Daftar Dokumen (dibagi per kategori) -->
+                <div id="document-sections" class="accordion mt-4">
+                    <!-- Kategori akan di-render oleh JavaScript di sini -->
+                </div>
+
+                <!-- [BARU] 2d. Tombol Aksi -->
+                <div class="text-right mt-5 border-top pt-4">
+                    <button type="button" id="btnSaveDraft" class="btn btn-secondary btn-lg mr-2">
+                        <i class="fa-solid fa-save mr-1"></i> Simpan Draft
+                    </button>
+                    <button type="button" id="btnSubmitPengajuan" class="btn btn-success btn-lg">
+                        <i class="fa-solid fa-paper-plane mr-1"></i> Ajukan Peninjauan
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- [BARU] 2e. Riwayat Pengajuan -->
+        <div class="card shadow-sm mt-4 rounded-lg border-left-info">
+            <div class="card-body">
+                <h5 class="h6 font-weight-bold text-info mb-3"><i class="fa-solid fa-history mr-2"></i>Riwayat Pengajuan Peninjauan</h5>
+                <div id="history-list-container">
+                    <p class="text-muted mb-0">Belum ada riwayat pengajuan.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Sederhana -->
+        <footer class="text-center mt-5 mb-3 text-muted">
+            © 2024 PT Indexim Coalindo. Seluruh hak cipta dilindungi.
+        </footer>
+    </div>
+
+
+    <script>
+        // --- DATA DOKUMEN ---
+        // [DIEDIT] Menambahkan properti 'status'
+        const documentList = [
+            // Grup 1: Legalitas & Struktur Dasar
+            { id: 1, group: 'Legalitas & Struktur Dasar', title: 'Izin Usaha', description: 'Dokumen izin operasional, NIB, SIUP.', status: 'wajib' },
+            { id: 2, group: 'Legalitas & Struktur Dasar', title: 'Sertifikasi Pengawas POP-POM', description: 'Sertifikat kompetensi pengawas operasional pertambangan.', status: 'wajib' },
+            { id: 3, group: 'Legalitas & Struktur Dasar', title: 'Pemeriksaan Kesehatan', description: 'Hasil MCU dan rekam medis karyawan.', status: 'wajib' },
+            { id: 4, group: 'Legalitas & Struktur Dasar', title: 'Memiliki Ahli K3', description: 'Sertifikat ahli K3 umum/spesialis.', status: 'wajib' },
+            { id: 5, group: 'Legalitas & Struktur Dasar', title: 'Penunjukan PJO', description: 'SK Penanggung Jawab Operasional.', status: 'wajib' },
+            { id: 6, group: 'Legalitas & Struktur Dasar', title: 'Kualifikasi Bidang Subbidang Usaha', description: 'Sertifikat badan usaha (SBU) dan SKK.', status: 'wajib' },
+            { id: 7, group: 'Legalitas & Struktur Dasar', title: 'Kebijakan KPLH', description: 'Dokumen kebijakan K3L perusahaan.', status: 'wajib' },
+            { id: 8, group: 'Legalitas & Struktur Dasar', title: 'Struktur Organisasi K3', description: 'Bagan organisasi tim K3 yang disahkan.', status: 'wajib' },
+            { id: 9, group: 'Legalitas & Struktur Dasar', title: 'Bukti Lapor Ketenagakerjaan', description: 'Dokumen WLK (Wajib Lapor Ketenagakerjaan) yang masih berlaku.', status: 'wajib' },
+            { id: 10, group: 'Legalitas & Struktur Dasar', title: 'Asuransi Ketenagakerjaan', description: 'Bukti kepesertaan BPJS Ketenagakerjaan.', status: 'wajib' },
+
+            // Grup 2: Sistem & Proses Operasional
+            { id: 11, group: 'Sistem & Proses Operasional', title: 'Bisnis Proses Perusahaan', description: 'Diagram alur proses dan fungsi tiap bagian.', status: 'wajib' },
+            { id: 12, group: 'Sistem & Proses Operasional', title: 'Identifikasi & Evaluasi Peraturan', description: 'Daftar peraturan K3L yang berlaku.', status: 'wajib' },
+            { id: 13, group: 'Sistem & Proses Operasional', title: 'Manual Sistem Manajemen KPLH', description: 'Buku manual sistem manajemen K3L.', status: 'wajib' },
+            { id: 14, group: 'Sistem & Proses Operasional', title: 'Pengendalian Dokumen dan Rekaman', description: 'Prosedur kontrol dokumen & arsip.', status: 'wajib' },
+            { id: 15, group: 'Sistem & Proses Operasional', title: 'Struktur Organisasi', description: 'Bagan organisasi dan uraian jabatan.', status: 'wajib' },
+            { id: 16, group: 'Sistem & Proses Operasional', title: 'Tenaga Teknis Khusus', description: 'Data dan sertifikat tenaga teknis khusus (blasting, mekanik, dll).', status: 'wajib' },
+            { id: 17, group: 'Sistem & Proses Operasional', title: 'Program K3LH Tahunan', description: 'Rencana kerja tahunan bidang K3L.', status: 'wajib' },
+            { id: 18, group: 'Sistem & Proses Operasional', title: 'Daftar Pekerjaan', description: 'Daftar aktivitas pekerjaan aktif.', status: 'wajib' },
+            { id: 19, group: 'Sistem & Proses Operasional', title: 'IBPR-HIRA', description: 'Identifikasi Bahaya dan Penilaian Risiko.', status: 'wajib' },
+            { id: 20, group: 'Sistem & Proses Operasional', title: 'Daftar Peralatan', description: 'Inventaris alat kerja dan inspeksi kelayakan.', status: 'wajib' },
+
+            // Grup 3: Operasional & Keselamatan Kerja
+            { id: 21, group: 'Operasional & Keselamatan Kerja', title: 'Jadwal & Monitoring SAP', description: 'Jadwal dan laporan safety patrol atau audit.', status: 'wajib' },
+            { id: 22, group: 'Operasional & Keselamatan Kerja', title: 'Pengelolaan P3K', description: 'Daftar isi kotak P3K dan penanggung jawab.', status: 'wajib' },
+            { id: 23, group: 'Operasional & Keselamatan Kerja', title: 'Prosedur Pekerjaan', description: 'SOP pekerjaan berisiko (hot work, lifting, confined space).', status: 'wajib' },
+            { id: 24, group: 'Operasional & Keselamatan Kerja', title: 'SOP APD', description: 'Prosedur pemakaian alat pelindung diri.', status: 'wajib' },
+            { id: 25, group: 'Operasional & Keselamatan Kerja', title: 'Matrix APD', description: 'Tabel jenis APD sesuai pekerjaan.', status: 'wajib' },
+            { id: 26, group: 'Operasional & Keselamatan Kerja', title: 'Monitoring APD', description: 'Checklist kelayakan dan kepatuhan penggunaan APD.', status: 'wajib' },
+            { id: 27, group: 'Operasional & Keselamatan Kerja', title: 'Penanganan Limbah', description: 'Prosedur pengelolaan limbah B3 dan non-B3.', status: 'wajib' },
+            { id: 28, group: 'Operasional & Keselamatan Kerja', title: 'Pengelolaan Limbah (Bukti)', description: 'Bukti pengiriman limbah ke pihak ketiga.', status: 'wajib' },
+            { id: 29, group: 'Operasional & Keselamatan Kerja', title: 'Buku Catatan Insiden', description: 'Catatan insiden, near miss, unsafe act/condition.', status: 'wajib' },
+            { id: 30, group: 'Operasional & Keselamatan Kerja', title: 'SPR (Izin Kerja)', description: 'Surat Perintah Resmi untuk pekerjaan berisiko tinggi.', status: 'wajib' },
+            { id: 31, group: 'Operasional & Keselamatan Kerja', title: 'Laporan SPR', description: 'Hasil pelaksanaan dan evaluasi izin kerja.', status: 'wajib' },
+            { id: 32, group: 'Operasional & Keselamatan Kerja', title: 'SOP Penyelidikan Kecelakaan', description: 'Langkah investigasi dan tindak lanjut kecelakaan.', status: 'wajib' },
+            { id: 33, group: 'Operasional & Keselamatan Kerja', title: 'Prosedur Lockout-Tagout (LOTO)', description: 'SOP untuk isolasi energi saat perbaikan mesin.', status: 'wajib' },
+
+            // Grup 4: Pelatihan, Tanggap Darurat & Audit
+            { id: 34, group: 'Pelatihan, Tanggap Darurat & Audit', title: 'Pelaporan KO', description: 'Laporan kegiatan, observasi, dan kondisi tidak aman.', status: 'wajib' },
+            { id: 35, group: 'Pelatihan, Tanggap Darurat & Audit', title: 'Matrix Pelatihan', description: 'Jadwal dan daftar pelatihan seluruh karyawan.', status: 'wajib' },
+            { id: 36, group: 'Pelatihan, Tanggap Darurat & Audit', title: 'Pelatihan Khusus KPLH Pengawas', description: 'Materi dan sertifikat pelatihan pengawas lingkungan.', status: 'wajib' },
+            { id: 37, group: 'Pelatihan, Tanggap Darurat & Audit', title: 'Sertifikat Pekerjaan', description: 'Bukti kompetensi operator atau teknisi.', status: 'wajib' },
+            { id: 38, group: 'Pelatihan, Tanggap Darurat & Audit', title: 'SOP Orientasi Karyawan', description: 'Panduan orientasi dan safety induction karyawan baru.', status: 'wajib' },
+            { id: 39, group: 'Pelatihan, Tanggap Darurat & Audit', title: 'Prosedur Keadaan Darurat', description: 'Langkah tanggap kebakaran, tumpahan, gempa, dsb.', status: 'wajib' },
+            { id: 40, group: 'Pelatihan, Tanggap Darurat & Audit', title: 'Struktur Tanggap Darurat', description: 'Struktur organisasi dan kontak tim darurat.', status: 'wajib' },
+            { id: 41, group: 'Pelatihan, Tanggap Darurat & Audit', title: 'Sertifikat Kompetensi Tanggap Darurat', description: 'Sertifikat pelatihan tim emergency response.', status: 'wajib' },
+            { id: 42, group: 'Pelatihan, Tanggap Darurat & Audit', title: 'Prosedur Inspeksi', description: 'SOP inspeksi area kerja, alat, dan perilaku aman.', status: 'wajib' },
+            { id: 43, group: 'Pelatihan, Tanggap Darurat & Audit', title: 'Audit SMKP', description: 'Dokumen hasil audit, temuan, dan tindak lanjut SMKP.', status: 'wajib' },
+        ];
+
+        // --- Variabel UI ---
+        const sectionsContainer = document.getElementById('document-sections');
+        const overallProgressBar = document.getElementById('overall-progress');
+        const progressText = document.getElementById('progress-text');
+        const totalDocuments = documentList.length;
+        // [BARU] Variabel untuk elemen baru
+        const btnSaveDraft = document.getElementById('btnSaveDraft');
+        const btnSubmitPengajuan = document.getElementById('btnSubmitPengajuan');
+        const historyContainer = document.getElementById('history-list-container');
+
+        // [BARU] Data Riwayat (untuk simulasi)
+        let submissionHistory = [
+            // Contoh data:
+            // { date: '25 Okt 2025', status: 'Ditolak', notes: 'Item 3 (MCU) tidak valid atau kedaluwarsa.' }
+        ];
+
+        // --- FUNGSI ---
+
+        /**
+         * Render semua kategori dan item dokumen ke halaman
+         */
+        function renderDocuments() {
+            const groups = documentList.reduce((acc, doc) => {
+                (acc[doc.group] = acc[doc.group] || []).push(doc);
+                return acc;
+            }, {});
+
+            let groupIndex = 0;
+            sectionsContainer.innerHTML = ''; // Bersihkan kontainer
+
+            for (const groupName in groups) {
+                const documentsInGroup = groups[groupName];
+                const isFirstGroup = groupIndex === 0;
+
+                // [BARU] Hitung progres awal grup
+                const completedInGroup = documentsInGroup.filter(d => d.status === 'diunggah').length;
+                const totalInGroup = documentsInGroup.length;
+
+                const collapseId = `collapse-group-${groupIndex}`;
+                const section = document.createElement('div');
+                section.className = 'card shadow-sm mb-3 rounded-lg';
+
+                const cardHeader = document.createElement('div');
+                cardHeader.className = 'card-header section-header p-0';
+                cardHeader.id = `heading-group-${groupIndex}`;
+                cardHeader.innerHTML = `
+                    <h2 class="mb-0">
+                        <button class="btn btn-light btn-block text-left d-flex justify-content-between align-items-center p-3"
+                                type="button"
+                                data-toggle="collapse"
+                                data-target="#${collapseId}"
+                                aria-expanded="${isFirstGroup ? 'true' : 'false'}"
+                                aria-controls="${collapseId}">
+                            <span class="h6 mb-0 text-primary">${groupName}</span>
+                            <span class="d-flex align-items-center">
+                                <!-- [DIEDIT] Teks progres grup -->
+                                <span id="group-progress-${groupIndex}" class="text-sm text-muted mr-3">Dokumen: ${completedInGroup} / ${totalInGroup}</span>
+                                <i class="fa-solid fa-chevron-down chevron-icon text-muted"></i>
+                            </span>
+                        </button>
+                    </h2>
+                `;
+
+                const collapseWrapper = document.createElement('div');
+                collapseWrapper.id = collapseId;
+                collapseWrapper.className = `collapse ${isFirstGroup ? 'show' : ''}`;
+                collapseWrapper.setAttribute('aria-labelledby', `heading-group-${groupIndex}`);
+                collapseWrapper.setAttribute('data-parent', '#document-sections');
+
+                const cardBody = document.createElement('div');
+                cardBody.className = 'card-body p-0';
+
+                cardBody.innerHTML = documentsInGroup.map(doc => renderDocumentItem(doc)).join('');
+
+                collapseWrapper.appendChild(cardBody);
+                section.appendChild(cardHeader);
+                section.appendChild(collapseWrapper);
+                sectionsContainer.appendChild(section);
+
+                groupIndex++;
+            }
+        }
+
+        /**
+         * Render HTML untuk satu item dokumen
+         */
+        function renderDocumentItem(doc) {
+
+            // [BARU] Logika untuk status
+            const statusText = doc.status === 'wajib' ? 'Wajib Diunggah' : 'Sudah Diunggah';
+            const statusClass = doc.status === 'wajib' ? 'status-wajib' : 'status-diunggah';
+
+            const fileInputHTML = `
+                <div class="custom-file">
+                    <input
+                        type="file"
+                        class="custom-file-input"
+                        id="file-doc-${doc.id}"
+                        name="file-doc-${doc.id}"
+                        data-doc-id="${doc.id}"
+                        data-group-name="${doc.group}"
+                        accept="application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    >
+                    <label class="custom-file-label" for="file-doc-${doc.id}">
+                        ${doc.status === 'wajib' ? 'Pilih file...' : 'File Sudah Diunggah'}
+                    </label>
+                </div>
+                <!-- [DIEDIT] Keterangan file -->
+                <small class="form-text text-muted mt-1">Hanya file PDF atau EXCEL (Maks 10MB)</small>
+            `;
+
+            return `
+                <div id="item-${doc.id}" class="document-item p-3 border-bottom">
+                    <div class="row align-items-center">
+                        <!-- Info Dokumen -->
+                        <div class="col-md-5 mb-2 mb-md-0">
+                            <h5 class="h6 font-weight-bold text-dark mb-1">${doc.id}. ${doc.title}</h5>
+                            <p class="text-sm text-muted mb-0">${doc.description}</p>
+                        </div>
+                        <!-- File Input Area -->
+                        <div class="col-md-5 mb-2 mb-md-0">
+                            ${fileInputHTML}
+                        </div>
+                        <!-- [BARU] Status Badge Area -->
+                        <div class="col-md-2 text-md-right">
+                            <span id="status-doc-${doc.id}" class="status-badge ${statusClass}">
+                                ${statusText}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * [BARU] Update progress bar keseluruhan
+         */
+        function updateOverallProgress() {
+            const uploadedCount = documentList.filter(doc => doc.status === 'diunggah').length;
+            const percentage = (uploadedCount / totalDocuments) * 100;
+
+            if (overallProgressBar) {
+                overallProgressBar.style.width = `${percentage}%`;
+                overallProgressBar.setAttribute('aria-valuenow', percentage);
+            }
+            if (progressText) {
+                progressText.textContent = `${Math.round(percentage)}% (${uploadedCount}/${totalDocuments})`;
+            }
+        }
+
+        /**
+         * [BARU] Render tabel riwayat pengajuan
+         */
+        function renderHistory() {
+            if (submissionHistory.length === 0) {
+                historyContainer.innerHTML = '<p class="text-muted mb-0">Belum ada riwayat pengajuan.</p>';
+                return;
+            }
+
+            historyContainer.innerHTML = `
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover mb-0" style="font-size: 0.9rem;">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Tanggal Pengajuan</th>
+                                <th>Status</th>
+                                <th>Catatan dari OHS Dept.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${submissionHistory.map(item => {
+                                let statusClass = 'warning'; // Default untuk 'Menunggu Review'
+                                if (item.status === 'Disetujui') statusClass = 'success';
+                                if (item.status === 'Ditolak') statusClass = 'danger';
+
+                                return `
+                                <tr>
+                                    <td class="align-middle">${item.date}</td>
+                                    <td class="align-middle"><span class="badge badge-${statusClass}">${item.status}</span></td>
+                                    <td class="align-middle">${item.notes}</td>
+                                </tr>
+                            `}).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        /**
+         * [BARU] Reset semua form dan data
+         */
+        function resetAllData() {
+            // 1. Reset status dokumen
+            documentList.forEach(doc => doc.status = 'wajib');
+
+            // 2. Render ulang UI dokumen (accordion)
+            renderDocuments();
+
+            // 3. Update progress
+            updateOverallProgress();
+            updateAllGroupProgress();
+
+            // 4. Reset form informasi mitra
+            document.getElementById('mitraNamaPT').value = '';
+            document.getElementById('mitraProvinsi').selectedIndex = 0;
+            // (Dropdown lain akan otomatis reset karena 'disabled' dan tidak punya 'value')
+        }
+
+
+        // --- EVENT LISTENERS ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderDocuments();
+            updateOverallProgress(); // Update progress saat pertama kali load
+            renderHistory(); // [BARU] Render riwayat saat load
+
+            sectionsContainer.addEventListener('change', (e) => {
+                if (e.target.matches('.custom-file-input')) {
+                    const input = e.target;
+                    const fileName = input.files[0] ? input.files[0].name : 'Pilih file...';
+                    const label = input.nextElementSibling;
+                    const docId = input.dataset.docId; // Ambil docId dari data-atribute
+
+                    if (label && label.classList.contains('custom-file-label')) {
+                        label.textContent = fileName;
+                    }
+
+                    // [BARU] Update status
+                    if (docId) {
+                        const doc = documentList.find(d => d.id == docId);
+                        if (doc) {
+                            doc.status = 'diunggah';
+
+                            // Update badge
+                            const badge = document.getElementById(`status-doc-${docId}`);
+                            if (badge) {
+                                badge.textContent = 'Sudah Diunggah';
+                                badge.classList.remove('status-wajib');
+                                badge.classList.add('status-diunggah');
+                            }
+
+                            // Update progress
+                            updateOverallProgress();
+                            updateAllGroupProgress();
+                        }
+                    }
+                }
+            });
+
+            // [BARU] Listener Tombol Save Draft
+            btnSaveDraft.addEventListener('click', () => {
+                // (Di aplikasi nyata, ini akan mengirim data ke server)
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Draft Disimpan',
+                    text: 'Data dan file yang telah Anda unggah berhasil disimpan sebagai draft.',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            });
+
+            // [BARU] Listener Tombol Submit Pengajuan
+            btnSubmitPengajuan.addEventListener('click', () => {
+                const uploadedCount = documentList.filter(doc => doc.status === 'diunggah').length;
+
+                // Cek kelengkapan
+                if (uploadedCount < totalDocuments) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Dokumen Belum Lengkap',
+                        text: `Anda baru mengunggah ${uploadedCount} dari ${totalDocuments} dokumen wajib. Harap lengkapi semua dokumen sebelum mengajukan.`,
+                        confirmButtonColor: '#4e73df' // Warna primary SB Admin 2
+                    });
+                    return;
+                }
+
+                // Jika sudah lengkap, minta konfirmasi
+                Swal.fire({
+                    title: 'Konfirmasi Pengajuan',
+                    text: "Apakah Anda yakin ingin mengajukan semua dokumen ini untuk ditinjau oleh OHS Departemen? Data akan dikunci setelah diajukan.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#1cc88a', // Hijau (Success)
+                    cancelButtonColor: '#6c757d', // Abu-abu (Secondary)
+                    confirmButtonText: 'Ya, Ajukan Sekarang!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Simulasi pengajuan
+                        const tgl = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+
+                        // Tambah ke awal array riwayat
+                        submissionHistory.unshift({
+                            date: tgl,
+                            status: 'Menunggu Review',
+                            notes: 'Dokumen sedang ditinjau oleh OHS Dept.'
+                        });
+
+                        renderHistory();   // Update tabel riwayat
+                        resetAllData();    // Reset form
+
+                        Swal.fire(
+                            'Berhasil Diajukan!',
+                            'Dokumen Anda telah dikirim untuk peninjauan.',
+                            'success'
+                        );
+
+                        // Scroll ke atas
+                        document.documentElement.scrollTop = 0; // Untuk Chrome/Firefox
+                        document.body.scrollTop = 0; // Untuk Safari
+                    }
+                });
+            });
+        });
+
+    </script>
+
+    <!-- [ASUMSI] jQuery dan Bootstrap JS (termasuk Popper.js) sudah dimuat oleh _Layout.cshtml -->
+
+</body>
+</html>
+
+

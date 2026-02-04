@@ -1,0 +1,388 @@
+﻿@{
+    // PENTING: File ini tidak lagi menggunakan @model
+    // Error C# 'Model.CurrentMonthYear' tidak akan terjadi di sini.
+    ViewData["Title"] = "Ringkasan Jadwal Kerja";
+}
+
+<!-- 1. STYLE (UI Kompak & Sticky Column) -->
+<style>
+    .table-roster {
+        white-space: nowrap;
+        font-size: 0.75rem; /* 🚀 Perkecil font */
+    }
+
+        .table-roster th, .table-roster td {
+            text-align: center;
+            vertical-align: middle;
+            padding: 0.25rem; /* 🚀 Perkecil padding */
+            min-width: 40px; /* 🚀 Perkecil lebar sel tanggal */
+            height: 30px;
+        }
+
+            /* 🚀 Konfigurasi STICKY COLUMN (Kolom Tetap) */
+            .table-roster th:nth-child(1), .table-roster td:nth-child(1) { /* NIK */
+                position: sticky;
+                left: 0;
+                min-width: 70px;
+                width: 70px;
+            }
+
+            .table-roster th:nth-child(2), .table-roster td:nth-child(2) { /* Nama */
+                position: sticky;
+                left: 70px;
+                min-width: 130px;
+                width: 130px;
+            }
+
+            .table-roster th:nth-child(3), .table-roster td:nth-child(3) { /* Dept */
+                position: sticky;
+                left: 200px;
+                min-width: 120px;
+                width: 120px;
+            }
+
+            .table-roster th:nth-child(4), .table-roster td:nth-child(4) { /* Posisi */
+                position: sticky;
+                left: 320px;
+                min-width: 120px;
+                width: 120px;
+            }
+
+            .table-roster th:nth-child(1), .table-roster th:nth-child(2),
+            .table-roster th:nth-child(3), .table-roster th:nth-child(4),
+            .table-roster td:nth-child(1), .table-roster td:nth-child(2),
+            .table-roster td:nth-child(3), .table-roster td:nth-child(4) {
+                text-align: left;
+                background-color: #f8f9fa;
+                z-index: 1;
+            }
+
+        .table-roster thead th {
+            position: sticky;
+            top: 0; /* Membuat header tabel 'nempel' */
+            background-color: #e9ecef;
+            z-index: 2;
+        }
+
+    .legend-box {
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        border: 1px solid #ccc;
+        margin-right: 8px;
+        vertical-align: middle;
+        flex-shrink: 0; /* 🚀 Agar tidak mengecil */
+    }
+
+    /* 🚀 Style untuk Legenda Multi-kolom */
+    #rosterLegend {
+        font-size: 0.8rem;
+        column-count: 3; /* Tampil dalam 3 kolom */
+        column-gap: 20px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+        break-inside: avoid-column; /* Mencegah item terpotong */
+    }
+
+    /* Style untuk Loading */
+    #loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.7);
+        z-index: 9998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+
+<!-- 2. HTML (Area Konten) -->
+<!-- Navigasi & Download -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <button id="btnPrevMonth" class="btn btn-outline-primary btn-sm">&laquo; Bulan Lalu</button>
+    <h3 id="currentMonthYear" class="mb-0 mx-3">Loading...</h3>
+    <button id="btnNextMonth" class="btn btn-outline-primary btn-sm">Bulan Depan &raquo;</button>
+    <button id="btnDownloadExcel" class="btn btn-success btn-sm ml-auto">
+        <i class="fas fa-file-excel"></i> Download Excel
+    </button>
+</div>
+
+<!-- 🚀 FILTER ADMINISTRATOR (Muncul kondisional) -->
+@if (ViewBag.kategoriUserId == "ADMINISTRATOR" && ViewBag.DeptList != null)
+{
+    <div class="card mb-3" id="filter-area">
+        <div class="card-header">
+            Filter Administrator
+        </div>
+        <div class="card-body d-flex" style="gap: 10px;">
+            <select id="filterDept" class="form-control form-control-sm" style="width: 250px;">
+                <option value="">-- Semua Departemen --</option>
+                @foreach (var dept in (List<string>)ViewBag.DeptList)
+                {
+                    <option value="@dept">@dept</option>
+                }
+            </select>
+            <button id="btnApplyFilter" class="btn btn-primary btn-sm">Terapkan</button>
+        </div>
+    </div>
+}
+
+
+<!-- Legenda (Dibuat dinamis) -->
+<div class="card mb-3">
+    <div class="card-header">
+        Legenda
+    </div>
+    <!-- 🚀 Kontainer legenda yang rapi -->
+    <div class="card-body" id="rosterLegend">
+        <p>Memuat legenda...</p>
+    </div>
+</div>
+
+<!-- Tabel (Dibuat dinamis) -->
+<div class="table-responsive" style="max-height: 60vh;">
+    <table class="table table-bordered table-hover table-sm table-roster">
+        <thead id="rosterTHead">
+            <!-- Header di-generate oleh JS -->
+        </thead>
+        <tbody id="rosterTBody">
+            <!-- Body di-generate oleh JS -->
+        </tbody>
+    </table>
+</div>
+
+<!-- 3. LOADING INDICATOR -->
+<div id="loading-overlay" style="display: none;">
+    <div class="spinner-border text-primary" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+</div>
+
+
+<!-- 4. SCRIPT -->
+@section Scripts {
+    <!-- 🚀 Tambahkan library SheetJS (js-xlsx) untuk Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            // State untuk menyimpan tanggal saat ini
+            let currentYear = new Date().getFullYear();
+            let currentMonth = new Date().getMonth() + 1; // (JS bulan 0-11)
+
+            // 🚀 Variabel untuk menyimpan data (untuk Excel)
+            let currentRosterData = null;
+
+            // Ambil elemen DOM
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const legendContainer = document.getElementById('rosterLegend');
+            const tableHead = document.getElementById('rosterTHead');
+            const tableBody = document.getElementById('rosterTBody');
+            const monthYearDisplay = document.getElementById('currentMonthYear');
+            const btnPrev = document.getElementById('btnPrevMonth');
+            const btnNext = document.getElementById('btnNextMonth');
+            const btnDownloadExcel = document.getElementById('btnDownloadExcel');
+
+            // Filter (jika ada)
+            const filterDeptSelect = document.getElementById('filterDept');
+            const btnApplyFilter = document.getElementById('btnApplyFilter');
+
+            // Fungsi utama untuk memuat data
+            async function loadRosterData(year, month) {
+                loadingOverlay.style.display = 'flex';
+                tableBody.innerHTML = '<tr><td colspan="99" class="text-center">Loading data...</td></tr>';
+                currentRosterData = null; // Hapus data lama
+
+                // 🚀 Ambil nilai filter
+                const filterDept = filterDeptSelect ? filterDeptSelect.value : '';
+
+                try {
+                    // 🚀 Panggil endpoint controller dengan filter
+                    const response = await fetch(`@Url.Action("GetRosterData")?year=${year}&month=${month}&filterDept=${filterDept}`);
+
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            alert("Sesi Anda telah berakhir. Harap login kembali.");
+                            window.location = '@Url.Action("Index", "Login")';
+                        } else {
+                            throw new Error(`Error: ${response.statusText}`);
+                        }
+                        return;
+                    }
+
+                    const data = await response.json();
+                    currentRosterData = data; // 🚀 Simpan data untuk Excel
+
+                    updateNavigation(data.currentMonthYear);
+                    buildLegend(data.legend);
+                    buildTable(data.dateHeaders, data.employeeRows, data.statusColors);
+
+                } catch (error) {
+                    console.error("Gagal mengambil data roster:", error);
+                    tableBody.innerHTML = `<tr><td colspan="99" class="text-center text-danger">Gagal memuat data. ${error.message}</td></tr>`;
+                } finally {
+                    loadingOverlay.style.display = 'none';
+                }
+            }
+
+            function updateNavigation(currentMonthISO) {
+                const date = new Date(currentMonthISO);
+                currentYear = date.getFullYear();
+                currentMonth = date.getMonth() + 1;
+
+                const prevMonth = new Date(date);
+                prevMonth.setMonth(prevMonth.getMonth() - 1);
+
+                const nextMonth = new Date(date);
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+                const monthFormatter = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' });
+                // ⬇️ PERBAIKAN DI SINI: 'MMM' diubah menjadi 'short'
+                const shortMonthFormatter = new Intl.DateTimeFormat('id-ID', { month: 'short', 'year': 'numeric' });
+
+                monthYearDisplay.textContent = monthFormatter.format(date);
+                btnPrev.textContent = `« ${shortMonthFormatter.format(prevMonth)}`;
+                btnNext.textContent = `${shortMonthFormatter.format(nextMonth)} »`;
+            }
+
+            // 🚀 Fungsi untuk membangun legenda (Rapi)
+            function buildLegend(legend) {
+                legendContainer.innerHTML = ''; // Kosongkan
+                if (!legend || legend.length === 0) {
+                    legendContainer.innerHTML = 'Legenda tidak tersedia.';
+                    return;
+                }
+
+                legend.forEach(item => {
+                    legendContainer.innerHTML += `
+                        <div class="legend-item">
+                            <span class="legend-box" style="background-color: ${item.warna};"></span>
+                            <span class="ml-2"><strong>${item.kode}</strong>: ${item.keterangan}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            // Fungsi untuk membangun tabel (Tidak berubah, UI diatur CSS)
+            function buildTable(dateHeaders, employeeRows, statusColors) {
+                // 1. Build Header
+                let headerHtml = '<tr><th>NIK</th><th>Nama</th><th>Departemen</th><th>Posisi</th>';
+                dateHeaders.forEach(dateISO => {
+                    const date = new Date(dateISO);
+                    const day = date.getDate().toString().padStart(2, '0');
+                    const dayName = date.toLocaleDateString('id-ID', { weekday: 'short' });
+
+                    let dayColor = '';
+                    const dayOfWeek = date.getDay();
+                    if (dayOfWeek === 0) dayColor = 'text-danger'; // Minggu
+                    if (dayOfWeek === 6) dayColor = 'text-primary'; // Sabtu
+
+                    headerHtml += `<th class="${dayColor}">${day}<br><small>${dayName}</small></th>`;
+                });
+                headerHtml += '</tr>';
+                tableHead.innerHTML = headerHtml;
+
+                // 2. Build Body
+                tableBody.innerHTML = ''; // Kosongkan
+                if (!employeeRows || employeeRows.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="${dateHeaders.length + 4}" class="text-center">Tidak ada data karyawan ditemukan.</td></tr>`;
+                    return;
+                }
+
+                employeeRows.forEach(row => {
+                    let rowHtml = `
+                        <tr>
+                            <td>${row.nik || ''}</td>
+                            <td>${row.nama || ''}</td>
+                            <td>${row.departemen || ''}</td>
+                            <td>${row.posisi || ''}</td>
+                    `;
+
+                    dateHeaders.forEach(dateISO => {
+                        const status = row.rosterCells[dateISO];
+                        const color = (status && statusColors[status]) ? statusColors[status] : '#FFFFFF';
+
+                        rowHtml += `<td style="background-color: ${color};">${status || ''}</td>`;
+                    });
+
+                    rowHtml += '</tr>';
+                    tableBody.innerHTML += rowHtml;
+                });
+            }
+
+            // 🚀 Fungsi untuk Download Excel
+            function downloadExcel() {
+                if (!currentRosterData) {
+                    alert("Data belum dimuat atau sedang diproses. Silakan tunggu.");
+                    return;
+                }
+
+                const { dateHeaders, employeeRows } = currentRosterData;
+
+                // 1. Buat Header
+                const headers = ["NIK", "Nama", "Departemen", "Posisi"];
+                const dateStrings = dateHeaders.map(d => new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }));
+                headers.push(...dateStrings);
+
+                // 2. Buat Data Rows
+                const data = employeeRows.map(row => {
+                    const rowData = [row.nik, row.nama, row.departemen, row.posisi];
+                    const cellData = dateHeaders.map(dateISO => row.rosterCells[dateISO] || '');
+                    rowData.push(...cellData);
+                    return rowData;
+                });
+
+                // 3. Buat Worksheet
+                const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+
+                // (Opsional) Tentukan lebar kolom
+                const cols = [
+                    { wch: 12 }, { wch: 30 }, { wch: 20 }, { wch: 20 }
+                ];
+                dateStrings.forEach(() => cols.push({ wch: 8 }));
+                ws['!cols'] = cols;
+
+                // 4. Buat Workbook dan download
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Ringkasan Jadwal");
+                XLSX.writeFile(wb, `RingkasanJadwal_${currentYear}_${currentMonth}.xlsx`);
+            }
+
+            // --- Event Listeners ---
+
+            btnPrev.addEventListener('click', () => {
+                currentMonth--;
+                if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+                loadRosterData(currentYear, currentMonth);
+            });
+
+            btnNext.addEventListener('click', () => {
+                currentMonth++;
+                if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+                loadRosterData(currentYear, currentMonth);
+            });
+
+            // 🚀 Listener untuk Tombol Excel
+            btnDownloadExcel.addEventListener('click', downloadExcel);
+
+            // 🚀 Listener untuk Tombol Filter Admin (jika ada)
+            if (btnApplyFilter) {
+                btnApplyFilter.addEventListener('click', () => {
+                    // Muat ulang data dengan filter saat ini
+                    loadRosterData(currentYear, currentMonth);
+                });
+            }
+
+            // Muat data untuk pertama kali
+            loadRosterData(currentYear, currentMonth);
+        });
+    </script>
+}

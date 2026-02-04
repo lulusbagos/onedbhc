@@ -1,0 +1,27 @@
+﻿body {
+<head>
+    <style>
+        @keyframes blink {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0;
+            }
+        }
+
+        .blinking-dot {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 10px;
+            height: 10px;
+            background-color: #32CD32;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+    </style>
+</head>
+
+
+}
